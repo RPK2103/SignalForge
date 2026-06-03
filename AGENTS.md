@@ -34,3 +34,14 @@ AI:
 
 Priority:
 Demo quality over technical complexity.
+
+Output Preference:
+
+When implementing features:
+
+1. Explain files to create or modify.
+2. Generate Cursor-ready prompts.
+3. Keep code generation scoped.
+4. Prefer mock data before integrations.
+5. Prioritize demo value over production readiness.
+

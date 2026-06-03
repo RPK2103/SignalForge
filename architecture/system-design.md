@@ -49,3 +49,26 @@ MVP Features:
 
 Hackathon Rule:
 Every feature must improve the demo experience.
+
+
+Business Problem:
+
+Engineering managers struggle to identify which engineers can successfully execute a project based on real evidence rather than self-reported skills.
+
+SignalForge analyzes engineering evidence and generates explainable execution intelligence.
+
+Core Demo Scenario:
+
+An engineering manager needs to staff an Azure AI migration project.
+
+SignalForge evaluates engineers and recommends:
+
+* Best-fit engineer
+* Risk assessment
+* Capability breakdown
+* Recommended team composition
+
+Differentiator:
+
+Unlike traditional skill matrices, SignalForge focuses on execution capability inferred from evidence.
+
