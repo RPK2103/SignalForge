@@ -5,3 +5,8 @@ dist
 build
 __pycache__
 .cursor/
+.env
+*.env
+backend/.env
+__pycache__/
+*.pyc

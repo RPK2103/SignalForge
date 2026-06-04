@@ -1,0 +1,39 @@
+---
+Project: SignalForge
+
+Purpose:
+AI-powered execution intelligence platform.
+
+Stack:
+
+Frontend:
+- Next.js
+- TypeScript
+- Tailwind CSS
+- shadcn/ui
+
+Backend:
+- FastAPI
+- Python
+- Pydantic
+
+AI:
+- Azure OpenAI
+
+Development Rules:
+- Build one feature at a time.
+- Keep architecture simple.
+- No authentication.
+- No Kubernetes.
+- No microservices.
+- No unnecessary dependencies.
+- Prefer mock data before integrations.
+- Optimize for hackathon demo quality.
+- Do not modify unrelated files.
+
+When implementing:
+1. Show files being modified.
+2. Explain changes briefly.
+3. Generate test steps.
+4. Keep code readable and explainable.
+---
