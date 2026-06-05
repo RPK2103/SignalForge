@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SignalForge · Execution Intelligence Dashboard</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="page">
+      <!-- 1. What is SignalForge? -->
+      <header class="header">
+        <div class="header-top">
+          <div class="logo-icon" aria-hidden="true">✦</div>
+          <span class="badge badge-secondary">Execution Intelligence</span>
+        </div>
+        <h1>SignalForge</h1>
+        <p class="header-subtitle">
+          Evidence-based execution intelligence for engineering leaders — predict
+          delivery success, simulate staffing risk, and ask AI-powered execution
+          questions.
+        </p>
+        <div class="badge-row">
+          <span class="badge badge-outline">Project: Azure AI Migration</span>
+          <span class="badge badge-outline">Engineer: Kavi</span>
+        </div>
+      </header>
+
+      <!-- 2. Is the project ready? -->
+      <section aria-label="Hero readiness banner" class="hero-readiness">
+        <div class="hero-readiness-glow" aria-hidden="true"></div>
+        <div class="hero-readiness-inner">
+          <div class="hero-readiness-status">
+            <span class="hero-readiness-check" aria-hidden="true">✓</span>
+            <p class="hero-readiness-title">Ready for Execution</p>
+          </div>
+          <div class="hero-readiness-stats">
+            <div class="hero-stat">
+              <span class="hero-stat-value" id="hero-success-percent">91%</span>
+              <span class="hero-stat-label">predicted delivery success</span>
+            </div>
+            <div class="hero-stat-divider" aria-hidden="true"></div>
+            <div class="hero-stat">
+              <span class="hero-stat-value emerald">Low</span>
+              <span class="hero-stat-label">delivery risk</span>
+            </div>
+            <div class="hero-stat-divider" aria-hidden="true"></div>
+            <div class="hero-stat">
+              <span class="hero-stat-value emerald">100%</span>
+              <span class="hero-stat-label">capability coverage</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. What is the predicted success? -->
+      <section aria-label="Predicted delivery success" class="card hero-card success-card">
+        <div class="card-header">
+          <div>
+            <h3>Predicted Delivery Success</h3>
+            <p>Based on team capability, staffing coverage, and delivery risk</p>
+          </div>
+          <div class="card-icon icon-emerald" aria-hidden="true">◎</div>
+        </div>
+        <div class="hero-body">
+          <p id="success-loading" class="loading">Loading success prediction…</p>
+          <p id="success-error" class="error-msg hidden">
+            Could not load live prediction — showing demo values.
+          </p>
+          <div id="success-content" class="success-hero hidden">
+            <div class="success-percent-block">
+              <p id="success-percent" class="success-percent">—</p>
+              <p class="success-label">Project Success Probability</p>
+            </div>
+            <div class="success-meta">
+              <div class="meta-pill meta-pill-badge">
+                <span>Confidence</span>
+                <strong id="success-confidence" class="badge badge-emerald">—</strong>
+              </div>
+              <div class="meta-pill meta-pill-badge">
+                <span>Delivery Outlook</span>
+                <strong id="success-outlook" class="badge badge-emerald">—</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. What happens if a key engineer is removed? -->
+      <section aria-label="Staffing impact simulator" class="card hero-card simulator-card">
+        <div class="card-header">
+          <div>
+            <h3>Staffing Impact Simulator</h3>
+            <p>Cause-and-effect analysis when key engineers leave the team</p>
+          </div>
+          <div class="card-icon icon-amber" aria-hidden="true">⇄</div>
+        </div>
+        <div class="hero-body">
+          <p id="sim-loading" class="loading">Running staffing simulation…</p>
+          <p id="sim-error" class="error-msg hidden">
+            Could not load live simulation — showing demo values.
+          </p>
+          <div id="sim-content" class="hidden">
+            <p id="sim-scenario" class="scenario-headline">
+              If Kavi is removed:
+            </p>
+
+            <div class="cause-effect-grid">
+              <div class="cause-effect-row">
+                <span class="cause-effect-label">Coverage</span>
+                <span id="sim-coverage" class="cause-effect-value">—</span>
+              </div>
+              <div class="cause-effect-row cause-effect-row-risk">
+                <span class="cause-effect-label">Risk</span>
+                <span id="sim-risk" class="cause-effect-value">—</span>
+              </div>
+              <div class="cause-effect-row">
+                <span class="cause-effect-label">Success</span>
+                <span id="sim-success" class="cause-effect-value">—</span>
+              </div>
+            </div>
+
+            <div id="sim-lost-wrap" class="lost-capability">
+              <p class="lost-capability-label">Lost Capability</p>
+              <p id="sim-lost" class="lost-capability-value">Generative AI</p>
+            </div>
+
+            <p id="sim-takeaway" class="executive-takeaway">
+              Generative AI is a critical dependency for this project.
+            </p>
+
+            <p class="impact-score">
+              Impact Score: <strong id="sim-impact">—</strong>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. Ask AI why -->
+      <section aria-label="Ask SignalForge Copilot" class="card hero-card copilot-card">
+        <div class="card-header">
+          <div>
+            <h3>Ask SignalForge Copilot</h3>
+            <p>AI leadership advisor for execution and staffing questions</p>
+          </div>
+          <div class="card-icon icon-blue" aria-hidden="true">✦</div>
+        </div>
+        <div class="hero-body">
+          <form id="copilot-form" class="copilot-form">
+            <input
+              id="copilot-input"
+              class="copilot-input"
+              type="text"
+              placeholder="Ask about delivery risk, staffing, or success drivers…"
+              aria-label="Copilot question"
+            />
+            <button id="copilot-ask-btn" class="btn btn-primary" type="submit">
+              Ask
+            </button>
+          </form>
+
+          <div id="suggested-questions" class="suggested-questions"></div>
+
+          <p id="copilot-loading" class="loading hidden">
+            <span class="spinner"></span>Generating AI answer…
+          </p>
+          <p id="copilot-error" class="error-msg hidden"></p>
+
+          <div id="copilot-answer-wrap" class="copilot-response hidden">
+            <div class="copilot-response-header">
+              <div class="copilot-avatar" aria-hidden="true">AI</div>
+              <span class="copilot-response-label">SignalForge Copilot</span>
+            </div>
+            <div class="copilot-bubble">
+              <p id="copilot-answer-text"></p>
+            </div>
+            <div id="copilot-sources" class="source-tags"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. See detailed evidence -->
+      <div class="evidence-divider">
+        <span class="evidence-divider-line" aria-hidden="true"></span>
+        <span class="evidence-divider-label">Detailed Evidence</span>
+        <span class="evidence-divider-line" aria-hidden="true"></span>
+      </div>
+
+      <section aria-label="Execution intelligence summary">
+        <div>
+          <h2 class="section-title">Execution Intelligence Summary</h2>
+          <p class="section-desc">
+            AI-powered staffing and delivery confidence assessment.
+          </p>
+        </div>
+
+        <div class="kpi-grid">
+          <div class="card kpi-card">
+            <div>
+              <p class="kpi-label">Fit Score</p>
+              <p class="kpi-value positive">100</p>
+            </div>
+          </div>
+          <div class="card kpi-card">
+            <div>
+              <p class="kpi-label">Delivery Risk</p>
+              <p class="kpi-value positive">Low</p>
+            </div>
+          </div>
+          <div class="card kpi-card">
+            <div>
+              <p class="kpi-label">Capability Coverage</p>
+              <p class="kpi-value positive">100%</p>
+            </div>
+          </div>
+          <div class="card kpi-card">
+            <div>
+              <p class="kpi-label">Execution Confidence</p>
+              <p class="kpi-value positive">96%</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="insight-box">
+          <span class="badge badge-secondary">Executive Insight</span>
+          <p>
+            Kavi is strongly aligned to Azure AI Migration. The recommended team
+            provides full capability coverage with minimal delivery risk and high
+            execution confidence.
+          </p>
+        </div>
+      </section>
+
+      <section aria-label="Delivery readiness" class="readiness-banner">
+        <div class="readiness-left">
+          <div class="readiness-icon" aria-hidden="true">✓</div>
+          <div>
+            <p class="readiness-title">Delivery Readiness</p>
+            <p class="readiness-value">Ready for Execution</p>
+          </div>
+        </div>
+        <p class="readiness-reason">
+          Required capabilities covered and delivery risk is low.
+        </p>
+      </section>
+
+      <section aria-label="AI executive insight" class="card ai-insight-card">
+        <div class="card-header">
+          <div class="card-header-left">
+            <div class="card-icon icon-blue-solid" aria-hidden="true">✦</div>
+            <h3>AI Executive Insight</h3>
+          </div>
+          <span class="badge badge-blue">Powered by Azure OpenAI</span>
+        </div>
+        <div class="card-body">
+          <p class="body-text">
+            Kavi demonstrates strong capability alignment across Azure, Python, and
+            Generative AI. Team composition provides balanced AI leadership, cloud
+            expertise, and execution capacity. SignalForge predicts a high likelihood
+            of successful project delivery.
+          </p>
+        </div>
+      </section>
+
+      <section aria-label="Execution intelligence details" class="analysis-grid">
+        <article class="card">
+          <div class="card-header">
+            <div>
+              <h3>Engineer Analysis</h3>
+              <p>Capability profile for Kavi</p>
+            </div>
+            <div class="card-icon icon-blue" aria-hidden="true">👤</div>
+          </div>
+          <div class="card-body">
+            <div class="score-bar">
+              <div class="score-bar-header">
+                <span>Execution</span>
+                <span class="score-emerald">90</span>
+              </div>
+              <div class="score-bar-track">
+                <div class="score-bar-fill" style="width: 90%"></div>
+              </div>
+            </div>
+            <div class="score-bar">
+              <div class="score-bar-header">
+                <span>Backend</span>
+                <span class="score-emerald">85</span>
+              </div>
+              <div class="score-bar-track">
+                <div class="score-bar-fill" style="width: 85%"></div>
+              </div>
+            </div>
+            <div class="score-bar">
+              <div class="score-bar-header">
+                <span>Cloud</span>
+                <span class="score-emerald">80</span>
+              </div>
+              <div class="score-bar-track">
+                <div class="score-bar-fill" style="width: 80%"></div>
+              </div>
+            </div>
+            <div class="score-bar">
+              <div class="score-bar-header">
+                <span>AI Readiness</span>
+                <span class="score-emerald">88</span>
+              </div>
+              <div class="score-bar-track">
+                <div class="score-bar-fill" style="width: 88%"></div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-header">
+            <div>
+              <h3>Project Fit Recommendation</h3>
+              <p>Alignment with Azure AI Migration</p>
+            </div>
+            <div class="card-icon icon-violet" aria-hidden="true">◎</div>
+          </div>
+          <div class="card-body">
+            <div class="stat-row">
+              <div>
+                <p class="stat-label">Fit Score</p>
+                <p class="stat-value emerald">100</p>
+              </div>
+              <span class="badge badge-emerald">Strong Fit</span>
+            </div>
+            <div class="skill-section">
+              <p class="skill-section-title">Matched Skills</p>
+              <div class="skill-tags">
+                <span class="badge badge-secondary">Azure</span>
+                <span class="badge badge-secondary">Python</span>
+                <span class="badge badge-secondary">Generative AI</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-header">
+            <div>
+              <h3>Risk Assessment</h3>
+              <p>Delivery risk for Azure AI Migration</p>
+            </div>
+            <div class="card-icon icon-emerald" aria-hidden="true">🛡</div>
+          </div>
+          <div class="card-body">
+            <div class="stat-row">
+              <div>
+                <p class="stat-label">Risk Score</p>
+                <p class="stat-value emerald">0</p>
+              </div>
+              <span class="badge badge-emerald">Low Risk</span>
+            </div>
+            <div class="muted-box">
+              <p class="box-title">Mitigation Plan</p>
+              <p class="muted-text">Assign with light review from lead</p>
+            </div>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-header">
+            <div>
+              <h3>Team Recommendation</h3>
+              <p>Optimal roster for Azure AI Migration</p>
+            </div>
+            <div class="card-icon icon-sky" aria-hidden="true">👥</div>
+          </div>
+          <div class="card-body">
+            <ul class="team-list">
+              <li>
+                <div>
+                  <p class="team-name">Kavi</p>
+                  <p class="team-role">AI Engineer</p>
+                </div>
+                <span class="badge badge-emerald">Fit: 100</span>
+              </li>
+              <li>
+                <div>
+                  <p class="team-name">Vikram</p>
+                  <p class="team-role">Lead AI Engineer</p>
+                </div>
+                <span class="badge badge-emerald">Fit: 100</span>
+              </li>
+              <li>
+                <div>
+                  <p class="team-name">Arjun</p>
+                  <p class="team-role">Cloud Engineer</p>
+                </div>
+                <span class="badge badge-amber">Fit: 67</span>
+              </li>
+            </ul>
+            <div class="mini-grid">
+              <div class="muted-box">
+                <p class="stat-label">Team Status</p>
+                <p class="mini-stat emerald">Fully Staffed</p>
+              </div>
+              <div class="muted-box">
+                <p class="stat-label">Coverage Score</p>
+                <p class="mini-stat emerald">100%</p>
+              </div>
+            </div>
+            <div class="skill-section">
+              <p class="skill-section-title">Team Coverage</p>
+              <div class="skill-tags">
+                <span class="badge badge-outline">Azure</span>
+                <span class="badge badge-outline">Python</span>
+                <span class="badge badge-outline">Generative AI</span>
+              </div>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <!-- Powered By / Architecture -->
+      <section aria-label="Architecture and technology" class="card arch-card">
+        <div class="card-header">
+          <div>
+            <h3>Powered By</h3>
+            <p>SignalForge demo architecture</p>
+          </div>
+          <div class="card-icon icon-slate" aria-hidden="true">⚙</div>
+        </div>
+        <div class="card-body">
+          <div class="arch-tags">
+            <span class="arch-tag">Azure OpenAI</span>
+            <span class="arch-tag">Azure AI Foundry</span>
+            <span class="arch-tag">FastAPI</span>
+            <span class="arch-tag">Pydantic v2</span>
+            <span class="arch-tag">JSON Mock Data</span>
+          </div>
+          <p class="arch-future">
+            Designed for future Azure deployment with Cosmos DB, Azure AI Search,
+            Azure Functions, and Azure Monitor.
+          </p>
+        </div>
+      </section>
+
+      <footer class="footer">
+        SignalForge · Demo scenario · Azure AI Migration
+      </footer>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>

@@ -1,4 +1,8 @@
+from pathlib import Path
+
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.routes.copilot import router as copilot_router
 from app.routes.engineer import router as engineer_router
@@ -10,6 +14,20 @@ from app.routes.simulator import router as simulator_router
 from app.routes.team import router as team_router
 
 app = FastAPI(title="SignalForge API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+DASHBOARD_DIR = Path(__file__).resolve().parent.parent.parent / "dashboard"
+app.mount(
+    "/dashboard",
+    StaticFiles(directory=str(DASHBOARD_DIR), html=True),
+    name="dashboard",
+)
 
 app.include_router(engineer_router, tags=["Engineer Analysis"])
 app.include_router(project_fit_router, tags=["Project Fit"])
