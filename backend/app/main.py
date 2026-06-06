@@ -22,7 +22,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-DASHBOARD_DIR = Path(__file__).resolve().parent.parent.parent / "dashboard"
+DASHBOARD_DIR = Path(__file__).resolve().parent.parent / "dashboard"
 app.mount(
     "/dashboard",
     StaticFiles(directory=str(DASHBOARD_DIR), html=True),

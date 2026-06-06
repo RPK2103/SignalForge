@@ -1,3 +1,4 @@
+stitch-reference/
 __pycache__/
 *.pyc
 .env
