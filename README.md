@@ -1,8 +1,10 @@
 # SignalForge
 
+**Predict. Simulate. Deliver.**
+
 **AI-powered Engineering Execution Intelligence**
 
-SignalForge helps engineering leaders staff projects with confidence by turning real engineering evidence like profiles, certifications, GitHub activity, PR summaries, and architecture notes into explainable execution intelligence. Instead of relying on self-reported skill matrices, SignalForge infers what engineers can actually deliver and surfaces fit, risk, and team recommendations in a demo-ready dashboard.
+SignalForge is an AI-powered Engineering Execution Intelligence platform that helps engineering leaders predict project delivery success, identify staffing risks, simulate team changes, and make evidence-based decisions before projects fail.
 
 Built for the **Microsoft Build AI Hackathon 2026**.
 
@@ -50,7 +52,7 @@ The executive dashboard summarizes delivery readiness, capability breakdown, pro
 
 ### Architecture
 
-SignalForge combines a Next.js frontend, FastAPI backend, and Azure OpenAI to turn evidence into actionable execution intelligence.
+SignalForge combines a modular FastAPI backend, Azure OpenAI reasoning, and an executive dashboard to turn evidence into actionable execution intelligence.
 
 ![Architecture Diagram](assets/architecture.png)
 
@@ -74,13 +76,103 @@ Explore and test SignalForge endpoints through auto-generated Swagger docs.
 
 ---
 
+## AI Integration & Intelligence Design
+
+SignalForge uses a hybrid intelligence architecture.
+
+The platform first converts engineer and project inputs into structured execution signals such as capability coverage, project fit, delivery risk, success probability, and staffing dependency impact.
+
+Azure OpenAI is then used as a reasoning layer over these structured signals. Instead of acting as a generic chatbot, the SignalForge Copilot interprets project context, explains staffing risk, summarizes delivery confidence, and generates strategic recommendations for engineering leaders.
+
+This design keeps the core decision signals explainable while using AI for synthesis, reasoning, and executive decision support.
+
+---
+
+## Data Privacy
+
+SignalForge uses synthetic demo data only.
+
+No confidential employer data, proprietary project data, sensitive employee information, or personal records are included in this repository.
+
+API keys and secrets are managed through environment variables and are not committed to source control.
+
+---
+
+## AI Tools Used
+
+- Azure OpenAI for Copilot reasoning and strategic recommendations
+- AI-assisted development tools for coding support, UI iteration, documentation refinement, and demo storytelling
+
+All final product decisions, architecture direction, implementation choices, testing, deployment, and submission materials were reviewed and completed by the participant.
+
+---
+
+## MVP Limitations
+
+This is a hackathon MVP built to demonstrate the core execution intelligence concept.
+
+Current limitations:
+
+- Uses synthetic demo data
+- Uses explainable scoring logic rather than trained historical ML models
+- Does not yet integrate with enterprise systems such as Azure DevOps, GitHub, Microsoft Graph, Workday, or Teams
+- Does not yet include authentication or role-based access control
+
+These limitations are intentional for the MVP scope and are part of the future roadmap.
+
+---
+
+## Future Roadmap
+
+- Azure DevOps integration for delivery signals
+- GitHub integration for contribution and code activity signals
+- Microsoft Graph integration for collaboration and team context
+- Workday or HRIS integration for skill and role data
+- Historical delivery learning from completed projects
+- Organization-wide capability graph
+- Agentic staffing recommendations
+- Executive briefing generation
+- Role-based access and enterprise authentication
+
+The long-term vision is to evolve SignalForge into an AI Chief of Staff for Engineering Delivery.
+
+---
+
+## Evaluation Criteria Alignment
+
+### AI Integration & Intelligence Design
+
+SignalForge uses Azure OpenAI as a reasoning layer over structured execution signals. The Copilot converts staffing, capability, risk, and delivery data into strategic recommendations.
+
+### System Architecture & Engineering Quality
+
+The application uses a modular backend, structured APIs, explainable scoring engines, Azure OpenAI integration, an interactive dashboard, and live deployment.
+
+### Communication, Presentation & UX
+
+The dashboard is designed as an executive command center with clear metrics, reasoning panels, and simulation-first storytelling.
+
+### Prototype Readiness & Scalability
+
+The project is fully deployed with a live dashboard, backend API, Swagger documentation, and public GitHub repository.
+
+### Problem Depth & Product Clarity
+
+SignalForge addresses a real enterprise problem: engineering leaders often lack an evidence-based way to predict delivery risk and staffing impact.
+
+### Market Understanding & Product Fit
+
+The product fits enterprise engineering organizations, consulting firms, AI transformation teams, cloud migration teams, and delivery leadership groups.
+
+---
+
 ## Tech stack
 
 | Layer | Technologies |
 |-------|--------------|
-| Frontend | Next.js, TypeScript, Tailwind CSS, shadcn/ui |
-| Backend | FastAPI, Python, Pydantic |
-| AI | Azure OpenAI |
+| Frontend | HTML, CSS, JavaScript, custom executive dashboard, interactive simulator, AI reasoning panels |
+| Backend | Python, FastAPI, Pydantic v2, Azure OpenAI, OpenAI SDK, REST APIs |
+| Deployment | Render, GitHub |
 
 ---
 
@@ -88,11 +180,12 @@ Explore and test SignalForge endpoints through auto-generated Swagger docs.
 
 ```
 SignalForge/
-├── assets/          # Project screenshots (see assets/README.md)
-├── backend/         # FastAPI API and services
-├── frontend/        # Next.js dashboard
-├── architecture/    # System design and MVP scope
-└── sample-data/     # Demo engineer profiles
+├── assets/            # Project screenshots (see assets/README.md)
+├── backend/           # FastAPI API, services, and deployed dashboard
+│   └── dashboard/     # Live executive dashboard UI
+├── frontend/          # Next.js prototype (local development)
+├── architecture/      # System design and MVP scope
+└── sample-data/       # Demo engineer profiles
 ```
 
 ---
@@ -107,7 +200,9 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-### Frontend
+Open the dashboard at `http://localhost:8000/dashboard/` after starting the backend.
+
+### Frontend (optional local prototype)
 
 ```bash
 cd frontend
