@@ -19,7 +19,7 @@ SignalForge is an AI-powered Engineering Execution Intelligence platform that he
 
 Engineering leaders make high-stakes delivery decisions every day.
 
-But many of those decisions are still made using fragmented information: resumes, skill inventories, project requirements, spreadsheets, and manager intuition.
+But many of those decisions are still made using fragmented information: resumes, skill inventories, project requirements, spreadsheets, and managers' intuition.
 
 This creates a blind spot.
 
@@ -219,7 +219,7 @@ The platform first converts engineer and project inputs into structured executio
 * success probability
 * staffing dependency impact
 
-Azure OpenAI is then used as a reasoning layer over these structured signals.
+Azure OpenAI is then used as a reasoning layer on top of these structured signals.
 
 Instead of acting as a generic chatbot, the SignalForge Copilot interprets project context, explains staffing risk, summarizes delivery confidence, and generates strategic recommendations for engineering leaders.
 
@@ -472,9 +472,12 @@ SignalForge uses Azure OpenAI as a reasoning layer over structured execution sig
 
 The application uses a modular FastAPI backend, structured Pydantic models, REST APIs, explainable scoring engines, Azure OpenAI integration, an interactive dashboard, and live deployment.
 
+
 ### Communication, Presentation & UX
 
 The dashboard is designed as an executive command center with clear metrics, reasoning panels, and simulation-first storytelling.
+
+
 
 ### Prototype Readiness & Scalability
 
@@ -586,7 +589,7 @@ SignalForge/
 │
 ├── README.md
 ├── assets/
-│   ├── signalforge-hero.png
+│   ├── signalforge-cover.png
 │   ├── dashboard-home.png
 │   ├── architecture.png
 │   ├── staffing-simulator-before-after.png
@@ -617,6 +620,7 @@ All final product decisions, architecture direction, implementation choices, tes
 
 ---
 
+
 ## MVP Limitations
 
 This is a hackathon MVP built to demonstrate the core execution intelligence concept.
@@ -631,7 +635,10 @@ Current limitations:
 
 These limitations are intentional for the MVP scope and are part of the future roadmap.
 
+
 ---
+
+
 
 ## Future Roadmap
 
@@ -648,9 +655,14 @@ Planned enhancements include:
 * Delivery risk monitoring over time
 * Role-based access and enterprise authentication
 
+
+
 The long-term vision is to evolve SignalForge into an AI Chief of Staff for Engineering Delivery.
 
+
 ---
+
+
 
 ## Hackathon Submission Note
 
@@ -683,7 +695,7 @@ Role:
 
 ## Closing Thought
 
-Engineering organizations do not fail only because of missing talent.
+Engineering organizations do not fail solely because of a lack of talent.
 
 They fail because leaders cannot see execution risk early enough.
 
