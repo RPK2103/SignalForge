@@ -6,6 +6,14 @@ SignalForge helps engineering leaders staff projects with confidence by turning 
 
 Built for the **Microsoft Build AI Hackathon 2026**.
 
+## Live Project Links
+
+Try the deployed demo:
+
+- **Live Dashboard:** [https://signalforge-o0m4.onrender.com/dashboard/](https://signalforge-o0m4.onrender.com/dashboard/)
+- **Backend API:** [https://signalforge-o0m4.onrender.com](https://signalforge-o0m4.onrender.com)
+- **Swagger API Docs:** [https://signalforge-o0m4.onrender.com/docs](https://signalforge-o0m4.onrender.com/docs)
+
 ---
 
 ## Problem
