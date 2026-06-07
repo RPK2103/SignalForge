@@ -2,7 +2,7 @@
 
 **AI-powered Engineering Execution Intelligence**
 
-SignalForge helps engineering leaders staff projects with confidence by turning real engineering evidence—profiles, certifications, GitHub activity, PR summaries, and architecture notes—into explainable execution intelligence. Instead of relying on self-reported skill matrices, SignalForge infers what engineers can actually deliver and surfaces fit, risk, and team recommendations in a demo-ready dashboard.
+SignalForge helps engineering leaders staff projects with confidence by turning real engineering evidence like profiles, certifications, GitHub activity, PR summaries, and architecture notes into explainable execution intelligence. Instead of relying on self-reported skill matrices, SignalForge infers what engineers can actually deliver and surfaces fit, risk, and team recommendations in a demo-ready dashboard.
 
 Built for the **Microsoft Build AI Hackathon 2026**.
 
