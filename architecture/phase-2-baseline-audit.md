@@ -569,3 +569,122 @@ Only items **not answerable from the repository**:
 ---
 
 *End of Phase 2 baseline audit.*
+
+---
+
+## Phase 2 Baseline Stabilization — Resolved (2026-07-21)
+
+Implementation aligned with **PROMPT 1 — Baseline Stabilization, Configuration and Test Harness**. No UI or scoring logic was modified.
+
+### Resolved Findings
+
+| Audit ID / Finding | Resolution |
+|--------------------|------------|
+| P0-3 Zero automated tests | Added `backend/tests/` with 21 smoke tests (import, `/`, `/health`, `/docs`, all 8 legacy POST routes at validation level) |
+| P1-3 Committed `__pycache__` / `.pyc` | Removed four tracked `.pyc` files; expanded `.gitignore` for Python/frontend build artefacts |
+| P0-2 No deployment IaC in repo | Added `render.yaml` as documented deployment source of truth |
+| P2-1 Wide-open CORS | CORS restricted via `CORS_ORIGINS` env var; local dev defaults include `localhost:3000` and `localhost:8000` |
+| P2-4 Hardcoded Azure API version | `AZURE_OPENAI_API_VERSION` now read from settings (default `2024-10-21`) |
+| Config uses `os.getenv` + `load_dotenv` | Replaced with `pydantic-settings` (`Settings` in `app/core/config.py`) |
+| No centralized error handling | Added `APIErrorResponse` schema and handlers in `app/core/exceptions.py` |
+| No startup logging | Added structured startup logging in `app/core/logging_config.py` (no secrets logged) |
+| README env var drift (`OPENAI_API_KEY` unused) | `backend/.env.example` documents only settings consumed by code |
+| Missing `.env.example` | Added `backend/.env.example` with safe placeholders |
+| Fragile paths | Centralized in `app/core/paths.py` using `Path(__file__)` |
+| No Dockerfile | Added `backend/Dockerfile` matching `backend/` + `uvicorn app.main:app` layout |
+
+### New / Updated Artifacts
+
+| Path | Purpose |
+|------|---------|
+| `backend/app/core/paths.py` | `BACKEND_ROOT`, `DASHBOARD_DIR`, `ENV_FILE` from `__file__` |
+| `backend/app/core/config.py` | Validated settings: `APP_ENV`, `LOG_LEVEL`, `DATABASE_URL`, `CORS_ORIGINS`, Azure vars, `AI_ENABLED` |
+| `backend/app/core/exceptions.py` | Centralized HTTP, validation, and unhandled exception handlers |
+| `backend/app/core/logging_config.py` | Logging setup + startup snapshot |
+| `backend/.env.example` | Safe configuration template |
+| `backend/requirements-dev.txt` | `pytest`, `httpx` |
+| `backend/pytest.ini` | Test discovery |
+| `backend/tests/conftest.py` | Settings isolation for deterministic tests |
+| `backend/tests/test_smoke.py` | Smoke tests |
+| `backend/Dockerfile` | Container build from `backend/` context |
+| `render.yaml` | Render web service definition (`rootDir: backend`, `/health` check) |
+
+### Supported Environment Variables
+
+| Variable | Required | Default / Notes |
+|----------|----------|-----------------|
+| `APP_ENV` | No | `development` |
+| `LOG_LEVEL` | No | `INFO` |
+| `DATABASE_URL` | No | Optional; not used by MVP endpoints |
+| `CORS_ORIGINS` | No | Comma-separated; dev defaults to local Next.js + API ports |
+| `AZURE_OPENAI_ENDPOINT` | No | Required only for live `/generate-insight` AI responses |
+| `AZURE_OPENAI_API_KEY` | No | Secret — set in platform env, never commit |
+| `AZURE_OPENAI_DEPLOYMENT` | No | Azure deployment name |
+| `AZURE_OPENAI_API_VERSION` | No | `2024-10-21` |
+| `AI_ENABLED` | No | `true`; when `false`, AI calls are disabled (same as unconfigured for insight) |
+
+### Validation Results (2026-07-21)
+
+#### Backend
+
+```powershell
+cd backend
+pip install -r requirements.txt -r requirements-dev.txt
+python -c "from app.main import app; print('import_ok', app.title)"
+```
+**Result:** PASS — `import_ok SignalForge API` (no Azure configuration required)
+
+```powershell
+cd backend
+python -m pytest -v
+```
+**Result:** PASS — 21 passed
+
+```powershell
+cd SignalForge
+python -c "from app.main import app"
+```
+**Result:** FAIL — `ModuleNotFoundError: No module named 'app'` (unchanged; run from `backend/` or set `PYTHONPATH=backend`)
+
+#### Frontend
+
+```powershell
+cd frontend
+npm run lint
+npm run build
+```
+**Result:** PASS — ESLint exit 0; Next.js 16.2.7 production build succeeded
+
+### Preserved Contracts
+
+- All 8 legacy POST routes unchanged (paths, request/response models, scoring behavior)
+- GET `/`, `/health`, `/dashboard/*`, `/docs` unchanged
+- `/generate-insight` still returns **503** when Azure is not configured
+- `/copilot` still returns **200** with deterministic fallback when AI unavailable
+- Static dashboard mount at `/dashboard` unchanged
+- Next.js frontend untouched (no API wiring in this phase)
+
+### Unresolved Deployment Risks
+
+| Risk | Notes |
+|------|-------|
+| Render dashboard may not match `render.yaml` | Existing service predates IaC; manual sync of root directory, start command, and env vars required |
+| Azure OpenAI on Render | `AZURE_OPENAI_*` values remain external; must be set in Render dashboard (`sync: false` in blueprint) |
+| Render free-tier cold starts | Still possible; `/health` path documented in `render.yaml` |
+| Repo-root import | `uvicorn` from repo root without `PYTHONPATH=backend` still fails by design |
+| Error response schema extension | Errors now include `status_code` and `error_type` alongside `detail`; success payloads unchanged |
+
+### Deployment Source of Truth
+
+**`render.yaml`** at repository root defines:
+
+- `rootDir: backend`
+- `startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+- `healthCheckPath: /health`
+- Production `CORS_ORIGINS` and Azure env placeholders
+
+**Docker alternative:** build with context `backend/` using `backend/Dockerfile`.
+
+---
+
+*End of Phase 2 baseline stabilization update.*

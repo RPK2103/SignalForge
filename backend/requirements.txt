@@ -13,6 +13,7 @@ idna==3.17
 jiter==0.15.0
 openai==2.40.0
 pydantic==2.13.4
+pydantic-settings==2.13.1
 pydantic_core==2.46.4
 python-dotenv==1.2.2
 sniffio==1.3.1

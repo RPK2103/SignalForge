@@ -1,0 +1,34 @@
+# SignalForge deployment (Render)
+# Source of truth: https://render.com/docs/blueprint-spec
+#
+# Sync these settings with the Render dashboard for the existing service at
+# https://signalforge-o0m4.onrender.com
+
+services:
+  - type: web
+    name: signalforge-api
+    runtime: python
+    rootDir: backend
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+      - key: AI_ENABLED
+        value: "true"
+      - key: PYTHON_VERSION
+        value: 3.13.0
+      - key: AZURE_OPENAI_ENDPOINT
+        sync: false
+      - key: AZURE_OPENAI_API_KEY
+        sync: false
+      - key: AZURE_OPENAI_DEPLOYMENT
+        sync: false
+      - key: AZURE_OPENAI_API_VERSION
+        value: "2024-10-21"
+      - key: CORS_ORIGINS
+        value: "https://signalforge-o0m4.onrender.com"

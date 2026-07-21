@@ -4,8 +4,6 @@ from openai import AzureOpenAI
 
 from app.core.config import get_settings
 
-AZURE_OPENAI_API_VERSION = "2024-10-21"
-
 
 @lru_cache
 def get_azure_openai_client() -> AzureOpenAI:
@@ -13,7 +11,7 @@ def get_azure_openai_client() -> AzureOpenAI:
     return AzureOpenAI(
         azure_endpoint=settings.azure_openai_endpoint,
         api_key=settings.azure_openai_api_key,
-        api_version=AZURE_OPENAI_API_VERSION,
+        api_version=settings.azure_openai_api_version,
     )
 
 

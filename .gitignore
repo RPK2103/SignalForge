@@ -1,6 +1,36 @@
 stitch-reference/
+
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
 .env
-*.env
+.env.*
+!.env.example
 backend/.env
+
+# Frontend
+frontend/.next/
+frontend/out/
+frontend/node_modules/
+node_modules/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Test / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Build artefacts
+dist/
+build/
+*.egg-info/
