@@ -1,3 +1,7 @@
+from app.adapters.legacy_mapper import (
+    domain_coverage_to_legacy_skill_names,
+    legacy_team_to_domain,
+)
 from app.schemas.engineer import EngineerProfile
 from app.schemas.team import (
     RecommendedEngineer,
@@ -5,6 +9,7 @@ from app.schemas.team import (
     TeamRecommendationResponse,
 )
 from app.services.fit_recommender import _score_fit
+from app.services.intelligence.capability_coverage_service import CapabilityCoverageService
 
 
 def _has_skill(skills: list[str], target: str) -> bool:
@@ -72,13 +77,12 @@ def recommend_team(request: TeamRecommendationRequest) -> TeamRecommendationResp
         for engineer, fit_score, _ in top_engineers
     ]
 
-    matched_by_engineer = [matched for _, _, matched in top_engineers]
-    team_coverage = [
-        skill
-        for skill in required_skills
-        if any(skill in matched for matched in matched_by_engineer)
-    ]
-    missing_coverage = [skill for skill in required_skills if skill not in team_coverage]
+    domain_project, domain_team = legacy_team_to_domain(
+        project,
+        [engineer for engineer, _, _ in top_engineers],
+    )
+    coverage_results = CapabilityCoverageService().analyze(domain_project, domain_team)
+    team_coverage, missing_coverage = domain_coverage_to_legacy_skill_names(coverage_results)
 
     summary = _build_summary(required_skills, team_coverage, missing_coverage)
 

@@ -3,21 +3,24 @@ import re
 
 from fastapi import HTTPException
 
+from app.adapters.legacy_mapper import (
+    legacy_coverage_percentage,
+    legacy_risk_level_from_coverage,
+    legacy_success_probability,
+    legacy_team_to_domain,
+)
 from app.core.config import get_settings
-from app.data.mock_catalog import MOCK_ENGINEERS, MOCK_PROJECTS
+from app.repositories.mock_catalog_repository import MockCatalogRepository
 from app.schemas.copilot import CopilotRequest, CopilotResponse
 from app.schemas.predictor import SuccessPredictionRequest
 from app.schemas.team import TeamRecommendationRequest
 from app.services.ai_service import create_chat_completion
+from app.services.intelligence.capability_coverage_service import CapabilityCoverageService
 from app.services.predictor import predict_success
-from app.services.simulator import (
-    _build_simulation_summary,
-    _recommended_team,
-    _risk_level,
-    _success_probability,
-    _team_coverage,
-)
+from app.services.simulator import _build_simulation_summary, _recommended_team
 from app.services.team_recommender import recommend_team
+
+_catalog = MockCatalogRepository()
 
 SYSTEM_PROMPT = (
     "You are SignalForge Copilot, an executive AI advisor for engineering leaders. "
@@ -68,13 +71,25 @@ DEFAULT_REMOVAL_BY_PROJECT: dict[str, list[str]] = {
 }
 
 
+def _legacy_team_coverage(required_skills: list[str], team, project) -> tuple[int, list[str]]:
+    domain_project, domain_team = legacy_team_to_domain(project, team)
+    coverage_results = CapabilityCoverageService().analyze(domain_project, domain_team)
+    coverage_pct = legacy_coverage_percentage(coverage_results, len(required_skills))
+    covered = [
+        result.capability_name
+        for result in coverage_results
+        if result.level.value != "missing"
+    ]
+    return coverage_pct, covered
+
+
 def _detect_named_removal_engineers(question: str) -> list[str]:
     question_lower = question.lower()
     if not any(keyword in question_lower for keyword in REMOVAL_KEYWORDS):
         return []
 
     detected: list[str] = []
-    for name in MOCK_ENGINEERS:
+    for name in _catalog.list_engineer_names():
         if re.search(rf"\b{re.escape(name.lower())}\b", question_lower):
             detected.append(name)
     return detected
@@ -85,10 +100,10 @@ def _is_simulation_relevant(question: str) -> bool:
     return any(keyword in question_lower for keyword in SIMULATION_SOURCE_KEYWORDS)
 
 
-def _highest_impact_removal(original_team, required_skills: list[str]) -> list[str]:
-    coverage_before, covered_before = _team_coverage(required_skills, original_team)
-    risk_before = _risk_level(coverage_before)
-    success_before = _success_probability(coverage_before, risk_before)
+def _highest_impact_removal(original_team, required_skills: list[str], project) -> list[str]:
+    coverage_before, covered_before = _legacy_team_coverage(required_skills, original_team, project)
+    risk_before = legacy_risk_level_from_coverage(coverage_before)
+    success_before = legacy_success_probability(coverage_before, risk_before)
 
     best_engineer: str | None = None
     best_impact = -1
@@ -96,10 +111,12 @@ def _highest_impact_removal(original_team, required_skills: list[str]) -> list[s
         remaining_team = [
             member for member in original_team if member.name != engineer.name
         ]
-        coverage_after, covered_after = _team_coverage(required_skills, remaining_team)
+        coverage_after, covered_after = _legacy_team_coverage(
+            required_skills, remaining_team, project
+        )
         lost_capabilities = [skill for skill in covered_before if skill not in covered_after]
-        risk_after = _risk_level(coverage_after)
-        success_after = _success_probability(coverage_after, risk_after)
+        risk_after = legacy_risk_level_from_coverage(coverage_after)
+        success_after = legacy_success_probability(coverage_after, risk_after)
         impact_score = max(0, success_before - success_after)
         if impact_score > best_impact or (
             impact_score == best_impact and lost_capabilities and best_engineer is None
@@ -115,29 +132,34 @@ def _resolve_removal_engineers(
     project_name: str,
     original_team,
     required_skills: list[str],
+    project,
 ) -> list[str]:
     named_removals = _detect_named_removal_engineers(question)
     if named_removals:
         return named_removals
     if project_name in DEFAULT_REMOVAL_BY_PROJECT:
         return DEFAULT_REMOVAL_BY_PROJECT[project_name]
-    return _highest_impact_removal(original_team, required_skills)
+    return _highest_impact_removal(original_team, required_skills, project)
 
 
-def _analyze_most_critical_capability(original_team, required_skills: list[str]) -> dict:
-    coverage_before, covered_before = _team_coverage(required_skills, original_team)
-    risk_before = _risk_level(coverage_before)
-    success_before = _success_probability(coverage_before, risk_before)
+def _analyze_most_critical_capability(original_team, required_skills: list[str], project) -> dict:
+    coverage_before, covered_before = _legacy_team_coverage(
+        required_skills, original_team, project
+    )
+    risk_before = legacy_risk_level_from_coverage(coverage_before)
+    success_before = legacy_success_probability(coverage_before, risk_before)
 
     top_scenario: dict | None = None
     for engineer in original_team:
         remaining_team = [
             member for member in original_team if member.name != engineer.name
         ]
-        coverage_after, covered_after = _team_coverage(required_skills, remaining_team)
+        coverage_after, covered_after = _legacy_team_coverage(
+            required_skills, remaining_team, project
+        )
         lost_capabilities = [skill for skill in covered_before if skill not in covered_after]
-        risk_after = _risk_level(coverage_after)
-        success_after = _success_probability(coverage_after, risk_after)
+        risk_after = legacy_risk_level_from_coverage(coverage_after)
+        success_after = legacy_success_probability(coverage_after, risk_after)
         impact_score = max(0, success_before - success_after)
         scenario = {
             "removed_engineer": engineer.name,
@@ -182,6 +204,7 @@ def _build_staffing_simulation_context(
     removal_engineers: list[str],
     original_team,
     required_skills: list[str],
+    project,
 ) -> dict | None:
     if not removal_engineers:
         return None
@@ -194,14 +217,18 @@ def _build_staffing_simulation_context(
     remaining_team = [
         engineer for engineer in original_team if engineer.name not in on_team
     ]
-    coverage_before, covered_before = _team_coverage(required_skills, original_team)
-    coverage_after, covered_after = _team_coverage(required_skills, remaining_team)
+    coverage_before, covered_before = _legacy_team_coverage(
+        required_skills, original_team, project
+    )
+    coverage_after, covered_after = _legacy_team_coverage(
+        required_skills, remaining_team, project
+    )
     lost_capabilities = [skill for skill in covered_before if skill not in covered_after]
 
-    risk_before = _risk_level(coverage_before)
-    risk_after = _risk_level(coverage_after)
-    success_before = _success_probability(coverage_before, risk_before)
-    success_after = _success_probability(coverage_after, risk_after)
+    risk_before = legacy_risk_level_from_coverage(coverage_before)
+    risk_after = legacy_risk_level_from_coverage(coverage_after)
+    success_before = legacy_success_probability(coverage_before, risk_before)
+    success_after = legacy_success_probability(coverage_after, risk_after)
     impact_score = max(0, success_before - success_after)
 
     return {
@@ -218,13 +245,16 @@ def _build_staffing_simulation_context(
         "most_critical_capability": _analyze_most_critical_capability(
             original_team,
             required_skills,
+            project,
         ),
     }
 
 
 def _build_execution_context(project_name: str, question: str) -> dict:
-    project = MOCK_PROJECTS[project_name]
-    engineers = list(MOCK_ENGINEERS.values())
+    project = _catalog.get_legacy_project(project_name)
+    if project is None:
+        raise HTTPException(status_code=404, detail=f"Project '{project_name}' not found.")
+    engineers = _catalog.list_legacy_engineers()
     required_skills = project.required_skills
 
     team_result = recommend_team(
@@ -233,8 +263,10 @@ def _build_execution_context(project_name: str, question: str) -> dict:
     prediction = predict_success(SuccessPredictionRequest(project_name=project_name))
 
     original_team = _recommended_team(project, engineers)
-    coverage_percent, covered_skills = _team_coverage(required_skills, original_team)
-    risk_level = _risk_level(coverage_percent)
+    coverage_percent, covered_skills = _legacy_team_coverage(
+        required_skills, original_team, project
+    )
+    risk_level = legacy_risk_level_from_coverage(coverage_percent)
     average_fit = (
         round(
             sum(member.fit_score for member in team_result.recommended_team)
@@ -286,11 +318,13 @@ def _build_execution_context(project_name: str, question: str) -> dict:
             project_name=project_name,
             original_team=original_team,
             required_skills=required_skills,
+            project=project,
         )
         simulation = _build_staffing_simulation_context(
             removal_engineers=removal_engineers,
             original_team=original_team,
             required_skills=required_skills,
+            project=project,
         )
         if simulation is not None:
             context["staffing_simulation"] = simulation
@@ -382,7 +416,7 @@ def answer_copilot_question(request: CopilotRequest) -> CopilotResponse:
         raise HTTPException(status_code=400, detail="question must not be empty.")
 
     project_name = request.project_name.strip()
-    if project_name not in MOCK_PROJECTS:
+    if _catalog.get_legacy_project(project_name) is None:
         raise HTTPException(
             status_code=404,
             detail=f"Project '{request.project_name}' not found.",
