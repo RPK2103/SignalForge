@@ -12,6 +12,23 @@ class APIErrorResponse(BaseModel):
     error_type: str
 
 
+def _http_error_type(status_code: int) -> str:
+    if status_code == 415:
+        return "unsupported_media_type"
+    return "http_error"
+
+
+def _sanitize_validation_errors(errors: list[Any]) -> list[Any]:
+    sanitized: list[Any] = []
+    for error in errors:
+        item = dict(error)
+        raw_input = item.get("input")
+        if isinstance(raw_input, bytes):
+            item["input"] = raw_input.decode("utf-8", errors="replace")
+        sanitized.append(item)
+    return sanitized
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(HTTPException)
     async def http_exception_handler(
@@ -22,7 +39,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         payload = APIErrorResponse(
             detail=detail,
             status_code=exc.status_code,
-            error_type="http_error",
+            error_type=_http_error_type(exc.status_code),
         )
         return JSONResponse(
             status_code=exc.status_code,
@@ -35,7 +52,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         exc: RequestValidationError,
     ) -> JSONResponse:
         payload = APIErrorResponse(
-            detail=exc.errors(),
+            detail=_sanitize_validation_errors(exc.errors()),
             status_code=422,
             error_type="validation_error",
         )

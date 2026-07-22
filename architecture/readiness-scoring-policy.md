@@ -267,8 +267,69 @@ Run tests:
 ```powershell
 cd backend
 python -m pytest tests/intelligence -v
+python -m pytest tests/api -v
 python -m pytest -v
 ```
+
+---
+
+## Version 2 API Surface
+
+The deterministic intelligence domain is exposed at `/api/v2` without changing legacy MVP routes.
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| POST | `/api/v2/readiness/assess` | Run a full readiness assessment |
+| GET | `/api/v2/capabilities` | List canonical capability definitions |
+| GET | `/api/v2/policies/readiness` | List readiness scoring policy metadata |
+| GET | `/api/v2/engineers` | List catalog engineers (domain models) |
+| GET | `/api/v2/projects` | List catalog projects (domain models) |
+
+### Assessment request
+
+```json
+{
+  "project_id": "azure_ai_migration",
+  "engineer_ids": ["kavi", "vikram"],
+  "policy_version": "v1"
+}
+```
+
+### Assessment response
+
+The HTTP response extends the domain `ReadinessAssessmentResponse` with `assessment_id` and `team`. Scoring fields (`readiness_score`, `confidence_score`, `coverage_results`, `skill_gaps`, `risk_findings`, `dimension_scores`, `decision_trace`, `policy_version`, `summary`) are serialized directly from the domain model — no duplicate scoring logic in the API layer.
+
+### Request flow
+
+```
+POST /api/v2/readiness/assess
+  → ReadinessAssessRequest validation
+  → ReadinessOrchestrator (repository lookup)
+  → ReadinessAssessmentService.assess()
+  → ReadinessAssessResponse serialization
+```
+
+Catalog data is accessed exclusively through `CatalogRepository`; routers never read `MOCK_ENGINEERS` or `MOCK_PROJECTS` directly.
+
+### Assessment identifier
+
+`assessment_id` is a deterministic 16-character hex prefix of SHA-256 over canonical JSON:
+
+```json
+{
+  "project_id": "<normalized project id>",
+  "engineer_ids": ["<sorted unique normalized engineer ids>"],
+  "policy_version": "<active policy version>"
+}
+```
+
+Rules:
+
+- Engineer IDs are trimmed, lowercased, deduplicated, and sorted before hashing.
+- Duplicate request IDs do not change the fingerprint for the same logical team.
+- Engineer request order does not change the fingerprint.
+- Policy version is always included (defaults to active policy when omitted).
+- No timestamps, random values, or process-specific data are used.
 
 ---
 

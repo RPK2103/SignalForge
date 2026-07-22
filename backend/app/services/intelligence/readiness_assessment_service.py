@@ -25,8 +25,12 @@ class ReadinessAssessmentService:
         self._readiness_scoring_service = ReadinessScoringService()
         self._confidence_service = ConfidenceService()
 
-    def assess(self, request: ReadinessAssessmentRequest) -> ReadinessAssessmentResponse:
-        policy = get_policy()
+    def assess(
+        self,
+        request: ReadinessAssessmentRequest,
+        policy_version: str | None = None,
+    ) -> ReadinessAssessmentResponse:
+        policy = get_policy(policy_version)
         trace = DecisionTraceService(policy.POLICY_VERSION)
 
         unique_engineers, duplicate_ids = deduplicate_team(request.team.engineers)
