@@ -53,3 +53,37 @@ class EvidenceSource(str, Enum):
     CERTIFICATIONS = "certifications"
     PROJECTS = "projects"
     EXPERIENCE = "experience"
+
+
+class SimulationOperationType(str, Enum):
+    ADD = "add"
+    REMOVE = "remove"
+    REPLACE = "replace"
+    COMPARE = "compare"
+
+
+class SimulationChangeType(str, Enum):
+    INTRODUCED = "introduced"
+    RESOLVED = "resolved"
+    ESCALATED = "escalated"
+    DEESCALATED = "deescalated"
+    IMPROVED = "improved"
+    DEGRADED = "degraded"
+    MODIFIED = "modified"
+
+
+class MitigationType(str, Enum):
+    ADD_CAPABILITY_COVERAGE = "add_capability_coverage"
+    STRENGTHEN_CAPABILITY_COVERAGE = "strengthen_capability_coverage"
+    ESTABLISH_SECONDARY_OWNER = "establish_secondary_owner"
+    PRESERVE_CRITICAL_ENGINEER = "preserve_critical_engineer"
+    IMPROVE_ENGINEER_EVIDENCE = "improve_engineer_evidence"
+    REASSESS_PROJECT_SCOPE = "reassess_project_scope"
+    REPLACE_WITH_STRONGER_MATCH = "replace_with_stronger_match"
+
+
+class MitigationPriority(str, Enum):
+    CRITICAL = "critical"
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"

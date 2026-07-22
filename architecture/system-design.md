@@ -36,7 +36,8 @@ Backend:
 - Python
 - Pydantic
 - Versioned readiness API at `/api/v2` (Phase 2 intelligence domain)
-- Legacy MVP routes remain at root paths (`/analyze`, `/recommend-team`, etc.)
+- Team simulation API at `/api/v2/simulations` (deterministic what-if staffing analysis)
+- Legacy MVP routes remain at root paths (`/analyze`, `/recommend-team`, `/simulate`, etc.)
 
 AI:
 

@@ -56,6 +56,7 @@ backend/app/main.py           →  app.include_router(api_v2_router)
 | Method | Path | Purpose |
 |--------|------|---------|
 | POST | `/api/v2/readiness/assess` | Full deterministic readiness assessment |
+| POST | `/api/v2/simulations` | Deterministic team composition simulation |
 | GET | `/api/v2/capabilities` | Canonical capability registry |
 | GET | `/api/v2/policies/readiness` | Active scoring policy metadata |
 | GET | `/api/v2/engineers` | Domain engineer catalog |
@@ -65,7 +66,7 @@ backend/app/main.py           →  app.include_router(api_v2_router)
 
 | Area | Suggested path pattern |
 |------|------------------------|
-| Team Simulation Engine | `/api/v2/simulations/*` |
+| Team Simulation Engine | `/api/v2/simulations` (implemented) |
 | Assessment persistence | `/api/v2/assessments/*` |
 | Review workflows | `/api/v2/reviews/*` |
 | Leadership briefs | `/api/v2/briefs/*` |
