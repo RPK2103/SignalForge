@@ -1,18 +1,19 @@
 from fastapi import HTTPException
 
-from app.data.mock_catalog import MOCK_ENGINEERS, MOCK_PROJECTS
+from app.adapters.legacy_mapper import (
+    legacy_coverage_percentage,
+    legacy_risk_level_from_coverage,
+    legacy_success_probability,
+    legacy_team_to_domain,
+)
+from app.repositories.mock_catalog_repository import MockCatalogRepository
 from app.schemas.engineer import EngineerProfile
 from app.schemas.project_fit import ProjectRequirements
 from app.schemas.simulator import SimulateRequest, SimulateResponse
-from app.services.fit_recommender import _is_skill_matched, _score_fit
+from app.services.fit_recommender import _score_fit
+from app.services.intelligence.capability_coverage_service import CapabilityCoverageService
 
-
-def _resolve_engineer_name(name: str) -> str | None:
-    normalized = name.strip().lower()
-    for canonical in MOCK_ENGINEERS:
-        if canonical.lower() == normalized:
-            return canonical
-    return None
+_catalog = MockCatalogRepository()
 
 
 def _recommended_team(
@@ -27,52 +28,19 @@ def _recommended_team(
     return [engineer for engineer, _ in scored[:3]]
 
 
-def _team_coverage(
-    required_skills: list[str],
+def _team_coverage_via_domain(
+    project: ProjectRequirements,
     team: list[EngineerProfile],
 ) -> tuple[int, list[str]]:
-    if not required_skills:
-        return 100, []
-
+    domain_project, domain_team = legacy_team_to_domain(project, team)
+    coverage_results = CapabilityCoverageService().analyze(domain_project, domain_team)
+    coverage_pct = legacy_coverage_percentage(coverage_results, len(project.required_skills))
     covered = [
-        skill
-        for skill in required_skills
-        if any(_is_skill_matched(skill, engineer) for engineer in team)
+        result.capability_name
+        for result in coverage_results
+        if result.level.value != "missing"
     ]
-    coverage = round(len(covered) / len(required_skills) * 100)
-    return coverage, covered
-
-
-def _risk_level(coverage: int) -> str:
-    """Map capability coverage to delivery risk (used for risk_before and risk_after).
-
-    Thresholds:
-    - coverage >= 80 → Low
-    - coverage >= 70 and < 80 → Medium
-    - coverage < 70 → High
-    """
-    if coverage >= 80:
-        return "Low"
-    if coverage >= 70:
-        return "Medium"
-    return "High"
-
-
-def _success_probability(coverage: int, risk_level: str) -> int:
-    penalties = {"Low": 0, "Medium": 15, "High": 30}
-    penalty = penalties[risk_level]
-    return max(0, min(100, coverage - penalty))
-
-
-def _skills_provided_by(
-    engineers: list[EngineerProfile],
-    required_skills: list[str],
-) -> list[str]:
-    return [
-        skill
-        for skill in required_skills
-        if any(_is_skill_matched(skill, engineer) for engineer in engineers)
-    ]
+    return coverage_pct, covered
 
 
 def _build_simulation_summary(
@@ -82,22 +50,12 @@ def _build_simulation_summary(
 ) -> str:
     names = ", ".join(removed_engineers)
     if not lost_capabilities:
-        if len(removed_engineers) == 1:
-            return (
-                f"Removing {names} has minimal impact on capability coverage. "
-                f"Delivery risk remains {risk_after.lower()}."
-            )
         return (
             f"Removing {names} has minimal impact on capability coverage. "
             f"Delivery risk remains {risk_after.lower()}."
         )
 
     skills_text = ", ".join(lost_capabilities)
-    if len(removed_engineers) == 1:
-        return (
-            f"Removing {names} significantly increases delivery risk because "
-            f"{skills_text} capabilities are no longer fully covered."
-        )
     return (
         f"Removing {names} significantly increases delivery risk because "
         f"{skills_text} capabilities are no longer fully covered."
@@ -106,7 +64,7 @@ def _build_simulation_summary(
 
 def simulate_staffing(request: SimulateRequest) -> SimulateResponse:
     project_name = request.project_name.strip()
-    project = MOCK_PROJECTS.get(project_name)
+    project = _catalog.get_legacy_project(project_name)
     if project is None:
         raise HTTPException(
             status_code=404,
@@ -121,16 +79,19 @@ def simulate_staffing(request: SimulateRequest) -> SimulateResponse:
 
     resolved_removed: list[str] = []
     for name in request.remove_engineers:
-        canonical = _resolve_engineer_name(name)
+        canonical = _catalog.resolve_engineer_name(name)
         if canonical is None:
             raise HTTPException(
                 status_code=400,
-                detail=f"Unknown engineer '{name}'. Known engineers: {', '.join(sorted(MOCK_ENGINEERS))}.",
+                detail=(
+                    f"Unknown engineer '{name}'. Known engineers: "
+                    f"{', '.join(_catalog.list_engineer_names())}."
+                ),
             )
         if canonical not in resolved_removed:
             resolved_removed.append(canonical)
 
-    original_team = _recommended_team(project, list(MOCK_ENGINEERS.values()))
+    original_team = _recommended_team(project, _catalog.list_legacy_engineers())
     original_names = [engineer.name for engineer in original_team]
 
     not_on_team = [name for name in resolved_removed if name not in original_names]
@@ -148,15 +109,15 @@ def simulate_staffing(request: SimulateRequest) -> SimulateResponse:
     ]
 
     required_skills = project.required_skills
-    coverage_before, covered_before = _team_coverage(required_skills, original_team)
-    coverage_after, covered_after = _team_coverage(required_skills, remaining_team)
+    coverage_before, covered_before = _team_coverage_via_domain(project, original_team)
+    coverage_after, covered_after = _team_coverage_via_domain(project, remaining_team)
 
     lost_capabilities = [skill for skill in covered_before if skill not in covered_after]
 
-    risk_before = _risk_level(coverage_before)
-    risk_after = _risk_level(coverage_after)
-    success_before = _success_probability(coverage_before, risk_before)
-    success_after = _success_probability(coverage_after, risk_after)
+    risk_before = legacy_risk_level_from_coverage(coverage_before)
+    risk_after = legacy_risk_level_from_coverage(coverage_after)
+    success_before = legacy_success_probability(coverage_before, risk_before)
+    success_after = legacy_success_probability(coverage_after, risk_after)
     impact_score = max(0, success_before - success_after)
 
     summary = _build_simulation_summary(resolved_removed, lost_capabilities, risk_after)
