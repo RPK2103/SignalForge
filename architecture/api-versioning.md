@@ -61,14 +61,20 @@ backend/app/main.py           →  app.include_router(api_v2_router)
 | GET | `/api/v2/policies/readiness` | Active scoring policy metadata |
 | GET | `/api/v2/engineers` | Domain engineer catalog |
 | GET | `/api/v2/projects` | Domain project catalog |
+| POST | `/api/v2/assessments` | Compute + persist readiness assessment (SQL catalog) |
+| GET | `/api/v2/assessments` | Paginated assessment history |
+| GET | `/api/v2/assessments/{assessment_record_id}` | Stored assessment snapshot + reviews |
+| POST | `/api/v2/assessments/{assessment_record_id}/reviews` | Append human review |
+| POST | `/api/v2/simulation-records` | Compute + persist simulation (SQL catalog) |
+| GET | `/api/v2/simulation-records` | Paginated simulation history |
+| GET | `/api/v2/simulation-records/{simulation_record_id}` | Stored simulation snapshots |
+
+Compute-only routes (`POST /api/v2/readiness/assess`, `POST /api/v2/simulations`) remain unchanged and use the in-memory mock catalog. Persistence routes require `DATABASE_URL`, migrated schema, and seeded catalog data. See `architecture/persistence-and-audit.md`.
 
 ### Future endpoints (planned, same namespace)
 
 | Area | Suggested path pattern |
 |------|------------------------|
-| Team Simulation Engine | `/api/v2/simulations` (implemented) |
-| Assessment persistence | `/api/v2/assessments/*` |
-| Review workflows | `/api/v2/reviews/*` |
 | Leadership briefs | `/api/v2/briefs/*` |
 
 All future production features should remain under `/api/v2` to avoid namespace fragmentation.
@@ -92,7 +98,7 @@ All future production features should remain under `/api/v2` to avoid namespace 
 ## OpenAPI and Documentation
 
 - Legacy and v2 routes appear together in `/openapi.json` and `/docs`.
-- v2 routes use dedicated tags: `Readiness Intelligence`, `Capability Catalog`, `Intelligence Catalog`.
+- v2 routes use dedicated tags: `Readiness Intelligence`, `Capability Catalog`, `Intelligence Catalog`, `Assessment History`, `Simulation History`.
 - Policy versioning (`policy_version` request field, `policy_version` response field) is separate from URL versioning.
 - **JSON request bodies:** v2 POST endpoints that accept structured payloads require `Content-Type: application/json` or a valid structured JSON media type (`application/*+json`). Unsupported media types return HTTP 415 with the centralized `APIErrorResponse` envelope (`error_type: unsupported_media_type`). Legacy unversioned POST routes retain their existing content-type behavior.
 

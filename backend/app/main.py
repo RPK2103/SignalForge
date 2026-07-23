@@ -26,6 +26,9 @@ configure_logging(settings)
 async def lifespan(_app: FastAPI):
     log_startup(settings, dashboard_dir=str(DASHBOARD_DIR))
     yield
+    from app.db.session import reset_engine
+
+    reset_engine()
 
 
 app = FastAPI(title="SignalForge API", lifespan=lifespan)

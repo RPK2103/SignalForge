@@ -65,9 +65,9 @@ class TestSimulationIdDeterminism:
         assert len(_sim_id()) == 16
 
     def test_not_equal_to_assessment_id(self):
-        from app.services.readiness_orchestrator import _build_assessment_id
+        from app.services.identifiers import build_assessment_id
 
-        assessment_id = _build_assessment_id(
+        assessment_id = build_assessment_id(
             "azure_ai_migration",
             ["kavi", "vikram"],
             DEFAULT_POLICY_VERSION,

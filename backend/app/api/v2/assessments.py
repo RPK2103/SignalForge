@@ -1,0 +1,85 @@
+"""Persisted assessment history API routes."""
+
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+
+from app.api.dependencies import require_json_content_type
+from app.api.persistence_dependencies import (
+    get_assessment_persistence_service,
+    get_review_persistence_service,
+)
+from app.domain.enums import HumanReviewState
+from app.domain.persistence_models import AssessmentRecordResponse, PaginatedAssessmentList
+from app.schemas.api_v2 import ReadinessAssessRequest
+from app.services.persistence.assessment_persistence_service import AssessmentPersistenceService
+from app.services.persistence.exceptions import PersistenceError
+from app.services.persistence.review_persistence_service import (
+    HumanReviewPersistenceService,
+    HumanReviewRequest,
+)
+
+router = APIRouter(prefix="/assessments", tags=["Assessment History"])
+
+
+@router.post(
+    "",
+    response_model=AssessmentRecordResponse,
+    dependencies=[Depends(require_json_content_type)],
+)
+def create_assessment(
+    request: ReadinessAssessRequest,
+    service: AssessmentPersistenceService = Depends(get_assessment_persistence_service),
+) -> AssessmentRecordResponse:
+    try:
+        return service.create_assessment(request)
+    except PersistenceError:
+        raise
+
+
+@router.get("", response_model=PaginatedAssessmentList)
+def list_assessments(
+    project_id: str | None = Query(default=None),
+    assessment_id: str | None = Query(default=None),
+    review_state: HumanReviewState | None = Query(default=None),
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    service: AssessmentPersistenceService = Depends(get_assessment_persistence_service),
+) -> PaginatedAssessmentList:
+    try:
+        return service.list_assessments(
+            project_id=project_id,
+            assessment_id=assessment_id,
+            review_state=review_state,
+            limit=limit,
+            offset=offset,
+        )
+    except PersistenceError:
+        raise
+
+
+@router.get("/{assessment_record_id}", response_model=AssessmentRecordResponse)
+def get_assessment(
+    assessment_record_id: UUID,
+    service: AssessmentPersistenceService = Depends(get_assessment_persistence_service),
+) -> AssessmentRecordResponse:
+    try:
+        return service.get_assessment(assessment_record_id)
+    except PersistenceError:
+        raise
+
+
+@router.post(
+    "/{assessment_record_id}/reviews",
+    response_model=AssessmentRecordResponse,
+    dependencies=[Depends(require_json_content_type)],
+)
+def create_review(
+    assessment_record_id: UUID,
+    request: HumanReviewRequest,
+    service: HumanReviewPersistenceService = Depends(get_review_persistence_service),
+) -> AssessmentRecordResponse:
+    try:
+        return service.add_review(assessment_record_id, request)
+    except PersistenceError:
+        raise
