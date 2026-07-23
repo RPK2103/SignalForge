@@ -46,6 +46,25 @@ class Settings(BaseSettings):
         validation_alias="AZURE_OPENAI_API_VERSION",
     )
     ai_enabled: bool = Field(default=True, validation_alias="AI_ENABLED")
+    ai_request_timeout_seconds: int = Field(
+        default=30,
+        validation_alias="AI_REQUEST_TIMEOUT_SECONDS",
+    )
+    ai_max_retries: int = Field(default=2, validation_alias="AI_MAX_RETRIES")
+
+    @field_validator("ai_request_timeout_seconds")
+    @classmethod
+    def validate_ai_timeout(cls, value: int) -> int:
+        if value < 1 or value > 120:
+            raise ValueError("AI_REQUEST_TIMEOUT_SECONDS must be between 1 and 120")
+        return value
+
+    @field_validator("ai_max_retries")
+    @classmethod
+    def validate_ai_retries(cls, value: int) -> int:
+        if value < 0 or value > 5:
+            raise ValueError("AI_MAX_RETRIES must be between 0 and 5")
+        return value
 
     @field_validator("cors_origins", mode="before")
     @classmethod

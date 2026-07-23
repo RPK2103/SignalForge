@@ -11,6 +11,7 @@ from app.db.models.catalog import (
 )
 from app.db.models.review import HumanReview
 from app.db.models.scenario import DemoScenario
+from app.db.models.leadership_brief import LeadershipBrief
 from app.db.models.simulation import Simulation
 
 __all__ = [
@@ -23,6 +24,7 @@ __all__ = [
     "Engineer",
     "EngineerCapability",
     "HumanReview",
+    "LeadershipBrief",
     "Project",
     "ProjectRequirement",
     "Simulation",

@@ -15,6 +15,7 @@ from app.db.models import (  # noqa: F401
     Engineer,
     EngineerCapability,
     HumanReview,
+    LeadershipBrief,
     Project,
     ProjectRequirement,
     Simulation,

@@ -10,9 +10,11 @@ from sqlalchemy.orm import Session
 from app.db.models.assessment import Assessment, AssessmentDecisionTrace, AssessmentRiskFinding
 from app.db.models.audit import AuditEvent
 from app.db.models.catalog import Capability, Engineer, EngineerCapability, Project, ProjectRequirement
+from app.db.models.leadership_brief import LeadershipBrief as LeadershipBriefRow
 from app.db.models.review import HumanReview
 from app.db.models.simulation import Simulation
 from app.domain.enums import EvidenceSource, HumanReviewState
+from app.domain.leadership_brief_models import LeadershipBriefRecord
 from app.domain.models import (
     CapabilityDefinition,
     EngineerCapability as DomainEngineerCapability,
@@ -516,3 +518,74 @@ class SqlAuditEventRepository:
             payload_hash=row.payload_hash,
             occurred_at=row.occurred_at,
         )
+
+
+class SqlLeadershipBriefRepository:
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def add(self, record: LeadershipBriefRecord) -> None:
+        self._session.add(
+            LeadershipBriefRow(
+                leadership_brief_record_id=record.leadership_brief_record_id,
+                assessment_record_id=record.assessment_record_id,
+                assessment_id=record.assessment_id,
+                prompt_version=record.prompt_version,
+                provider_mode=record.provider_mode.value,
+                generation_status=record.generation_status.value,
+                failure_category=(
+                    record.failure_category.value if record.failure_category else None
+                ),
+                evidence_package_snapshot=record.evidence_package_snapshot,
+                evidence_package_hash=record.evidence_package_hash,
+                output_snapshot=record.output_snapshot,
+                output_snapshot_hash=record.output_snapshot_hash,
+                schema_version=record.schema_version,
+                created_at=record.created_at,
+            )
+        )
+
+    def get_by_record_id(self, record_id: UUID) -> LeadershipBriefRecord:
+        row = self._session.get(LeadershipBriefRow, record_id)
+        if row is None:
+            raise RecordNotFoundError(f"Leadership Brief record '{record_id}' not found")
+        return _to_leadership_brief_record(row)
+
+    def list_for_assessment(self, assessment_record_id: UUID) -> list[LeadershipBriefRecord]:
+        rows = self._session.scalars(
+            select(LeadershipBriefRow)
+            .where(LeadershipBriefRow.assessment_record_id == assessment_record_id)
+            .order_by(
+                LeadershipBriefRow.created_at.desc(),
+                LeadershipBriefRow.leadership_brief_record_id.desc(),
+            )
+        ).all()
+        return [_to_leadership_brief_record(row) for row in rows]
+
+
+def _to_leadership_brief_record(row: LeadershipBriefRow) -> LeadershipBriefRecord:
+    from app.domain.leadership_brief_models import (
+        GenerationStatus,
+        LeadershipBriefFailureCategory,
+        ProviderMode,
+    )
+
+    return LeadershipBriefRecord(
+        leadership_brief_record_id=row.leadership_brief_record_id,
+        assessment_record_id=row.assessment_record_id,
+        assessment_id=row.assessment_id,
+        prompt_version=row.prompt_version,
+        provider_mode=ProviderMode(row.provider_mode),
+        generation_status=GenerationStatus(row.generation_status),
+        failure_category=(
+            LeadershipBriefFailureCategory(row.failure_category)
+            if row.failure_category
+            else None
+        ),
+        evidence_package_snapshot=row.evidence_package_snapshot,
+        evidence_package_hash=row.evidence_package_hash,
+        output_snapshot=row.output_snapshot,
+        output_snapshot_hash=row.output_snapshot_hash,
+        schema_version=row.schema_version,
+        created_at=row.created_at,
+    )

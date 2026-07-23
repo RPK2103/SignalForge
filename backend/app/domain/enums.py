@@ -99,6 +99,7 @@ class AuditEventType(str, Enum):
     ASSESSMENT_CREATED = "assessment_created"
     SIMULATION_CREATED = "simulation_created"
     HUMAN_REVIEW_CREATED = "human_review_created"
+    LEADERSHIP_BRIEF_CREATED = "leadership_brief_created"
 
 
 class AuditAggregateType(str, Enum):

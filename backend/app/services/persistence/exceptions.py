@@ -35,3 +35,8 @@ class SnapshotIntegrityError(PersistenceError):
 class PersistenceValidationError(PersistenceError):
     error_type = "validation_error"
     status_code = 422
+
+
+class LeadershipBriefGenerationFailed(PersistenceError):
+    error_type = "leadership_brief_generation_failed"
+    status_code = 500

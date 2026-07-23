@@ -10,6 +10,7 @@ from app.db.repositories.sql_repositories import (
     SqlAuditEventRepository,
     SqlCatalogRepository,
     SqlHumanReviewRepository,
+    SqlLeadershipBriefRepository,
     SqlSimulationRepository,
 )
 from app.repositories.catalog_repository import CatalogRepository
@@ -24,6 +25,7 @@ class UnitOfWork:
         self.assessments = SqlAssessmentRepository(session)
         self.simulations = SqlSimulationRepository(session)
         self.reviews = SqlHumanReviewRepository(session)
+        self.leadership_briefs = SqlLeadershipBriefRepository(session)
         self.audit_events = SqlAuditEventRepository(session)
 
     def commit(self) -> None:
