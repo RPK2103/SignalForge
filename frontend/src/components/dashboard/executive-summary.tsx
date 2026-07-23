@@ -2,18 +2,47 @@ import { Activity, Gauge, Shield, Target } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { executiveSummary } from "@/lib/demo-data";
+import { EmptyState } from "@/components/ui/async-state";
 import { cn } from "@/lib/utils";
 
 const kpiIcons = [Target, Shield, Activity, Gauge] as const;
 
+type ExecutiveSummaryProps = {
+  kpis: Array<{ label: string; value: string }>;
+  insight?: string | null;
+  sourceLabel?: string;
+};
+
 function kpiValueClass(value: string): string {
-  if (value === "Low") return "text-emerald-700";
+  if (value.toLowerCase().includes("low")) return "text-emerald-700";
   if (value.includes("%") || value === "100") return "text-emerald-700";
   return "text-foreground";
 }
 
-export function ExecutiveSummary() {
+export function ExecutiveSummary({
+  kpis,
+  insight,
+  sourceLabel = "Deterministic Assessment",
+}: ExecutiveSummaryProps) {
+  if (kpis.length === 0) {
+    return (
+      <section aria-label="Execution intelligence summary" className="space-y-4">
+        <div className="space-y-1">
+          <h2 className="text-xl font-semibold tracking-tight">
+            Execution Intelligence Summary
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Select a project and team, then run an assessment.
+          </p>
+        </div>
+        <EmptyState
+          title="No assessment results yet"
+          message="Run a readiness assessment to populate KPIs and insights."
+        />
+      </section>
+    );
+  }
+
   return (
     <section aria-label="Execution intelligence summary" className="space-y-4">
       <div className="space-y-1">
@@ -21,13 +50,13 @@ export function ExecutiveSummary() {
           Execution Intelligence Summary
         </h2>
         <p className="text-sm text-muted-foreground">
-          AI-powered staffing and delivery confidence assessment.
+          Deterministic readiness and confidence from the SignalForge backend.
         </p>
       </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {executiveSummary.kpis.map((kpi, index) => {
-          const Icon = kpiIcons[index];
+        {kpis.map((kpi, index) => {
+          const Icon = kpiIcons[index % kpiIcons.length];
           return (
             <Card
               key={kpi.label}
@@ -56,16 +85,16 @@ export function ExecutiveSummary() {
         })}
       </div>
 
-      <div className="rounded-lg border border-border/70 bg-muted/30 px-4 py-3">
-        <div className="mb-1 flex items-center gap-2">
-          <Badge variant="secondary" className="font-normal">
-            Executive Insight
-          </Badge>
+      {insight ? (
+        <div className="rounded-lg border border-border/70 bg-muted/30 px-4 py-3">
+          <div className="mb-1 flex items-center gap-2">
+            <Badge variant="secondary" className="font-normal">
+              {sourceLabel}
+            </Badge>
+          </div>
+          <p className="text-sm leading-relaxed text-foreground/90">{insight}</p>
         </div>
-        <p className="text-sm leading-relaxed text-foreground/90">
-          {executiveSummary.insight}
-        </p>
-      </div>
+      ) : null}
     </section>
   );
 }
