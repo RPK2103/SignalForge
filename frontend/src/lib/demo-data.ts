@@ -1,3 +1,4 @@
+/** Test fixtures — not used in production runtime. */
 export const demoScenario = {
   project: "Azure AI Migration",
   engineer: "Kavi",
