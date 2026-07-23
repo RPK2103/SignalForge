@@ -1,0 +1,51 @@
+Generate a Leadership Brief JSON object for executive review.
+
+Schema contract:
+{
+  "executive_summary": "string",
+  "decision": "proceed|proceed_with_conditions|defer|do_not_proceed",
+  "top_risks": [
+    {
+      "title": "string",
+      "explanation": "string",
+      "severity": "low|medium|high",
+      "evidence_references": ["risk:...", "trace:..."]
+    }
+  ],
+  "staffing_actions": [
+    {
+      "title": "string",
+      "action": "string",
+      "rationale": "string",
+      "priority": "critical|high|medium|low",
+      "capability_id": "string or null",
+      "engineer_ids": ["..."],
+      "evidence_references": ["risk:...", "trace:..."]
+    }
+  ],
+  "mitigation_actions": [
+    {
+      "title": "string",
+      "action": "string",
+      "rationale": "string",
+      "priority": "critical|high|medium|low",
+      "capability_id": "string or null",
+      "engineer_ids": ["..."],
+      "evidence_references": ["risk:...", "trace:..."]
+    }
+  ],
+  "confidence_statement": "string",
+  "evidence_references": ["deduplicated union of all nested references"],
+  "provider_mode": "azure_openai",
+  "prompt_version": "{{prompt_version}}",
+  "generation_status": "generated"
+}
+
+Evidence-reference rules:
+- Use only evidence IDs present in the evidence package below.
+- Every top risk and action must include at least one evidence reference.
+- Top-level evidence_references must equal the deduplicated union of nested references.
+- Do not introduce unsupported numeric claims beyond values present in evidence.
+
+Evidence package JSON:
+{{evidence_package_json}}

@@ -10,6 +10,9 @@ from app.db.session import get_session_factory, init_engine
 from app.db.unit_of_work import UnitOfWork
 from app.services.persistence.assessment_persistence_service import AssessmentPersistenceService
 from app.services.persistence.exceptions import DatabaseUnavailableError, PersistenceError
+from app.services.persistence.leadership_brief_persistence_service import (
+    LeadershipBriefPersistenceService,
+)
 from app.services.persistence.review_persistence_service import HumanReviewPersistenceService
 from app.services.persistence.simulation_persistence_service import SimulationPersistenceService
 
@@ -50,6 +53,12 @@ def get_review_persistence_service(
     uow: UnitOfWork = Depends(get_unit_of_work),
 ) -> HumanReviewPersistenceService:
     return HumanReviewPersistenceService(uow)
+
+
+def get_leadership_brief_persistence_service(
+    uow: UnitOfWork = Depends(get_unit_of_work),
+) -> LeadershipBriefPersistenceService:
+    return LeadershipBriefPersistenceService(uow)
 
 
 def map_persistence_exception(exc: PersistenceError) -> HTTPException:

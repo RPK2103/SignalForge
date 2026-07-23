@@ -38,6 +38,7 @@ Backend:
 - Versioned readiness API at `/api/v2` (Phase 2 intelligence domain)
 - Team simulation API at `/api/v2/simulations` (deterministic what-if staffing analysis)
 - Persistence and history APIs at `/api/v2/assessments` and `/api/v2/simulation-records` (SQLAlchemy + Alembic; immutable snapshots, append-only reviews and audit events)
+- Leadership Brief APIs at `/api/v2/assessments/{assessment_record_id}/leadership-brief` (grounded AI communication layer with deterministic fallback)
 - Compute-only v2 routes unchanged; persistence endpoints use SQL-backed catalog via `DATABASE_URL`
 - Legacy MVP routes remain at root paths (`/analyze`, `/recommend-team`, `/simulate`, etc.)
 

@@ -47,8 +47,6 @@ Alembic revision: `d573b27e3974` (`initial_persistence_schema`)
 
 ### Non-goals (deferred)
 
-- AI leadership briefs
-- Azure OpenAI integration in persistence paths
 - Frontend history UI or API wiring
 - Authentication and authorization
 - Public audit-history API

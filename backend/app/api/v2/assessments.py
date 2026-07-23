@@ -7,13 +7,18 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from app.api.dependencies import require_json_content_type
 from app.api.persistence_dependencies import (
     get_assessment_persistence_service,
+    get_leadership_brief_persistence_service,
     get_review_persistence_service,
 )
 from app.domain.enums import HumanReviewState
+from app.domain.leadership_brief_models import LeadershipBriefResponse
 from app.domain.persistence_models import AssessmentRecordResponse, PaginatedAssessmentList
 from app.schemas.api_v2 import ReadinessAssessRequest
 from app.services.persistence.assessment_persistence_service import AssessmentPersistenceService
 from app.services.persistence.exceptions import PersistenceError
+from app.services.persistence.leadership_brief_persistence_service import (
+    LeadershipBriefPersistenceService,
+)
 from app.services.persistence.review_persistence_service import (
     HumanReviewPersistenceService,
     HumanReviewRequest,
@@ -65,6 +70,36 @@ def get_assessment(
 ) -> AssessmentRecordResponse:
     try:
         return service.get_assessment(assessment_record_id)
+    except PersistenceError:
+        raise
+
+
+@router.post(
+    "/{assessment_record_id}/leadership-brief",
+    response_model=LeadershipBriefResponse,
+    operation_id="generateLeadershipBriefV2",
+)
+def generate_leadership_brief(
+    assessment_record_id: UUID,
+    service: LeadershipBriefPersistenceService = Depends(get_leadership_brief_persistence_service),
+) -> LeadershipBriefResponse:
+    try:
+        return service.generate_leadership_brief(assessment_record_id)
+    except PersistenceError:
+        raise
+
+
+@router.get(
+    "/{assessment_record_id}/leadership-briefs",
+    response_model=list[LeadershipBriefResponse],
+    operation_id="listLeadershipBriefsV2",
+)
+def list_leadership_briefs(
+    assessment_record_id: UUID,
+    service: LeadershipBriefPersistenceService = Depends(get_leadership_brief_persistence_service),
+) -> list[LeadershipBriefResponse]:
+    try:
+        return service.list_leadership_briefs(assessment_record_id)
     except PersistenceError:
         raise
 

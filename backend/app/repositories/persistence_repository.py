@@ -4,6 +4,7 @@ from typing import Protocol
 from uuid import UUID
 
 from app.domain.enums import HumanReviewState
+from app.domain.leadership_brief_models import LeadershipBriefRecord
 from app.domain.persistence_models import (
     AssessmentListItem,
     AssessmentRecord,
@@ -71,3 +72,11 @@ class AuditEventRepository(Protocol):
         aggregate_type: str,
         aggregate_record_id: UUID,
     ) -> list[AuditEventRecord]: ...
+
+
+class LeadershipBriefRepository(Protocol):
+    def add(self, record: LeadershipBriefRecord) -> None: ...
+
+    def get_by_record_id(self, record_id: UUID) -> LeadershipBriefRecord: ...
+
+    def list_for_assessment(self, assessment_record_id: UUID) -> list[LeadershipBriefRecord]: ...

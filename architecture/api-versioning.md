@@ -65,17 +65,24 @@ backend/app/main.py           →  app.include_router(api_v2_router)
 | GET | `/api/v2/assessments` | Paginated assessment history |
 | GET | `/api/v2/assessments/{assessment_record_id}` | Stored assessment snapshot + reviews |
 | POST | `/api/v2/assessments/{assessment_record_id}/reviews` | Append human review |
+| POST | `/api/v2/assessments/{assessment_record_id}/leadership-brief` | Generate grounded leadership brief (no request body) |
+| GET | `/api/v2/assessments/{assessment_record_id}/leadership-briefs` | Append-only leadership brief history |
 | POST | `/api/v2/simulation-records` | Compute + persist simulation (SQL catalog) |
 | GET | `/api/v2/simulation-records` | Paginated simulation history |
 | GET | `/api/v2/simulation-records/{simulation_record_id}` | Stored simulation snapshots |
 
 Compute-only routes (`POST /api/v2/readiness/assess`, `POST /api/v2/simulations`) remain unchanged and use the in-memory mock catalog. Persistence routes require `DATABASE_URL`, migrated schema, and seeded catalog data. See `architecture/persistence-and-audit.md`.
 
-### Future endpoints (planned, same namespace)
+### Implemented extensions (Phase 2 Prompt 6)
 
-| Area | Suggested path pattern |
-|------|------------------------|
-| Leadership briefs | `/api/v2/briefs/*` |
+| Area | Path |
+|------|------|
+| Leadership brief generation | `POST /api/v2/assessments/{assessment_record_id}/leadership-brief` |
+| Leadership brief history | `GET /api/v2/assessments/{assessment_record_id}/leadership-briefs` |
+
+See `architecture/ai-reasoning-boundary.md`.
+
+### Future endpoints (planned, same namespace)
 
 All future production features should remain under `/api/v2` to avoid namespace fragmentation.
 
