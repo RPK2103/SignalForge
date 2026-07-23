@@ -87,3 +87,26 @@ class MitigationPriority(str, Enum):
     HIGH = "high"
     MEDIUM = "medium"
     LOW = "low"
+
+
+class HumanReviewState(str, Enum):
+    ACCEPTED = "accepted"
+    OVERRIDDEN = "overridden"
+    NEEDS_MORE_DATA = "needs_more_data"
+
+
+class AuditEventType(str, Enum):
+    ASSESSMENT_CREATED = "assessment_created"
+    SIMULATION_CREATED = "simulation_created"
+    HUMAN_REVIEW_CREATED = "human_review_created"
+
+
+class AuditAggregateType(str, Enum):
+    ASSESSMENT = "assessment"
+    SIMULATION = "simulation"
+    HUMAN_REVIEW = "human_review"
+
+
+class ScenarioType(str, Enum):
+    READINESS = "readiness"
+    SIMULATION = "simulation"

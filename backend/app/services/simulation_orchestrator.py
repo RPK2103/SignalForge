@@ -7,9 +7,8 @@ from app.domain.policy import DEFAULT_POLICY_VERSION, get_policy
 from app.domain.simulation_models import SimulationOperation
 from app.repositories.catalog_repository import CatalogRepository
 from app.schemas.api_v2 import SimulationRequest, SimulationResponse
-from app.services.readiness_orchestrator import _build_assessment_id
+from app.services.identifiers import build_assessment_id, build_simulation_id
 from app.services.simulation.exceptions import SimulationValidationError
-from app.services.simulation.simulation_id import build_simulation_id
 from app.services.simulation.team_transformation import (
     TeamTransformationService,
     canonicalize_engineer_ids,
@@ -133,7 +132,7 @@ class SimulationOrchestrator:
         from app.schemas.api_v2 import ReadinessAssessResponse
 
         return ReadinessAssessResponse(
-            assessment_id=_build_assessment_id(
+            assessment_id=build_assessment_id(
                 project_id,
                 [engineer.id for engineer in team],
                 policy_version,

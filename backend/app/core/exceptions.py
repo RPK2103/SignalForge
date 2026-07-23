@@ -12,6 +12,9 @@ class APIErrorResponse(BaseModel):
     error_type: str
 
 
+from app.services.persistence.exceptions import PersistenceError
+
+
 def _http_error_type(status_code: int) -> str:
     if status_code == 415:
         return "unsupported_media_type"
@@ -25,11 +28,32 @@ def _sanitize_validation_errors(errors: list[Any]) -> list[Any]:
         raw_input = item.get("input")
         if isinstance(raw_input, bytes):
             item["input"] = raw_input.decode("utf-8", errors="replace")
+        ctx = item.get("ctx")
+        if isinstance(ctx, dict):
+            item["ctx"] = {
+                key: str(value) if isinstance(value, BaseException) else value
+                for key, value in ctx.items()
+            }
         sanitized.append(item)
     return sanitized
 
 
 def register_exception_handlers(app: FastAPI) -> None:
+    @app.exception_handler(PersistenceError)
+    async def persistence_exception_handler(
+        _request: Request,
+        exc: PersistenceError,
+    ) -> JSONResponse:
+        payload = APIErrorResponse(
+            detail=exc.message,
+            status_code=exc.status_code,
+            error_type=exc.error_type,
+        )
+        return JSONResponse(
+            status_code=exc.status_code,
+            content=payload.model_dump(),
+        )
+
     @app.exception_handler(HTTPException)
     async def http_exception_handler(
         _request: Request,
