@@ -55,7 +55,9 @@ class TestMissingCriticalCapability:
     def test_detects_missing_critical_gap(self):
         response = SERVICE.assess(missing_critical_request())
         critical_missing = [
-            gap for gap in response.skill_gaps if gap.is_critical and gap.level == CoverageLevel.MISSING
+            gap
+            for gap in response.skill_gaps
+            if gap.is_critical and gap.level == CoverageLevel.MISSING
         ]
         assert critical_missing
         assert any(
@@ -190,7 +192,9 @@ class TestDecisionTraceReconciliation:
     def test_policy_version_on_trace_entries(self):
         response = SERVICE.assess(balanced_team_request())
         policy = get_policy()
-        assert all(entry.policy_version == policy.POLICY_VERSION for entry in response.decision_trace)
+        assert all(
+            entry.policy_version == policy.POLICY_VERSION for entry in response.decision_trace
+        )
 
     def test_readiness_trace_has_requirement_entries(self):
         response = SERVICE.assess(balanced_team_request())
@@ -202,18 +206,14 @@ class TestDecisionTraceReconciliation:
     def test_readiness_contributions_reconcile_to_final_score(self):
         response = SERVICE.assess(balanced_team_request())
         readiness_total = sum(
-            entry.contribution
-            for entry in response.decision_trace
-            if entry.step == "readiness"
+            entry.contribution for entry in response.decision_trace if entry.step == "readiness"
         )
         assert round(readiness_total, 2) == float(response.readiness_score)
 
     def test_confidence_contributions_reconcile_to_final_score(self):
         response = SERVICE.assess(balanced_team_request())
         confidence_total = sum(
-            entry.contribution
-            for entry in response.decision_trace
-            if entry.step == "confidence"
+            entry.contribution for entry in response.decision_trace if entry.step == "confidence"
         )
         assert round(confidence_total, 2) == float(response.confidence_score)
 
@@ -239,6 +239,7 @@ class TestBoundedEnums:
 class TestServiceIsolation:
     def test_services_do_not_import_private_functions(self):
         import inspect
+
         import app.services.intelligence as intelligence
 
         for name in intelligence.__all__:

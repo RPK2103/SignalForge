@@ -40,8 +40,6 @@ class TestAssessmentHistoryApi:
         assert response.json()["error_type"] == "unsupported_media_type"
 
     def test_unknown_record(self, persistence_client):
-        response = persistence_client.get(
-            f"{ASSESSMENTS_URL}/00000000-0000-0000-0000-000000000000"
-        )
+        response = persistence_client.get(f"{ASSESSMENTS_URL}/00000000-0000-0000-0000-000000000000")
         assert response.status_code == 404
         assert response.json()["error_type"] == "record_not_found"

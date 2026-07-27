@@ -60,13 +60,9 @@ def build_evidence_package(
         confidence_score=result.confidence_score,
         confidence_level=result.confidence_level.value,
         policy_version=result.policy_version,
-        dimension_scores=[
-            item.model_dump(mode="json") for item in result.dimension_scores
-        ],
+        dimension_scores=[item.model_dump(mode="json") for item in result.dimension_scores],
         skill_gaps=[item.model_dump(mode="json") for item in result.skill_gaps],
-        capability_coverage=[
-            item.model_dump(mode="json") for item in result.coverage_results
-        ],
+        capability_coverage=[item.model_dump(mode="json") for item in result.coverage_results],
         risk_findings=risk_findings,
         decision_trace=decision_trace,
         deterministic_summary=result.summary,

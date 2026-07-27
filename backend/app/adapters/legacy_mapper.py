@@ -19,7 +19,9 @@ def _slugify(name: str) -> str:
     return name.strip().lower().replace(" ", "_")
 
 
-def _legacy_skill_sources(required_label: str, profile: LegacyEngineerProfile) -> list[EvidenceSource]:
+def _legacy_skill_sources(
+    required_label: str, profile: LegacyEngineerProfile
+) -> list[EvidenceSource]:
     sources: list[EvidenceSource] = []
     target = required_label.lower()
 
@@ -162,7 +164,6 @@ def legacy_delivery_risk_score(coverage_pct: int) -> int:
 
 
 def legacy_confidence_label_from_score(score: int) -> str:
-    policy = get_policy()
     if score >= 90:
         return "High"
     if score >= 70:

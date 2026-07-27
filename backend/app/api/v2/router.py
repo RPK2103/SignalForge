@@ -2,7 +2,14 @@
 
 from fastapi import APIRouter
 
-from app.api.v2 import assessments, capabilities, catalog, readiness, simulation_records, simulations
+from app.api.v2 import (
+    assessments,
+    capabilities,
+    catalog,
+    readiness,
+    simulation_records,
+    simulations,
+)
 
 router = APIRouter(prefix="/api/v2")
 router.include_router(readiness.router)

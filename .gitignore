@@ -41,3 +41,14 @@ build/
 *.db-wal
 *.db-shm
 signalforge.db
+
+# Logs, PID files and local audit output
+*.log
+*.pid
+.audit-*
+
+# Browser E2E artifacts (also ignored in frontend/.gitignore)
+playwright-report/
+blob-report/
+test-results/
+playwright/.cache/

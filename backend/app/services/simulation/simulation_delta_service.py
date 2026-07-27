@@ -12,7 +12,6 @@ from app.domain.simulation_models import (
     trace_entry_key,
 )
 
-
 _SEVERITY_RANK = {
     RiskSeverity.LOW: 1,
     RiskSeverity.MEDIUM: 2,
@@ -36,9 +35,7 @@ class SimulationDeltaService:
             "capability_coverage_changes": self._coverage_changes(baseline, proposed),
             "newly_introduced_gaps": self._introduced_gaps(baseline, proposed),
             "resolved_gaps": self._resolved_gaps(baseline, proposed),
-            "key_person_dependency_changes": self._dependency_changes(
-                baseline, proposed
-            ),
+            "key_person_dependency_changes": self._dependency_changes(baseline, proposed),
             "decision_trace_delta": self._trace_delta(baseline, proposed),
         }
 
@@ -47,12 +44,8 @@ class SimulationDeltaService:
         baseline: ReadinessAssessmentResponse,
         proposed: ReadinessAssessmentResponse,
     ) -> list[RiskFindingChange]:
-        baseline_map = {
-            risk_finding_key(finding): finding for finding in baseline.risk_findings
-        }
-        proposed_map = {
-            risk_finding_key(finding): finding for finding in proposed.risk_findings
-        }
+        baseline_map = {risk_finding_key(finding): finding for finding in baseline.risk_findings}
+        proposed_map = {risk_finding_key(finding): finding for finding in proposed.risk_findings}
 
         changes: list[RiskFindingChange] = []
         for key, proposed_finding in proposed_map.items():
@@ -136,8 +129,7 @@ class SimulationDeltaService:
             if (
                 baseline_item.level == proposed_item.level
                 and baseline_item.team_proficiency == proposed_item.team_proficiency
-                and baseline_item.covering_engineer_ids
-                == proposed_item.covering_engineer_ids
+                and baseline_item.covering_engineer_ids == proposed_item.covering_engineer_ids
             ):
                 continue
 
@@ -150,8 +142,7 @@ class SimulationDeltaService:
                 change_type = SimulationChangeType.MODIFIED
 
             affected = sorted(
-                set(baseline_item.covering_engineer_ids)
-                ^ set(proposed_item.covering_engineer_ids)
+                set(baseline_item.covering_engineer_ids) ^ set(proposed_item.covering_engineer_ids)
             )
             changes.append(
                 CapabilityCoverageChange(
@@ -177,11 +168,7 @@ class SimulationDeltaService:
     ) -> list:
         baseline_keys = {skill_gap_key(gap) for gap in baseline.skill_gaps}
         return sorted(
-            [
-                gap
-                for gap in proposed.skill_gaps
-                if skill_gap_key(gap) not in baseline_keys
-            ],
+            [gap for gap in proposed.skill_gaps if skill_gap_key(gap) not in baseline_keys],
             key=lambda gap: (gap.capability_id, gap.level.value),
         )
 
@@ -192,11 +179,7 @@ class SimulationDeltaService:
     ) -> list:
         proposed_keys = {skill_gap_key(gap) for gap in proposed.skill_gaps}
         return sorted(
-            [
-                gap
-                for gap in baseline.skill_gaps
-                if skill_gap_key(gap) not in proposed_keys
-            ],
+            [gap for gap in baseline.skill_gaps if skill_gap_key(gap) not in proposed_keys],
             key=lambda gap: (gap.capability_id, gap.level.value),
         )
 
@@ -225,8 +208,7 @@ class SimulationDeltaService:
             )
             if (
                 baseline_dependency == proposed_dependency
-                and baseline_item.covering_engineer_ids
-                == proposed_item.covering_engineer_ids
+                and baseline_item.covering_engineer_ids == proposed_item.covering_engineer_ids
             ):
                 continue
 
@@ -242,12 +224,8 @@ class SimulationDeltaService:
                     change_type=change_type,
                     capability_id=capability_id,
                     capability_name=proposed_item.capability_name,
-                    baseline_covering_engineer_ids=sorted(
-                        baseline_item.covering_engineer_ids
-                    ),
-                    proposed_covering_engineer_ids=sorted(
-                        proposed_item.covering_engineer_ids
-                    ),
+                    baseline_covering_engineer_ids=sorted(baseline_item.covering_engineer_ids),
+                    proposed_covering_engineer_ids=sorted(proposed_item.covering_engineer_ids),
                     baseline_is_dependency=baseline_dependency,
                     proposed_is_dependency=proposed_dependency,
                     is_critical=proposed_item.is_critical,
@@ -261,12 +239,8 @@ class SimulationDeltaService:
         baseline: ReadinessAssessmentResponse,
         proposed: ReadinessAssessmentResponse,
     ) -> list[DecisionTraceDelta]:
-        baseline_map = {
-            trace_entry_key(entry): entry for entry in baseline.decision_trace
-        }
-        proposed_map = {
-            trace_entry_key(entry): entry for entry in proposed.decision_trace
-        }
+        baseline_map = {trace_entry_key(entry): entry for entry in baseline.decision_trace}
+        proposed_map = {trace_entry_key(entry): entry for entry in proposed.decision_trace}
         deltas: list[DecisionTraceDelta] = []
 
         for key in sorted(set(baseline_map) | set(proposed_map)):
@@ -321,9 +295,7 @@ class SimulationDeltaService:
         score_delta: int,
         existing: list[DecisionTraceDelta],
     ) -> list[DecisionTraceDelta]:
-        structural_delta = sum(
-            entry.contribution_delta for entry in existing if entry.step == step
-        )
+        structural_delta = sum(entry.contribution_delta for entry in existing if entry.step == step)
         gap = round(score_delta - structural_delta, 4)
         if gap == 0:
             return []
@@ -338,14 +310,10 @@ class SimulationDeltaService:
                 proposed_contribution=gap,
                 contribution_delta=gap,
                 baseline_value=str(
-                    baseline.readiness_score
-                    if step == "readiness"
-                    else baseline.confidence_score
+                    baseline.readiness_score if step == "readiness" else baseline.confidence_score
                 ),
                 proposed_value=str(
-                    proposed.readiness_score
-                    if step == "readiness"
-                    else proposed.confidence_score
+                    proposed.readiness_score if step == "readiness" else proposed.confidence_score
                 ),
             )
         ]

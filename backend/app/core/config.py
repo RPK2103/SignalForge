@@ -1,8 +1,9 @@
+import json
 from functools import lru_cache
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import Field, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 from app.core.paths import ENV_FILE
 
@@ -10,10 +11,7 @@ LogLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 AppEnv = Literal["development", "staging", "production"]
 
 DEFAULT_DEV_CORS_ORIGINS = (
-    "http://localhost:3000,"
-    "http://127.0.0.1:3000,"
-    "http://localhost:8000,"
-    "http://127.0.0.1:8000"
+    "http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000,http://127.0.0.1:8000"
 )
 
 
@@ -29,11 +27,11 @@ class Settings(BaseSettings):
     log_level: LogLevel = Field(default="INFO", validation_alias="LOG_LEVEL")
     database_url: str | None = Field(default=None, validation_alias="DATABASE_URL")
 
-    cors_origins: list[str] = Field(
+    # NoDecode: keep pydantic-settings from JSON-decoding this list field so the
+    # validator below can accept comma-separated, JSON-array, "*" or plain values.
+    cors_origins: Annotated[list[str], NoDecode] = Field(
         default_factory=lambda: [
-            origin.strip()
-            for origin in DEFAULT_DEV_CORS_ORIGINS.split(",")
-            if origin.strip()
+            origin.strip() for origin in DEFAULT_DEV_CORS_ORIGINS.split(",") if origin.strip()
         ],
         validation_alias="CORS_ORIGINS",
     )
@@ -71,9 +69,7 @@ class Settings(BaseSettings):
     def parse_cors_origins(cls, value: object) -> list[str]:
         if value is None or value == "":
             return [
-                origin.strip()
-                for origin in DEFAULT_DEV_CORS_ORIGINS.split(",")
-                if origin.strip()
+                origin.strip() for origin in DEFAULT_DEV_CORS_ORIGINS.split(",") if origin.strip()
             ]
         if isinstance(value, list):
             return [str(origin).strip() for origin in value if str(origin).strip()]
@@ -81,6 +77,15 @@ class Settings(BaseSettings):
             trimmed = value.strip()
             if trimmed == "*":
                 return ["*"]
+            # Accept a JSON array string (e.g. from a Render/Vercel env var).
+            if trimmed.startswith("["):
+                try:
+                    parsed = json.loads(trimmed)
+                except json.JSONDecodeError:
+                    parsed = None
+                if isinstance(parsed, list):
+                    return [str(origin).strip() for origin in parsed if str(origin).strip()]
+            # Otherwise treat as a comma-separated or single plain origin.
             return [origin.strip() for origin in trimmed.split(",") if origin.strip()]
         raise TypeError("CORS_ORIGINS must be a comma-separated string or list")
 

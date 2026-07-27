@@ -11,7 +11,6 @@ from app.domain.simulation_models import (
 from app.services.team_simulation_service import TeamSimulationService
 from tests.intelligence.fixtures import balanced_team_request
 
-
 SERVICE = TeamSimulationService()
 
 

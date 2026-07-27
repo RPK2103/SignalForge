@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import DateTime, Float, ForeignKey, Index, Integer, String, Text, Uuid
@@ -10,6 +11,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 from app.db.types import PortableJSON
+
+if TYPE_CHECKING:
+    from app.db.models.review import HumanReview
 
 
 def _utcnow() -> datetime:

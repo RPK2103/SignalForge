@@ -5,8 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from app.services.leadership_brief.evidence_package import canonical_evidence_json
 from app.domain.leadership_brief_models import LeadershipBriefEvidencePackage
+from app.services.leadership_brief.evidence_package import canonical_evidence_json
 
 PROMPT_VERSION = "leadership-brief-v1"
 _TEMPLATE_ROOT = Path(__file__).resolve().parents[2] / "prompts" / "leadership_brief" / "v1"

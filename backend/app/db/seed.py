@@ -9,13 +9,18 @@ from sqlalchemy.orm import Session
 
 from app.adapters.legacy_mapper import legacy_engineer_to_domain, legacy_project_to_domain
 from app.data.mock_catalog import MOCK_ENGINEERS, MOCK_PROJECTS
-from app.db.models.catalog import Capability, Engineer, EngineerCapability, Project, ProjectRequirement
+from app.db.models.catalog import (
+    Capability,
+    Engineer,
+    EngineerCapability,
+    Project,
+    ProjectRequirement,
+)
 from app.db.models.scenario import DemoScenario
 from app.db.session import init_engine, session_scope
 from app.domain.capability_registry import STANDARD_CAPABILITIES
 from app.domain.enums import ScenarioType
 from app.domain.simulation_models import CompareSimulationOperation, RemoveSimulationOperation
-
 
 SCHEMA_VERSION = "1"
 
@@ -106,9 +111,7 @@ def _seed_engineers(session: Session) -> int:
         existing_caps = {
             cap.capability_id
             for cap in session.scalars(
-                select(EngineerCapability).where(
-                    EngineerCapability.engineer_id == domain.id
-                )
+                select(EngineerCapability).where(EngineerCapability.engineer_id == domain.id)
             ).all()
         }
         for cap in domain.capabilities:
@@ -134,7 +137,9 @@ def _seed_engineers(session: Session) -> int:
     return created
 
 
-def _seed_project(session: Session, project_id: str, name: str, description: str, requirements) -> None:
+def _seed_project(
+    session: Session, project_id: str, name: str, description: str, requirements
+) -> None:
     row = session.get(Project, project_id)
     if row is None:
         row = Project(

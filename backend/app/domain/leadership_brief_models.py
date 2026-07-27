@@ -133,9 +133,7 @@ class LeadershipBrief(BaseModel):
 
         action_keys = [
             (item.title, item.action, item.priority.value) for item in self.staffing_actions
-        ] + [
-            (item.title, item.action, item.priority.value) for item in self.mitigation_actions
-        ]
+        ] + [(item.title, item.action, item.priority.value) for item in self.mitigation_actions]
         if len(action_keys) != len(set(action_keys)):
             raise ValueError("duplicate actions are not allowed")
 

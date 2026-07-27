@@ -1,8 +1,9 @@
 """Migration lifecycle tests."""
 
-from alembic import command
 from alembic.config import Config
 from sqlalchemy import inspect
+
+from alembic import command
 
 
 def test_upgrade_creates_all_tables(migrated_db: str):
@@ -29,8 +30,8 @@ def test_upgrade_creates_all_tables(migrated_db: str):
 
 
 def test_single_alembic_head():
-    from alembic.script import ScriptDirectory
     from alembic.config import Config
+    from alembic.script import ScriptDirectory
 
     cfg = Config("alembic.ini")
     script = ScriptDirectory.from_config(cfg)
@@ -38,8 +39,9 @@ def test_single_alembic_head():
 
 
 def test_alembic_check_detects_no_drift(migrated_db: str):
-    from alembic import command
     from alembic.config import Config
+
+    from alembic import command
 
     cfg = Config("alembic.ini")
     cfg.set_main_option("sqlalchemy.url", migrated_db)

@@ -28,8 +28,9 @@ def migrated_db(temp_database_url: str) -> Generator[str, None, None]:
     get_settings.cache_clear()
     reset_engine()
     init_engine(temp_database_url)
-    from alembic import command
     from alembic.config import Config
+
+    from alembic import command
 
     alembic_cfg = Config("alembic.ini")
     command.upgrade(alembic_cfg, "head")

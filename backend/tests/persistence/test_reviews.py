@@ -1,14 +1,14 @@
 """Human review persistence tests."""
 
+import pytest
+
 from app.domain.enums import HumanReviewState
 from app.schemas.api_v2 import ReadinessAssessRequest
 from app.services.persistence.assessment_persistence_service import AssessmentPersistenceService
-from app.services.persistence.exceptions import PersistenceValidationError
 from app.services.persistence.review_persistence_service import (
     HumanReviewPersistenceService,
     HumanReviewRequest,
 )
-import pytest
 
 
 def test_append_reviews(unit_of_work):
@@ -40,8 +40,7 @@ def test_append_reviews(unit_of_work):
 
 def test_overridden_requires_reason(unit_of_work):
     assessments = AssessmentPersistenceService(unit_of_work)
-    reviews = HumanReviewPersistenceService(unit_of_work)
-    created = assessments.create_assessment(
+    assessments.create_assessment(
         ReadinessAssessRequest(
             project_id="azure_ai_migration",
             engineer_ids=["kavi", "vikram"],

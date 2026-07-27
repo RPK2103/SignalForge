@@ -5,14 +5,13 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+from app.services.persistence.exceptions import PersistenceError
+
 
 class APIErrorResponse(BaseModel):
     detail: str | list[Any]
     status_code: int
     error_type: str
-
-
-from app.services.persistence.exceptions import PersistenceError
 
 
 def _http_error_type(status_code: int) -> str:

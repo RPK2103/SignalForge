@@ -12,10 +12,7 @@ from app.domain.enums import (
     SimulationOperationType,
 )
 from app.domain.simulation_models import (
-    CapabilityCoverageChange,
     DeterministicMitigation,
-    KeyPersonDependencyChange,
-    RiskFindingChange,
     SimulationOperation,
     SimulationResult,
 )
@@ -37,9 +34,7 @@ class MitigationService:
     def _from_introduced_gaps(self, result: SimulationResult) -> list[DeterministicMitigation]:
         items: list[DeterministicMitigation] = []
         for gap in result.newly_introduced_gaps:
-            priority = (
-                MitigationPriority.CRITICAL if gap.is_critical else MitigationPriority.HIGH
-            )
+            priority = MitigationPriority.CRITICAL if gap.is_critical else MitigationPriority.HIGH
             mitigation_type = (
                 MitigationType.ADD_CAPABILITY_COVERAGE
                 if gap.level == CoverageLevel.MISSING
@@ -67,9 +62,7 @@ class MitigationService:
             )
         return items
 
-    def _from_coverage_changes(
-        self, result: SimulationResult
-    ) -> list[DeterministicMitigation]:
+    def _from_coverage_changes(self, result: SimulationResult) -> list[DeterministicMitigation]:
         items: list[DeterministicMitigation] = []
         for change in result.capability_coverage_changes:
             if change.change_type not in {
@@ -123,9 +116,7 @@ class MitigationService:
                 )
         return items
 
-    def _from_key_person_changes(
-        self, result: SimulationResult
-    ) -> list[DeterministicMitigation]:
+    def _from_key_person_changes(self, result: SimulationResult) -> list[DeterministicMitigation]:
         items: list[DeterministicMitigation] = []
         for change in result.key_person_dependency_changes:
             if change.change_type != SimulationChangeType.INTRODUCED:
@@ -175,9 +166,7 @@ class MitigationService:
                         action="Collect certifications and project history for affected engineers.",
                         rationale=change.message,
                         capability_id=change.capability_id,
-                        affected_engineer_ids=[change.engineer_id]
-                        if change.engineer_id
-                        else [],
+                        affected_engineer_ids=[change.engineer_id] if change.engineer_id else [],
                         evidence_references=[
                             f"risk:{change.finding_type.value}:{change.engineer_id or 'team'}"
                         ],
@@ -195,9 +184,7 @@ class MitigationService:
                         action="Assign a backup engineer for the affected capability.",
                         rationale=change.message,
                         capability_id=change.capability_id,
-                        affected_engineer_ids=[change.engineer_id]
-                        if change.engineer_id
-                        else [],
+                        affected_engineer_ids=[change.engineer_id] if change.engineer_id else [],
                         evidence_references=[
                             f"risk:{change.finding_type.value}:{change.capability_id or 'general'}"
                         ],
@@ -208,9 +195,7 @@ class MitigationService:
                 )
         return items
 
-    def _from_confidence_decline(
-        self, result: SimulationResult
-    ) -> list[DeterministicMitigation]:
+    def _from_confidence_decline(self, result: SimulationResult) -> list[DeterministicMitigation]:
         if result.confidence_delta >= 0:
             return []
         return [

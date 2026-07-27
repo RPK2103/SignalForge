@@ -2,7 +2,7 @@
 
 from app.domain.capability_registry import get_capability
 from app.domain.enums import CoverageLevel, EvidenceSource
-from app.domain.models import EngineerCapability, EngineerProfile
+from app.domain.models import EngineerProfile
 from app.domain.policy import get_policy
 
 

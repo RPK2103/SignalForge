@@ -25,17 +25,13 @@ LEGACY_POST_ROUTES = [
 
 def _readiness_trace_total(body: dict) -> float:
     return sum(
-        entry["contribution"]
-        for entry in body["decision_trace"]
-        if entry["step"] == "readiness"
+        entry["contribution"] for entry in body["decision_trace"] if entry["step"] == "readiness"
     )
 
 
 def _confidence_trace_total(body: dict) -> float:
     return sum(
-        entry["contribution"]
-        for entry in body["decision_trace"]
-        if entry["step"] == "confidence"
+        entry["contribution"] for entry in body["decision_trace"] if entry["step"] == "confidence"
     )
 
 
@@ -62,9 +58,7 @@ class TestReadinessV2CatalogFlow:
         assert {member["id"] for member in first_body["team"]} == set(engineer_ids)
         assert len(first_body["team"]) == len(set(engineer_ids))
         assert first_body["policy_version"] == get_policy().POLICY_VERSION
-        assert round(_readiness_trace_total(first_body), 2) == float(
-            first_body["readiness_score"]
-        )
+        assert round(_readiness_trace_total(first_body), 2) == float(first_body["readiness_score"])
         assert round(_confidence_trace_total(first_body), 2) == float(
             first_body["confidence_score"]
         )

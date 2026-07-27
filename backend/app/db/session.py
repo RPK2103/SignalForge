@@ -36,7 +36,9 @@ def _configure_sqlite_engine(engine: Engine) -> None:
 def get_engine(database_url: str | None = None) -> Engine:
     global _engine, _SessionLocal
     settings = get_settings()
-    url = normalize_database_url(database_url or settings.database_url or "sqlite:///./signalforge.db")
+    url = normalize_database_url(
+        database_url or settings.database_url or "sqlite:///./signalforge.db"
+    )
     connect_args: dict = {}
     if url.startswith("sqlite"):
         connect_args["check_same_thread"] = False

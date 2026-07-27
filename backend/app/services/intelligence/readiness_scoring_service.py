@@ -58,9 +58,7 @@ class ReadinessScoringService:
             policy_version,
         )
 
-        weighted_readiness = sum(
-            dim.score * dim.weight for dim in dimension_scores
-        )
+        weighted_readiness = sum(dim.score * dim.weight for dim in dimension_scores)
 
         for dim in dimension_scores:
             dim_contribution = dim.score * dim.weight

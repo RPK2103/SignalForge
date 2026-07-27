@@ -40,10 +40,14 @@ class TestPersistenceV2Flow:
         assert sim.status_code == 200
         sim_id = sim.json()["simulation_record_id"]
         sim_detail = persistence_client.get(f"{SIM_RECORDS_URL}/{sim_id}").json()
-        assert sim_detail["result"]["readiness_score_delta"] == sim.json()["result"]["readiness_score_delta"]
+        assert (
+            sim_detail["result"]["readiness_score_delta"]
+            == sim.json()["result"]["readiness_score_delta"]
+        )
+
+        from sqlalchemy import select
 
         from app.db.models.catalog import EngineerCapability
-        from sqlalchemy import select
 
         cap = db_session.scalar(
             select(EngineerCapability).where(

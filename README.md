@@ -1,704 +1,363 @@
 # SignalForge
 
-## AI Execution Intelligence for Engineering Delivery
+**Predict. Simulate. Deliver.**
 
-SignalForge is an AI-powered Engineering Execution Intelligence platform that helps engineering leaders predict project delivery success, identify staffing risks, simulate team changes, and make evidence-based decisions before projects fail.
+SignalForge turns engineering capability and project requirements into an
+explainable delivery-readiness decision — with team simulation, immutable
+history, human review, and grounded leadership communication.
 
-> **Predict. Simulate. Deliver.**
+> **Category: Engineering Execution Intelligence.**
 
-
-## Live Project Links
-
-* **Live Dashboard:** https://signalforge-o0m4.onrender.com/dashboard/
-* **Backend API:** https://signalforge-o0m4.onrender.com
-* **Swagger API Docs:** https://signalforge-o0m4.onrender.com/docs
-
----
-
-## Why I Built SignalForge
-
-Engineering leaders make high-stakes delivery decisions every day.
-
-But many of those decisions are still made using fragmented information: resumes, skill inventories, project requirements, spreadsheets, and managers' intuition.
-
-This creates a blind spot.
-
-A project may look healthy on paper, but still have hidden risks:
-
-* one critical engineer carrying an important capability
-* missing cloud or AI readiness
-* weak project-fit signals
-* low capability coverage
-* unclear delivery confidence
-* dependency risk that only appears after someone leaves
-
-SignalForge was built to answer one practical question:
-
-> **Can this team actually deliver this project successfully?**
+This README separates what is **IMPLEMENTED** today from what is **PLANNED** for
+Phase 3. Every command and path below was verified against the current working
+tree (Python 3.13.7 · Node.js 22.19.0 · npm 11.18.0).
 
 ---
 
-## What SignalForge Does
+## 5. Problem
 
-SignalForge converts engineering capability data into execution intelligence.
+Engineering leaders make high-stakes delivery decisions from fragmented signals —
+resumes, skill inventories, spreadsheets and intuition. A project can look
+healthy on paper while hiding key-person risk, thin capability coverage, or low
+delivery confidence that only surfaces after someone leaves. The core question
+often goes unanswered with evidence:
 
-It helps leaders understand:
+> **Can this team actually deliver this initiative?**
 
-* which engineer is the right fit
-* which capability is most critical
-* how risky a project is
-* how confident the team should be in delivery success
-* what happens if a key engineer becomes unavailable
-* what action leadership should take next
+## 6. Target Users
 
-The goal is not just to show data.
+Engineering delivery leaders and their staff: VP/Director of Engineering,
+delivery/program managers, and engineering chiefs of staff.
 
-The goal is to make delivery risk visible early enough to act on it.
+## 7. Buyer & ICP
 
----
+Software organizations, consultancies and cloud/AI transformation teams where an
+engineering leader owns delivery outcomes across multiple initiatives and teams.
 
-## Core Product Themes
+## 8. Product Workflow
 
-### **Execution Intelligence**
-
-SignalForge does not stop at skill matching. It connects engineer capability, project requirements, delivery risk, and staffing impact into one decision view.
-
-### **Explainable AI**
-
-The platform uses transparent scoring and reasoning so leaders can understand why a project is considered low-risk, high-risk, well-covered, or dependent on a specific capability.
-
-### **Human + AI Decision Support**
-
-SignalForge is designed for leadership decisions. It does not replace engineering judgment. It strengthens it with structured signals and AI-powered reasoning.
-
-### **What-If Simulation**
-
-The Staffing Impact Simulator allows leaders to test staffing scenarios before they become real delivery problems.
-
-### **Enterprise Product Thinking**
-
-The MVP is deployed, interactive, API-driven, and designed around real engineering leadership workflows.
+1. Pick a project (initiative) and a candidate team.
+2. Run a readiness assessment → get **readiness** and **confidence** separately.
+3. Inspect gaps, ownership concentration and the decision trace.
+4. Simulate team changes (add / remove / replace / compare) and see the delta.
+5. Persist the assessment; add a human review.
+6. Generate a grounded Leadership Brief.
+7. Review history and audit trail.
 
 ---
 
-## Key Features
+## 9. Implemented Capabilities
 
-## 1. Engineer Analysis
+- Deterministic readiness + confidence scoring (versioned policy).
+- Capability coverage, skill-gap and key-person-risk analysis.
+- Decision traces (explainability) for every score.
+- Team simulation: add / remove / replace / compare with deltas + mitigations.
+- Immutable persistence of assessments and simulations, with history + detail.
+- Human review (accepted / overridden / needs-more-data) that never rewrites
+  scores.
+- Grounded Leadership Briefs with strict grounding validation and a deterministic
+  fallback (with explicit provenance).
+- Typed Next.js frontend wired to the live v2 API.
+- Quality + automation: Ruff, pytest, Vitest, Playwright E2E, GitHub Actions CI.
 
-SignalForge analyzes an engineer across delivery-relevant dimensions.
+## 10. Planned Capabilities (Phase 3)
 
-Outputs include:
+- Real connectors (GitHub / Jira / Azure DevOps), delivery graph, calibrated ML
+  prediction, continuous scenarios, AI Chief of Staff, multi-tenancy, auth/RBAC,
+  Entra ID, production observability. See
+  [`architecture/phase-3-enterprise-product-roadmap.md`](architecture/phase-3-enterprise-product-roadmap.md).
 
-* Execution score
-* Backend score
-* Cloud score
-* AI readiness score
-* Capability summary
+## 11. Deterministic Intelligence
 
-This helps leaders understand not just what an engineer knows, but how their capability contributes to delivery.
+Readiness and confidence are computed from a versioned policy (`policy_v1`) and
+are fully reproducible. **AI never changes scores.**
 
----
+## 12. Readiness versus Confidence
 
-## 2. Project Fit Recommendation
+- **Readiness** — can this team deliver this initiative (capability match)?
+- **Confidence** — how sure is SignalForge in that readiness signal (evidence
+  strength)?
 
-SignalForge compares engineer capabilities against project requirements.
+They are distinct scores and are never conflated.
 
-Outputs include:
+## 13. Team Simulation
 
-* Fit score
-* Matched skills
-* Missing skills
-* Alignment reasoning
+Simulate `add`, `remove`, `replace`, or `compare` operations. Each returns
+readiness/confidence deltas, newly introduced/resolved gaps, and recommended
+mitigations. Simulations run compute-only or are explicitly persisted.
 
-This helps identify whether an engineer is a strong fit for a specific project context.
+## 14. Decision Traces
 
----
+Every assessment returns a structured decision trace explaining how the score was
+derived — no black box.
 
-## 3. Risk Assessment
+## 15. Persistence and History
 
-SignalForge evaluates project delivery risk based on skill coverage and capability alignment.
+Assessments and simulations are stored as immutable snapshots with input/result
+hashes. History and detail endpoints return persisted snapshots, not recomputed
+values.
 
-Outputs include:
+## 16. Human Review
 
-* Risk score
-* Risk level
-* Risk reasoning
-* Mitigation plan
+Leaders record judgment (accepted / overridden / needs-more-data). Overrides
+require a reason; needs-more-data requires a comment. Reviews never modify the
+deterministic scores.
 
-This gives leaders an early view of possible delivery weaknesses.
+## 17. Leadership Briefs
 
----
+A leadership-ready narrative grounded in the deterministic evidence package,
+with brief history per assessment.
 
-## 4. Team Recommendation
+## 18. AI Reasoning Boundary
 
-SignalForge recommends a project team based on required capabilities.
+AI is an advisory communication layer only. The brief is grounded and validated;
+if grounding fails, output is malformed, or AI is disabled, the deterministic
+fallback is used.
 
-Outputs include:
+## 19. Deterministic Fallback
 
-* Recommended team composition
-* Capability coverage
-* Skill mapping
-* Coverage reasoning
-
-This helps leaders move from manual staffing decisions to evidence-based team formation.
-
----
-
-## 5. Success Prediction
-
-SignalForge estimates project delivery confidence based on team fit and capability coverage.
-
-Outputs include:
-
-* Success probability
-* Confidence score
-* Delivery outlook
-
-This gives an executive-level view of whether the current team setup is likely to succeed.
+The fallback provider always produces a valid, grounded brief and records
+`provider_mode`, `generation_status` and `failure_category` (e.g. `ai_disabled`).
 
 ---
 
-## 6. Staffing Impact Simulator
+## 20. Architecture Diagram
 
-The Staffing Impact Simulator is the core innovation of SignalForge.
-
-It allows leaders to simulate the removal of key engineers and immediately see how the project changes.
-
-Outputs include:
-
-* Capability loss
-* Coverage reduction
-* Risk increase
-* Success probability drop
-* Critical dependency identification
-
-Example scenario:
-
-A project initially shows:
-
-* Success probability: 91%
-* Coverage: 100%
-* Risk: Low
-
-After removing a critical engineer:
-
-* Success probability drops to 37%
-* Coverage drops to 67%
-* Risk increases to High
-* Lost capability: Generative AI
-
-This reveals a hidden dependency before execution begins.
-
----
-
-## 7. SignalForge Copilot
-
-SignalForge Copilot is an executive AI advisor powered by Azure OpenAI.
-
-Leaders can ask questions such as:
-
-* Why is this project likely to succeed?
-* What capability is most critical?
-* What happens if a key engineer is removed?
-* How can we reduce delivery risk?
-* Which staffing decision has the highest impact?
-
-The Copilot reasons over project, staffing, capability, risk, and delivery signals to generate practical recommendations.
-
----
-
-## AI Integration & Intelligence Design
-
-SignalForge uses a hybrid intelligence architecture.
-
-The platform first converts engineer and project inputs into structured execution signals such as:
-
-* capability coverage
-* project fit
-* delivery risk
-* success probability
-* staffing dependency impact
-
-Azure OpenAI is then used as a reasoning layer on top of these structured signals.
-
-Instead of acting as a generic chatbot, the SignalForge Copilot interprets project context, explains staffing risk, summarizes delivery confidence, and generates strategic recommendations for engineering leaders.
-
-This design keeps the core decision signals explainable while using AI for synthesis, reasoning, and executive decision support.
-
-In simple terms:
-
-> SignalForge uses deterministic intelligence for trust and Azure OpenAI for reasoning.
-
----
-
-## Architecture Overview
-
-```text
-Engineer Profiles + Project Requirements
-                 |
-                 v
-      SignalForge Intelligence Layer
-                 |
-   -------------------------------------
-   | Engineer Analysis Engine          |
-   | Project Fit Engine                |
-   | Risk Assessment Engine            |
-   | Team Recommendation Engine        |
-   | Success Prediction Engine         |
-   | Staffing Impact Simulator         |
-   -------------------------------------
-                 |
-                 v
-        Azure OpenAI Reasoning Layer
-                 |
-                 v
-      Executive Decision Intelligence
-                 |
-   -------------------------------------
-   | Dashboard                         |
-   | Copilot                           |
-   | Risk Insights                     |
-   | Staffing Recommendations          |
-   | Delivery Confidence               |
-   -------------------------------------
+```mermaid
+flowchart TD
+    UI[Next.js dashboard: typed services + contracts] -->|HTTPS/JSON v2| API[FastAPI /api/v2]
+    API --> SVC[Deterministic intelligence services]
+    API --> PERS[Persistence: SQLAlchemy + Unit of Work]
+    SVC --> POLICY[Versioned policy policy_v1]
+    PERS --> DB[(Alembic-migrated DB)]
+    API --> BRIEF[Leadership Brief orchestrator]
+    BRIEF --> AZ[Azure provider]
+    BRIEF --> FB[Deterministic fallback]
 ```
 
----
-## Product Walkthrough
-
-A quick visual walkthrough of SignalForge from executive dashboard to AI reasoning, staffing simulation, and API readiness.
-
----
-
-## SignalForge Overview
-
-![SignalForge Cover](assets/signalforge-cover.png)
-
-SignalForge is designed as an executive intelligence layer for engineering delivery — helping leaders move from intuition-based staffing decisions to evidence-based execution planning.
-
----
-
-## Dashboard Home
-
-![Dashboard Home](assets/dashboard-home.png)
-
-The home view summarizes the active project, core success metrics, staffing coverage, risk level, and AI-enabled execution insights.
-
----
-
-## AI-Generated Insights
-
-![AI Generated Insights](assets/ai-generated-insights.png)
-
-SignalForge converts structured engineering signals into leadership-ready insights, making delivery risks easier to understand and act on.
-
----
-
-## AI Reasoning Panel
-
-![AI Reasoning Panel](assets/AI-reasoning-panel.png)
-
-The AI reasoning panel explains why a project is likely to succeed, where the risk exists, and what decision-makers should pay attention to.
-
----
-
-## Engineer Analysis & Project Fit
-
-![Engineer Analysis and Project Fit](assets/engineer-analysis-project-fit.png)
-
-SignalForge analyzes engineer capability and compares it against project requirements to generate fit scores and alignment reasoning.
-
----
-
-
-## Staffing Impact Simulator
-
-![Staffing Simulator Before After](assets/staffing-simulator-before-after.png)
-
-This is the core simulation moment. SignalForge shows how removing a key engineer affects project coverage, delivery risk, and success probability.
-
----
-
-## SignalForge Copilot
-
-![SignalForge Copilot](assets/copilot-console.png)
-
-SignalForge Copilot is powered by Azure OpenAI and allows leaders to ask strategic questions about delivery risk, staffing impact, and mitigation plans.
-
----
-
-## Dashboard Insights
-
-![Dashboard Insights](assets/dashboard-home.png)
-
-The insights view brings together project signals, capability reasoning, and leadership recommendations in one place.
-
----
-
-## Architecture
-
-![Architecture](assets/architecture.png)
-
-SignalForge follows a hybrid intelligence architecture: explainable scoring engines generate delivery signals, and Azure OpenAI turns those signals into executive reasoning.
-
----
-
-## Swagger API Documentation
-
-![Swagger API Docs](assets/api-docs.png)
-
-The backend exposes documented FastAPI endpoints through Swagger, making the prototype easy to inspect, test, and extend.
-
----
-
-## Closing View
-
-![SignalForge Footer](assets/signalforge-footer.png)
-
-SignalForge is built around one core idea:
-
-> **Predict delivery risk. Simulate staffing impact. Deliver with confidence.**
-
----
-
-## Tech Stack
-
-### Backend
-
-* Python
-* FastAPI
-* Pydantic v2
-* Azure OpenAI
-* OpenAI SDK
-* REST APIs
-
-### Frontend
-
-* HTML
-* CSS
-* JavaScript
-* Custom executive dashboard
-* Interactive simulator
-* AI reasoning panels
-
-### Deployment
-
-* Render
-* GitHub
-
----
-
-## Microsoft AI Stack Usage
-
-SignalForge uses the Microsoft AI stack through Azure OpenAI.
-
-Azure OpenAI powers the Copilot experience and enables natural language reasoning over project delivery signals.
-
-The AI layer is used for:
-
-* executive reasoning
-* delivery risk explanation
-* strategic recommendation generation
-* staffing impact interpretation
-* natural language decision support
-
-The project demonstrates how Azure OpenAI can be applied beyond generic chat experiences to support enterprise engineering decisions.
-
----
-
-## API Overview
-
-The backend exposes APIs for the main intelligence workflows.
-
-Main API categories include:
-
-```text
-Engineer Analysis
-Project Fit Recommendation
-Risk Assessment
-Team Recommendation
-Success Prediction
-Staffing Impact Simulation
-SignalForge Copilot
+## 21. Data-Flow Diagram
+
+```mermaid
+flowchart LR
+    C[Catalog: projects + engineers] --> A[Assess readiness]
+    A --> R[Readiness + confidence + trace]
+    R --> S[Simulate team change]
+    R --> P[(Persist snapshot)]
+    P --> H[History + detail]
+    P --> RV[Human review]
+    R --> LB[Leadership Brief]
+    LB --> G{Grounded + AI enabled?}
+    G -->|yes| AZ[Azure brief]
+    G -->|no| DF[Deterministic fallback]
 ```
 
-Swagger documentation is available here:
+## 22. Data Model
 
-https://signalforge-o0m4.onrender.com/docs
+Core persisted entities (SQLAlchemy, Alembic-migrated):
 
----
+- `assessment` — immutable readiness snapshot (inputs, result, hashes, policy).
+- `simulation_record` — immutable simulation snapshot with deltas.
+- `human_review` — review state attached to an assessment.
+- `leadership_brief` — generated brief with provider/generation metadata.
+- audit/event records for traceability.
 
-## Example Use Case
+Catalog entities (projects, engineers, capabilities) are served from an
+in-memory mock repository and seeded for demos.
 
-Scenario:
+## 23. APIs (v2)
 
-An enterprise is planning an Azure AI Migration project.
+| Method | Path |
+| --- | --- |
+| GET | `/health`, `/docs`, `/openapi.json` |
+| GET | `/api/v2/projects`, `/api/v2/engineers`, `/api/v2/capabilities` |
+| GET | `/api/v2/policies/readiness` |
+| POST | `/api/v2/readiness/assess` (compute-only) |
+| POST/GET | `/api/v2/assessments`, `GET /api/v2/assessments/{id}` |
+| POST | `/api/v2/assessments/{id}/reviews` |
+| POST/GET | `/api/v2/assessments/{id}/leadership-brief(s)` |
+| POST/GET | `/api/v2/simulations`, `/api/v2/simulation-records`, `GET .../{id}` |
 
-The project requires:
+Legacy v1 routes remain mounted for backward compatibility.
 
-* Azure
-* Python
-* Backend engineering
-* Generative AI capability
+## 24. Demo Scenarios
 
-SignalForge analyzes the current team and shows that the project appears healthy.
+Seeded scenarios include readiness and simulation cases such as
+`critical_engineer_exit` and `balanced_team`. See
+[`architecture/phase-2-demo-scripts.md`](architecture/phase-2-demo-scripts.md).
 
-Initial state:
+## 25. Frontend Workflow
 
-* Success probability: 91%
-* Coverage: 100%
-* Risk: Low
+Typed API client → per-resource services/contracts → dashboard views (catalog
+selection, assessment, history, review dialog, simulation panel, Leadership Brief
+panel), with async-state handling and Vitest tests.
 
-Then leadership simulates the removal of a critical engineer.
+## 26. Screenshots / GIFs
 
-Updated state:
+_Placeholders — to be captured against the v2 dashboard:_
 
-* Success probability: 37%
-* Coverage: 67%
-* Risk: High
-* Lost capability: Generative AI
-
-This helps leaders identify dependency risk before the project is already in trouble.
-
----
-
-## Evaluation Criteria Alignment
-
-### AI Integration & Intelligence Design
-
-SignalForge uses Azure OpenAI as a reasoning layer over structured execution signals. The Copilot converts staffing, capability, risk, and delivery data into strategic recommendations.
-
-### System Architecture & Engineering Quality
-
-The application uses a modular FastAPI backend, structured Pydantic models, REST APIs, explainable scoring engines, Azure OpenAI integration, an interactive dashboard, and live deployment.
-
-
-### Communication, Presentation & UX
-
-The dashboard is designed as an executive command center with clear metrics, reasoning panels, and simulation-first storytelling.
-
-
-
-### Prototype Readiness & Scalability
-
-The project is fully deployed with a live dashboard, backend API, Swagger documentation, and public GitHub repository.
-
-### Problem Depth & Product Clarity
-
-SignalForge addresses a real enterprise problem: engineering leaders often lack an evidence-based way to predict delivery risk and staffing impact.
-
-### Market Understanding & Product Fit
-
-The product fits enterprise engineering organizations, consulting firms, AI transformation teams, cloud migration teams, and delivery leadership groups.
+- `![Dashboard](assets/dashboard-home.png)` — catalog + assessment view.
+- `![Readiness vs Confidence](assets/readiness-confidence.png)` — separated scores.
+- `![Simulation](assets/staffing-simulator-before-after.png)` — remove-engineer delta.
+- `![Leadership Brief](assets/leadership-brief.png)` — grounded brief + provenance.
 
 ---
 
-## Data Privacy
-
-SignalForge uses synthetic demo data only.
-
-No confidential employer data, proprietary project data, sensitive employee information, or personal records are included in this repository.
-
-API keys and secrets are managed through environment variables and are not committed to source control.
-
----
-
-## Environment Variables
-
-Create a `.env` file or configure environment variables in your deployment platform.
-
-```env
-AZURE_OPENAI_API_KEY=your_azure_openai_key
-AZURE_OPENAI_ENDPOINT=your_azure_openai_endpoint
-AZURE_OPENAI_DEPLOYMENT=your_deployment_name
-AZURE_OPENAI_API_VERSION=your_api_version
-OPENAI_API_KEY=your_optional_openai_key
-```
-
-Never commit real secrets to GitHub.
-
----
-
-## Local Setup
-
-### 1. Clone the repository
+## 27. Local Setup
 
 ```bash
 git clone https://github.com/RPK2103/SignalForge.git
 cd SignalForge
+
+# Backend
+cd backend
+python -m venv .venv
+# Windows: .venv\Scripts\activate   |  macOS/Linux: source .venv/bin/activate
+pip install -r requirements.txt
+pip install -r requirements-dev.txt   # Ruff, pip-audit (dev only)
+
+# Frontend
+cd ../frontend
+npm ci
 ```
 
-### 2. Create a virtual environment
+## 28. Environment Variables
 
-```bash
-python -m venv venv
+Backend (`backend/.env`, see `backend/.env.example`):
+
+```env
+APP_ENV=development
+LOG_LEVEL=INFO
+DATABASE_URL=sqlite:///./signalforge.db
+CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+AI_ENABLED=false            # keep AI off for local/E2E; uses deterministic fallback
+# AZURE_OPENAI_* only needed for live AI briefs
 ```
 
-### 3. Activate the virtual environment
+`CORS_ORIGINS` accepts a comma-separated list, a JSON array string, `*`, or a
+single origin.
 
-Windows:
+Frontend (`frontend/.env.local`, see `frontend/.env.example`):
 
-```bash
-venv\Scripts\activate
+```env
+NEXT_PUBLIC_SIGNALFORGE_API_BASE_URL=http://127.0.0.1:8000
 ```
 
-macOS/Linux:
-
-```bash
-source venv/bin/activate
-```
-
-### 4. Install dependencies
-
-If the backend dependencies are inside the backend folder:
+## 29. Migration
 
 ```bash
 cd backend
-pip install -r requirements.txt
+python -m alembic upgrade head
+python -m alembic current
+python -m alembic check
 ```
 
-Otherwise:
+Single head: `a1b2c3d4e5f6`. Downgrade with `python -m alembic downgrade -1`
+(validated on disposable SQLite; do not downgrade a long-lived DB without a
+backup).
+
+## 30. Seed Command
 
 ```bash
-pip install -r requirements.txt
+cd backend
+python -m app.db.seed
 ```
 
-### 5. Configure environment variables
+Idempotent: first run seeds `capabilities=11, engineers=3, projects=5,
+scenarios=8`; a second run inserts nothing.
 
-Create a `.env` file using the environment variable format shown above.
+## 31. Tests and Exact Verified Results
 
-### 6. Run the FastAPI server
+| Suite | Command | Result |
+| --- | --- | --- |
+| Backend | `python -m pytest tests -q` | **323 passed, 1 warning** |
+| Backend format | `python -m ruff format --check app tests` | 161 files already formatted |
+| Backend lint | `python -m ruff check app tests` | All checks passed! |
+| Frontend | `npm run test` | **23 passed** (4 files) |
+| Frontend lint | `npm run lint` | clean |
+| Frontend types | `npm run typecheck` | clean |
+| Frontend build | `npm run build` | Compiled successfully |
+| Browser E2E | `npm run test:e2e` | **1 passed** (22-step flow) |
 
-```bash
-uvicorn app.main:app --reload
-```
+## 32. Browser E2E Status
 
-### 7. Open the app locally
+**IMPLEMENTED.** Playwright (`frontend/playwright.config.ts`, `frontend/e2e/`)
+runs a deterministic cross-service test on a disposable SQLite DB with
+Alembic migration + explicit seed, `AI_ENABLED=false`, a locally started backend,
+and a production frontend build. It drives the full 22-step flow and asserts no
+uncaught console errors and no unhandled failed requests. Artifacts (reports,
+traces, videos, screenshots) are git-ignored.
 
-```text
-Dashboard: http://127.0.0.1:8000/dashboard/
-Swagger:   http://127.0.0.1:8000/docs
-```
+## 33. CI Workflows
 
----
+`.github/workflows/`: `backend-ci.yml`, `frontend-ci.yml`, `e2e-ci.yml`,
+`security-ci.yml`. All use `permissions: contents: read`, explicit timeouts,
+concurrency cancellation, trigger on PR + push-to-main + manual dispatch, and use
+no secrets, no Azure and no production database. **The first remote run is
+pending until pushed.**
 
-## Repository Structure
+## 34. Deployment
 
-```text
-SignalForge/
-│
-├── README.md
-├── assets/
-│   ├── signalforge-cover.png
-│   ├── dashboard-home.png
-│   ├── architecture.png
-│   ├── staffing-simulator-before-after.png
-│   ├── copilot-console.png
-│   └── api-docs.png
-│
-└── backend/
-    ├── app/
-    │   ├── main.py
-    │   ├── routes/
-    │   ├── schemas/
-    │   ├── services/
-    │   └── static/
-    │
-    └── requirements.txt
-```
+Backend deploys to **Render** (`render.yaml`): rootDir `backend`, build
+`pip install -r requirements.txt`, start
+`uvicorn app.main:app --host 0.0.0.0 --port $PORT`, health path `/health`,
+Python 3.13, Azure vars `sync:false`. Run `alembic upgrade head` then
+`python -m app.db.seed` on release. Rollback: redeploy the previous commit;
+schema rollback via `alembic downgrade -1` (with a backup). No frontend
+deployment configuration is committed yet.
 
----
+## 35. Public Deployment Status
 
-## AI Tools Used
+**DEPLOYMENT CONFIGURATION VALIDATED; PUBLIC FLOW DEFERRED.** No live public URL
+was tested in this release pass. Public deployment success is **not** claimed.
 
-The following AI tools were used during the hackathon development process:
+## 36. Security
 
-* Azure OpenAI for Copilot reasoning and strategic recommendations
-* AI-assisted development tools for coding support, UI iteration, documentation refinement, and demo storytelling
+- Production dependency audits clean: `pip-audit -r backend/requirements.txt`
+  (0 known vulns) and `npm audit --omit=dev --audit-level=high` (0 high/critical).
+- Secret scanning via gitleaks in CI; working tree + git history contain no real
+  secrets, keys, `.env` files or databases (only `*.env.example` templates).
+- Remaining advisories are dev/lint-time only and reported informationally.
 
-All final product decisions, architecture direction, implementation choices, testing, deployment, and submission materials were reviewed and completed by the participant.
+## 37. Privacy and Employee-Data Considerations
 
----
+SignalForge analyzes **team and initiative delivery capability**, not individuals.
+Current data is entirely synthetic. It explicitly prohibits profile scraping,
+email collection, unauthorized chat ingestion and sensitive-attribute inference.
+See
+[`architecture/phase-3-realistic-data-strategy.md`](architecture/phase-3-realistic-data-strategy.md).
 
+## 38. Limitations
 
-## MVP Limitations
+- Synthetic catalog/identities (toy seed IDs), not real data.
+- Deterministic policy scores, not calibrated ML prediction.
+- No real connectors, multi-tenancy, auth, RBAC or Entra ID.
+- Live PostgreSQL and live Azure OpenAI not validated in this pass.
 
-This is a hackathon MVP built to demonstrate the core execution intelligence concept.
+## 39. Phase 3 Roadmap
 
-Current limitations:
+Numbered from Prompt 1 in
+[`architecture/phase-3-enterprise-product-roadmap.md`](architecture/phase-3-enterprise-product-roadmap.md):
+domain foundation → connectors → delivery graph → prediction → continuous
+scenarios → AI Chief of Staff → security/scale → observability → realistic tenant
+→ POC/pitch.
 
-* Uses synthetic demo data
-* Uses explainable scoring logic rather than trained historical ML models
-* Does not yet integrate with enterprise systems such as Azure DevOps, GitHub, Microsoft Graph, Workday, or Teams
-* Does not yet include authentication or role-based access control
-* Does not yet store organization-wide historical delivery data
+## 40. Hackathon Origin
 
-These limitations are intentional for the MVP scope and are part of the future roadmap.
+SignalForge began as a solo hackathon MVP (v1) — a FastAPI backend with a
+vanilla dashboard and Azure OpenAI copilot over synthetic data. Phase 2
+re-architected it into a deterministic, tested, persisted, typed and CI-covered
+release candidate.
 
+## 41. Portfolio Relevance
 
----
-
-
-
-## Future Roadmap
-
-Planned enhancements include:
-
-* Azure DevOps integration for delivery signals
-* GitHub integration for contribution and code activity signals
-* Microsoft Graph integration for collaboration and team context
-* Workday or HRIS integration for skill and role data
-* Historical delivery learning from completed projects
-* Organization-wide capability graph
-* Agentic staffing recommendations
-* Executive briefing generation
-* Delivery risk monitoring over time
-* Role-based access and enterprise authentication
-
-
-
-The long-term vision is to evolve SignalForge into an AI Chief of Staff for Engineering Delivery.
-
+Demonstrates product thinking (a real leadership decision), deterministic +
+explainable intelligence, a clean FastAPI/Next.js architecture, and full
+engineering hygiene: migrations, tests, browser E2E, CI, security auditing and
+honest documentation of what is implemented versus planned.
 
 ---
 
-
-
-## Hackathon Submission Note
-
-SignalForge was designed, built, deployed, and submitted for the Microsoft Build AI Hackathon 2026.
-
-The project was built during the hackathon period and uses open-source frameworks and publicly available APIs where applicable.
-
-This submission demonstrates product thinking, engineering implementation, Microsoft AI stack usage, and human-led creativity in identifying a practical enterprise AI use case.
-
----
-
-## Team
-
-Solo participant:
-
-**Kaviyashre Ragupathy**
-
-Role:
-
-* Product ideation
-* System design
-* Backend implementation
-* Azure OpenAI integration
-* Dashboard design
-* Demo storytelling
-* Deployment
-* Documentation
-
----
-
-## Closing Thought
-
-Engineering organizations do not fail solely because of a lack of talent.
-
-They fail because leaders cannot see execution risk early enough.
-
-SignalForge makes that risk visible.
-
-**Predict. Simulate. Deliver.**
+_Further reading:
+[`architecture/phase-2-completion-report.md`](architecture/phase-2-completion-report.md) ·
+[`architecture/phase-2-microsoft-poc-and-startup-readiness.md`](architecture/phase-2-microsoft-poc-and-startup-readiness.md) ·
+[`architecture/phase-2-demo-scripts.md`](architecture/phase-2-demo-scripts.md)._

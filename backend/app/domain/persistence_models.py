@@ -8,7 +8,6 @@ from pydantic import BaseModel, Field
 from app.domain.enums import AuditAggregateType, AuditEventType, HumanReviewState
 from app.schemas.api_v2 import ReadinessAssessResponse, SimulationResponse
 
-
 SNAPSHOT_SCHEMA_VERSION = "1"
 
 

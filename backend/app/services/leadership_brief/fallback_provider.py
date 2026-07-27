@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import json
-
 from app.domain.enums import RiskFindingType, RiskSeverity
 from app.domain.leadership_brief_models import (
     GenerationStatus,
@@ -135,7 +133,10 @@ class DeterministicFallbackProvider:
             mitigation_actions.append(
                 LeadershipBriefAction(
                     title=f"Close skill gap for {gap.get('capability_name', capability_id)}",
-                    action="Assign targeted upskilling or add a specialist to close the identified gap.",
+                    action=(
+                        "Assign targeted upskilling or add a specialist "
+                        "to close the identified gap."
+                    ),
                     rationale=(
                         f"Deterministic assessment identified a {gap.get('level')} gap for "
                         f"{gap.get('capability_name', capability_id)}."
@@ -180,11 +181,7 @@ class DeterministicFallbackProvider:
         )
 
         nested_refs = sorted(
-            {
-                ref
-                for risk in top_risks
-                for ref in risk.evidence_references
-            }
+            {ref for risk in top_risks for ref in risk.evidence_references}
             | {
                 ref
                 for action in staffing_actions + mitigation_actions

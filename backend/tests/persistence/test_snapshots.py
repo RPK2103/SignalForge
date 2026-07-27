@@ -3,6 +3,7 @@
 from unittest.mock import patch
 
 import pytest
+from sqlalchemy import select
 
 from app.db.models.assessment import Assessment
 from app.db.models.catalog import EngineerCapability
@@ -12,7 +13,6 @@ from app.schemas.api_v2 import ReadinessAssessRequest, SimulationRequest
 from app.services.persistence.assessment_persistence_service import AssessmentPersistenceService
 from app.services.persistence.exceptions import SnapshotIntegrityError
 from app.services.persistence.simulation_persistence_service import SimulationPersistenceService
-from sqlalchemy import select
 
 
 def test_assessment_snapshot_survives_catalog_change(db_session, unit_of_work):
