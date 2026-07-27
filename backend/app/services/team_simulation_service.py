@@ -3,7 +3,11 @@
 from app.domain.evidence import deduplicate_team
 from app.domain.models import ProjectProfile, ReadinessAssessmentRequest, TeamComposition
 from app.domain.policy import DEFAULT_POLICY_VERSION
-from app.domain.simulation_models import SimulationOperation, SimulationResult, SimulationTeamSnapshot
+from app.domain.simulation_models import (
+    SimulationOperation,
+    SimulationResult,
+    SimulationTeamSnapshot,
+)
 from app.services.intelligence.readiness_assessment_service import ReadinessAssessmentService
 from app.services.simulation.mitigation_service import MitigationService
 from app.services.simulation.simulation_delta_service import SimulationDeltaService

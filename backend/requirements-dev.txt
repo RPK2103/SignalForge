@@ -1,2 +1,6 @@
 pytest>=8.3.0
 httpx>=0.28.0
+# Quality gate: lint + format (config in pyproject.toml)
+ruff==0.14.4
+# Dependency vulnerability audit (Phase 7 security)
+pip-audit==2.9.0

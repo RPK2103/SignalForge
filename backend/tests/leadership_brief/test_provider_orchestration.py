@@ -1,24 +1,24 @@
 """Provider orchestration tests."""
 
-import pytest
-
 from app.core.config import Settings
 from app.domain.leadership_brief_models import (
     GenerationStatus,
     LeadershipBriefFailureCategory,
     ProviderMode,
 )
-from app.services.leadership_brief.fallback_provider import DeterministicFallbackProvider
 from app.services.leadership_brief.orchestrator import LeadershipBriefOrchestrator
 from app.services.leadership_brief.provider_interface import (
     ProviderAuthenticationError,
-    ProviderMalformedOutputError,
     ProviderRateLimitError,
     ProviderTimeoutError,
     ProviderUnavailableError,
     ProviderUnknownError,
 )
-from tests.leadership_brief.conftest import FakeAzureProvider, sample_evidence_package, valid_brief_from_package
+from tests.leadership_brief.conftest import (
+    FakeAzureProvider,
+    sample_evidence_package,
+    valid_brief_from_package,
+)
 
 
 class TestProviderOrchestration:
@@ -148,7 +148,9 @@ class TestProviderOrchestration:
             azure_provider=FakeAzureProvider(brief.model_dump_json()),
         )
         outcome = orchestrator.generate(package)
-        assert outcome.failure_category == LeadershipBriefFailureCategory.GROUNDING_VALIDATION_FAILED
+        assert (
+            outcome.failure_category == LeadershipBriefFailureCategory.GROUNDING_VALIDATION_FAILED
+        )
 
     def test_unknown_provider_exception(self):
         orchestrator = LeadershipBriefOrchestrator(

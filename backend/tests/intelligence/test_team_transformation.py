@@ -14,7 +14,6 @@ from app.services.simulation.exceptions import SimulationValidationError
 from app.services.simulation.team_transformation import TeamTransformationService
 from tests.intelligence.fixtures import balanced_team_request
 
-
 SERVICE = TeamTransformationService()
 
 
@@ -25,23 +24,31 @@ def _baseline_ids():
 
 class TestAddOperation:
     def test_add_valid_engineer(self):
-        ids = SERVICE.compute_proposed_ids(_baseline_ids(), AddSimulationOperation(engineer_id="arjun"))
+        ids = SERVICE.compute_proposed_ids(
+            _baseline_ids(), AddSimulationOperation(engineer_id="arjun")
+        )
         assert ids == ["arjun", "kavi", "vikram"]
 
     def test_duplicate_addition_rejected(self):
         with pytest.raises(SimulationValidationError) as exc:
-            SERVICE.compute_proposed_ids(_baseline_ids(), AddSimulationOperation(engineer_id="kavi"))
+            SERVICE.compute_proposed_ids(
+                _baseline_ids(), AddSimulationOperation(engineer_id="kavi")
+            )
         assert exc.value.status_code == 409
 
 
 class TestRemoveOperation:
     def test_remove_existing_engineer(self):
-        ids = SERVICE.compute_proposed_ids(_baseline_ids(), RemoveSimulationOperation(engineer_id="kavi"))
+        ids = SERVICE.compute_proposed_ids(
+            _baseline_ids(), RemoveSimulationOperation(engineer_id="kavi")
+        )
         assert ids == ["vikram"]
 
     def test_remove_absent_engineer_rejected(self):
         with pytest.raises(SimulationValidationError) as exc:
-            SERVICE.compute_proposed_ids(_baseline_ids(), RemoveSimulationOperation(engineer_id="arjun"))
+            SERVICE.compute_proposed_ids(
+                _baseline_ids(), RemoveSimulationOperation(engineer_id="arjun")
+            )
         assert exc.value.status_code == 409
 
     def test_remove_final_engineer_allowed(self):

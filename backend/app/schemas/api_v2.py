@@ -74,16 +74,10 @@ class SimulationResponse(BaseModel):
     readiness_score_delta: int
     confidence_delta: int
     risk_level_changes: list[RiskFindingChange] = Field(default_factory=list)
-    capability_coverage_changes: list[CapabilityCoverageChange] = Field(
-        default_factory=list
-    )
+    capability_coverage_changes: list[CapabilityCoverageChange] = Field(default_factory=list)
     newly_introduced_gaps: list[SkillGap] = Field(default_factory=list)
     resolved_gaps: list[SkillGap] = Field(default_factory=list)
-    key_person_dependency_changes: list[KeyPersonDependencyChange] = Field(
-        default_factory=list
-    )
+    key_person_dependency_changes: list[KeyPersonDependencyChange] = Field(default_factory=list)
     decision_trace_delta: list[DecisionTraceDelta] = Field(default_factory=list)
-    recommended_mitigations: list[DeterministicMitigation] = Field(
-        default_factory=list
-    )
+    recommended_mitigations: list[DeterministicMitigation] = Field(default_factory=list)
     policy_version: str

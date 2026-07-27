@@ -24,10 +24,16 @@ def map_leadership_decision(
     if has_high_risk and readiness_score < READINESS_CONDITIONAL_THRESHOLD:
         return LeadershipDecision.DO_NOT_PROCEED
     if has_high_risk or has_critical_gap:
-        if readiness_score >= READINESS_PROCEED_THRESHOLD and confidence_score >= CONFIDENCE_LOW_THRESHOLD:
+        if (
+            readiness_score >= READINESS_PROCEED_THRESHOLD
+            and confidence_score >= CONFIDENCE_LOW_THRESHOLD
+        ):
             return LeadershipDecision.PROCEED_WITH_CONDITIONS
         return LeadershipDecision.DEFER
-    if readiness_score >= READINESS_PROCEED_THRESHOLD and confidence_score >= CONFIDENCE_LOW_THRESHOLD:
+    if (
+        readiness_score >= READINESS_PROCEED_THRESHOLD
+        and confidence_score >= CONFIDENCE_LOW_THRESHOLD
+    ):
         if has_key_person_dependency:
             return LeadershipDecision.PROCEED_WITH_CONDITIONS
         return LeadershipDecision.PROCEED

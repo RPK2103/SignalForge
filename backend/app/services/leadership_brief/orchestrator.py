@@ -48,7 +48,9 @@ class LeadershipBriefOrchestrator:
         fallback_provider: LeadershipBriefProvider | None = None,
     ) -> None:
         self._settings = settings or get_settings()
-        self._azure_provider = azure_provider or AzureLeadershipBriefProvider(settings=self._settings)
+        self._azure_provider = azure_provider or AzureLeadershipBriefProvider(
+            settings=self._settings
+        )
         self._fallback_provider = fallback_provider or DeterministicFallbackProvider()
 
     def generate(
@@ -164,8 +166,6 @@ class LeadershipBriefOrchestrator:
         evidence_json: str,
         failure_category: LeadershipBriefFailureCategory,
     ) -> LeadershipBriefGenerationOutcome:
-        if failure_category == LeadershipBriefFailureCategory.MALFORMED_OUTPUT:
-            category = LeadershipBriefFailureCategory.MALFORMED_OUTPUT
         result = self._fallback_provider.generate(
             evidence_package_json=evidence_json,
             prompt_bundle=prompt_bundle,

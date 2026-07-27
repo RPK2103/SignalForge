@@ -3,8 +3,9 @@
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, model_validator
 
+from app.db.unit_of_work import UnitOfWork
 from app.domain.enums import AuditAggregateType, AuditEventType, HumanReviewState
 from app.domain.persistence_models import (
     SNAPSHOT_SCHEMA_VERSION,
@@ -12,9 +13,8 @@ from app.domain.persistence_models import (
     AuditEventRecord,
     HumanReviewRecord,
 )
-from app.db.unit_of_work import UnitOfWork
 from app.services.persistence.assessment_persistence_service import AssessmentPersistenceService
-from app.services.persistence.exceptions import PersistenceValidationError, RecordNotFoundError
+from app.services.persistence.exceptions import RecordNotFoundError
 
 
 class HumanReviewRequest(BaseModel):

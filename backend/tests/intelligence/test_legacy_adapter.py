@@ -9,7 +9,6 @@ from app.adapters.legacy_mapper import (
 )
 from app.services.intelligence.capability_coverage_service import CapabilityCoverageService
 
-
 KAVI = {
     "name": "Kavi",
     "experience": 5,

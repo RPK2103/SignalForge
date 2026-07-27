@@ -3,7 +3,7 @@
 from sqlalchemy.orm import Session
 
 from app.db.seed import seed_database
-from app.db.session import get_engine, reset_engine, init_engine
+from app.db.session import get_engine, init_engine, reset_engine
 
 
 def test_seed_idempotent(migrated_db: str):

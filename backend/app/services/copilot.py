@@ -76,9 +76,7 @@ def _legacy_team_coverage(required_skills: list[str], team, project) -> tuple[in
     coverage_results = CapabilityCoverageService().analyze(domain_project, domain_team)
     coverage_pct = legacy_coverage_percentage(coverage_results, len(required_skills))
     covered = [
-        result.capability_name
-        for result in coverage_results
-        if result.level.value != "missing"
+        result.capability_name for result in coverage_results if result.level.value != "missing"
     ]
     return coverage_pct, covered
 
@@ -108,9 +106,7 @@ def _highest_impact_removal(original_team, required_skills: list[str], project) 
     best_engineer: str | None = None
     best_impact = -1
     for engineer in original_team:
-        remaining_team = [
-            member for member in original_team if member.name != engineer.name
-        ]
+        remaining_team = [member for member in original_team if member.name != engineer.name]
         coverage_after, covered_after = _legacy_team_coverage(
             required_skills, remaining_team, project
         )
@@ -143,17 +139,13 @@ def _resolve_removal_engineers(
 
 
 def _analyze_most_critical_capability(original_team, required_skills: list[str], project) -> dict:
-    coverage_before, covered_before = _legacy_team_coverage(
-        required_skills, original_team, project
-    )
+    coverage_before, covered_before = _legacy_team_coverage(required_skills, original_team, project)
     risk_before = legacy_risk_level_from_coverage(coverage_before)
     success_before = legacy_success_probability(coverage_before, risk_before)
 
     top_scenario: dict | None = None
     for engineer in original_team:
-        remaining_team = [
-            member for member in original_team if member.name != engineer.name
-        ]
+        remaining_team = [member for member in original_team if member.name != engineer.name]
         coverage_after, covered_after = _legacy_team_coverage(
             required_skills, remaining_team, project
         )
@@ -214,15 +206,9 @@ def _build_staffing_simulation_context(
     if not on_team:
         return None
 
-    remaining_team = [
-        engineer for engineer in original_team if engineer.name not in on_team
-    ]
-    coverage_before, covered_before = _legacy_team_coverage(
-        required_skills, original_team, project
-    )
-    coverage_after, covered_after = _legacy_team_coverage(
-        required_skills, remaining_team, project
-    )
+    remaining_team = [engineer for engineer in original_team if engineer.name not in on_team]
+    coverage_before, covered_before = _legacy_team_coverage(required_skills, original_team, project)
+    coverage_after, covered_after = _legacy_team_coverage(required_skills, remaining_team, project)
     lost_capabilities = [skill for skill in covered_before if skill not in covered_after]
 
     risk_before = legacy_risk_level_from_coverage(coverage_before)
@@ -257,9 +243,7 @@ def _build_execution_context(project_name: str, question: str) -> dict:
     engineers = _catalog.list_legacy_engineers()
     required_skills = project.required_skills
 
-    team_result = recommend_team(
-        TeamRecommendationRequest(project=project, engineers=engineers)
-    )
+    team_result = recommend_team(TeamRecommendationRequest(project=project, engineers=engineers))
     prediction = predict_success(SuccessPredictionRequest(project_name=project_name))
 
     original_team = _recommended_team(project, engineers)
@@ -370,7 +354,6 @@ def _build_contextual_fallback(context: dict) -> str:
                 f"{simulation['success_probability_after']}%."
             )
 
-        removed = ", ".join(simulation["removed_engineers"])
         return (
             f"SignalForge could not generate an AI response right now. "
             f"{simulation['simulation_summary']} "
@@ -384,7 +367,8 @@ def _build_contextual_fallback(context: dict) -> str:
     if probability is not None and coverage:
         coverage_text = ", ".join(coverage)
         return (
-            f"SignalForge could not generate an AI response right now, but {context['project_name']} "
+            f"SignalForge could not generate an AI response right now, "
+            f"but {context['project_name']} "
             f"shows {probability}% success probability with {risk_level.lower()} delivery risk "
             f"and full coverage of {coverage_text}."
         )

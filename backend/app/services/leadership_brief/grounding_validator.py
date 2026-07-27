@@ -9,7 +9,6 @@ from app.domain.leadership_brief_models import (
     LeadershipBriefEvidencePackage,
     ProviderMode,
 )
-from app.services.leadership_brief.provider_interface import ProviderSchemaError
 
 
 class GroundingValidationError(Exception):
@@ -66,9 +65,7 @@ def validate_grounding(
         item.capability_id for item in package.risk_findings if item.capability_id
     )
     known_engineers = set(package.team_member_ids)
-    known_engineers.update(
-        item.engineer_id for item in package.risk_findings if item.engineer_id
-    )
+    known_engineers.update(item.engineer_id for item in package.risk_findings if item.engineer_id)
 
     nested_refs: list[str] = []
     for risk in brief.top_risks:
@@ -87,14 +84,10 @@ def validate_grounding(
             if ref not in known_evidence:
                 raise GroundingValidationError(f"unknown evidence reference: {ref}")
         if action.capability_id and action.capability_id not in known_capabilities:
-            raise GroundingValidationError(
-                f"unknown capability reference: {action.capability_id}"
-            )
+            raise GroundingValidationError(f"unknown capability reference: {action.capability_id}")
         for engineer_id in action.engineer_ids:
             if engineer_id not in known_engineers:
-                raise GroundingValidationError(
-                    f"unknown engineer reference: {engineer_id}"
-                )
+                raise GroundingValidationError(f"unknown engineer reference: {engineer_id}")
 
     if sorted(set(brief.evidence_references)) != sorted(set(nested_refs)):
         raise GroundingValidationError("top-level evidence references mismatch")
@@ -116,6 +109,4 @@ def validate_grounding(
     )
     for match in _NUMBER_PATTERN.findall(text_blob):
         if match not in known_numbers and int(float(match)) > 100:
-            raise GroundingValidationError(
-                f"unsupported numeric claim detected: {match}"
-            )
+            raise GroundingValidationError(f"unsupported numeric claim detected: {match}")

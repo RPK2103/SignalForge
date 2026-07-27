@@ -4,16 +4,12 @@ import hashlib
 import json
 
 from app.domain.enums import SimulationOperationType
-from app.domain.simulation_models import CompareSimulationOperation, SimulationOperation
+from app.domain.simulation_models import SimulationOperation
 
 
 def _normalize_engineer_ids(engineer_ids: list[str]) -> list[str]:
     return sorted(
-        {
-            engineer_id.strip().lower()
-            for engineer_id in engineer_ids
-            if engineer_id.strip()
-        }
+        {engineer_id.strip().lower() for engineer_id in engineer_ids if engineer_id.strip()}
     )
 
 

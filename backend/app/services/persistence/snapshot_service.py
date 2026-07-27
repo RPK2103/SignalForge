@@ -58,11 +58,7 @@ def build_assessment_input_snapshot(
         data={
             "project_id": project_id.strip().lower(),
             "engineer_ids": sorted(
-                {
-                    engineer_id.strip().lower()
-                    for engineer_id in engineer_ids
-                    if engineer_id.strip()
-                }
+                {engineer_id.strip().lower() for engineer_id in engineer_ids if engineer_id.strip()}
             ),
         },
     )

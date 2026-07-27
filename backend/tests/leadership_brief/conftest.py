@@ -14,14 +14,12 @@ from app.domain.leadership_brief_models import (
     LeadershipDecision,
     ProviderMode,
 )
-from app.schemas.api_v2 import ReadinessAssessResponse
+from app.repositories.mock_catalog_repository import MockCatalogRepository
+from app.schemas.api_v2 import ReadinessAssessRequest, ReadinessAssessResponse
 from app.services.leadership_brief.evidence_package import build_evidence_package
 from app.services.leadership_brief.prompt_templates import PROMPT_VERSION, PromptBundle
 from app.services.leadership_brief.provider_interface import ProviderGenerationResult
-from app.repositories.mock_catalog_repository import MockCatalogRepository
 from app.services.readiness_orchestrator import ReadinessOrchestrator
-from app.schemas.api_v2 import ReadinessAssessRequest
-from tests.intelligence.fixtures import balanced_team_request
 
 
 def sample_assessment_result() -> ReadinessAssessResponse:

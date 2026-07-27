@@ -15,9 +15,7 @@ class TestSimulationHistoryApi:
         )
         assert response.status_code == 200, response.text
         body = response.json()
-        get_resp = persistence_client.get(
-            f"{SIM_RECORDS_URL}/{body['simulation_record_id']}"
-        )
+        get_resp = persistence_client.get(f"{SIM_RECORDS_URL}/{body['simulation_record_id']}")
         assert get_resp.status_code == 200
         assert get_resp.json()["simulation_id"] == body["simulation_id"]
 

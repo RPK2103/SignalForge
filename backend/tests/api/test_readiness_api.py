@@ -20,13 +20,79 @@ VALID_ASSESS_PAYLOAD = {
 }
 
 LEGACY_POST_ROUTES = [
-    ("/analyze", {"name": "Kavi", "experience": 5, "skills": ["Azure"], "certifications": [], "projects": []}),
-    ("/project-fit", {"engineer": {"name": "Kavi", "experience": 5, "skills": ["Azure"], "certifications": [], "projects": []}, "project": {"name": "Azure AI Migration", "required_skills": ["Azure"], "description": "Demo"}}),
-    ("/assess-risk", {"engineer": {"name": "Kavi", "experience": 5, "skills": ["Azure"], "certifications": [], "projects": []}, "project": {"name": "Azure AI Migration", "required_skills": ["Azure"], "preferred_skills": [], "domain": "Cloud"}}),
-    ("/recommend-team", {"project": {"name": "Azure AI Migration", "required_skills": ["Azure"], "description": "Demo"}, "engineers": [{"name": "Kavi", "experience": 5, "skills": ["Azure"], "certifications": [], "projects": []}]}),
+    (
+        "/analyze",
+        {
+            "name": "Kavi",
+            "experience": 5,
+            "skills": ["Azure"],
+            "certifications": [],
+            "projects": [],
+        },
+    ),
+    (
+        "/project-fit",
+        {
+            "engineer": {
+                "name": "Kavi",
+                "experience": 5,
+                "skills": ["Azure"],
+                "certifications": [],
+                "projects": [],
+            },
+            "project": {
+                "name": "Azure AI Migration",
+                "required_skills": ["Azure"],
+                "description": "Demo",
+            },
+        },
+    ),
+    (
+        "/assess-risk",
+        {
+            "engineer": {
+                "name": "Kavi",
+                "experience": 5,
+                "skills": ["Azure"],
+                "certifications": [],
+                "projects": [],
+            },
+            "project": {
+                "name": "Azure AI Migration",
+                "required_skills": ["Azure"],
+                "preferred_skills": [],
+                "domain": "Cloud",
+            },
+        },
+    ),
+    (
+        "/recommend-team",
+        {
+            "project": {
+                "name": "Azure AI Migration",
+                "required_skills": ["Azure"],
+                "description": "Demo",
+            },
+            "engineers": [
+                {
+                    "name": "Kavi",
+                    "experience": 5,
+                    "skills": ["Azure"],
+                    "certifications": [],
+                    "projects": [],
+                }
+            ],
+        },
+    ),
     ("/simulate", {"project_name": "Azure AI Migration", "remove_engineers": ["Kavi"]}),
     ("/success-prediction", {"project_name": "Azure AI Migration"}),
-    ("/copilot", {"project_name": "Azure AI Migration", "question": "Why is this project likely to succeed?"}),
+    (
+        "/copilot",
+        {
+            "project_name": "Azure AI Migration",
+            "question": "Why is this project likely to succeed?",
+        },
+    ),
 ]
 
 
@@ -87,8 +153,7 @@ class TestDuplicateTeamMembers:
         assert len(body["team"]) == 1
         assert body["team"][0]["id"] == "kavi"
         assert any(
-            finding["finding_type"] == "duplicate_team_member"
-            for finding in body["risk_findings"]
+            finding["finding_type"] == "duplicate_team_member" for finding in body["risk_findings"]
         )
 
 
@@ -114,8 +179,7 @@ class TestMissingCriticalCapabilities:
         ).json()
         assert missing["readiness_score"] < balanced["readiness_score"]
         assert any(
-            gap["is_critical"] and gap["level"] == "missing"
-            for gap in missing["skill_gaps"]
+            gap["is_critical"] and gap["level"] == "missing" for gap in missing["skill_gaps"]
         )
 
 
@@ -244,7 +308,9 @@ class TestConfidenceReadinessSeparation:
         ]
         assert readiness_trace
         assert confidence_trace
-        assert body["readiness_score"] != body["confidence_score"] or body["confidence_score"] <= 100
+        assert (
+            body["readiness_score"] != body["confidence_score"] or body["confidence_score"] <= 100
+        )
 
 
 class TestErrorEnvelopeConsistency:
@@ -252,7 +318,14 @@ class TestErrorEnvelopeConsistency:
         "status_code,payload",
         [
             (404, {"project_id": "missing", "engineer_ids": ["kavi"]}),
-            (400, {"project_id": "azure_ai_migration", "engineer_ids": ["kavi"], "policy_version": "v99"}),
+            (
+                400,
+                {
+                    "project_id": "azure_ai_migration",
+                    "engineer_ids": ["kavi"],
+                    "policy_version": "v99",
+                },
+            ),
             (422, {}),
         ],
     )

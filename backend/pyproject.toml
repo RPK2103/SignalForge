@@ -1,0 +1,18 @@
+[tool.ruff]
+# Minimal modern quality gate for the SignalForge backend.
+line-length = 100
+target-version = "py313"
+src = ["."]
+# Alembic migration scripts are largely generated; keep them out of the lint/format gate
+# to avoid churn on machine-generated code.
+extend-exclude = ["alembic/versions"]
+
+[tool.ruff.lint]
+# E/W: pycodestyle, F: pyflakes, I: import sorting (isort).
+select = ["E", "F", "W", "I"]
+
+[tool.ruff.lint.per-file-ignores]
+# insight_generator.py embeds a multi-line LLM system prompt as a triple-quoted
+# string literal. Wrapping those physical lines would alter the prompt content,
+# so E501 is narrowly ignored for this file only.
+"app/services/insight_generator.py" = ["E501"]

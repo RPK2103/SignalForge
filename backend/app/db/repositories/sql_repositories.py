@@ -9,17 +9,26 @@ from sqlalchemy.orm import Session
 
 from app.db.models.assessment import Assessment, AssessmentDecisionTrace, AssessmentRiskFinding
 from app.db.models.audit import AuditEvent
-from app.db.models.catalog import Capability, Engineer, EngineerCapability, Project, ProjectRequirement
+from app.db.models.catalog import (
+    Capability,
+    Engineer,
+    EngineerCapability,
+    Project,
+    ProjectRequirement,
+)
 from app.db.models.leadership_brief import LeadershipBrief as LeadershipBriefRow
 from app.db.models.review import HumanReview
 from app.db.models.simulation import Simulation
 from app.domain.enums import EvidenceSource, HumanReviewState
 from app.domain.leadership_brief_models import LeadershipBriefRecord
 from app.domain.models import (
-    CapabilityDefinition,
     EngineerCapability as DomainEngineerCapability,
+)
+from app.domain.models import (
     EngineerProfile,
     ProjectProfile,
+)
+from app.domain.models import (
     ProjectRequirement as DomainProjectRequirement,
 )
 from app.domain.persistence_models import (
@@ -90,9 +99,7 @@ class SqlCatalogRepository(CatalogRepository):
 
     def get_legacy_engineer(self, name: str) -> LegacyEngineerProfile | None:
         normalized = name.strip().lower()
-        row = self._session.scalar(
-            select(Engineer).where(func.lower(Engineer.name) == normalized)
-        )
+        row = self._session.scalar(select(Engineer).where(func.lower(Engineer.name) == normalized))
         if row is None:
             return None
         return self._engineer_to_legacy(row)
@@ -109,15 +116,11 @@ class SqlCatalogRepository(CatalogRepository):
 
     def resolve_engineer_name(self, name: str) -> str | None:
         normalized = name.strip().lower()
-        row = self._session.scalar(
-            select(Engineer).where(func.lower(Engineer.name) == normalized)
-        )
+        row = self._session.scalar(select(Engineer).where(func.lower(Engineer.name) == normalized))
         return row.name if row else None
 
     def get_domain_engineers(self) -> list[EngineerProfile]:
-        rows = self._session.scalars(
-            select(Engineer).order_by(Engineer.name)
-        ).all()
+        rows = self._session.scalars(select(Engineer).order_by(Engineer.name)).all()
         return [self._engineer_to_domain(row) for row in rows]
 
     def get_domain_engineer_by_id(self, engineer_id: str) -> EngineerProfile | None:
@@ -167,10 +170,12 @@ class SqlCatalogRepository(CatalogRepository):
     def _engineer_to_legacy(self, row: Engineer) -> LegacyEngineerProfile:
         domain = self._engineer_to_domain(row)
         cap_rows = self._session.scalars(
-            select(Capability).join(
+            select(Capability)
+            .join(
                 EngineerCapability,
                 EngineerCapability.capability_id == Capability.capability_id,
-            ).where(EngineerCapability.engineer_id == row.engineer_id)
+            )
+            .where(EngineerCapability.engineer_id == row.engineer_id)
         ).all()
         id_to_name = {cap.capability_id: cap.name for cap in cap_rows}
         skills = [id_to_name.get(c.capability_id, c.capability_id) for c in domain.capabilities]
@@ -202,14 +207,12 @@ class SqlCatalogRepository(CatalogRepository):
     def _project_to_legacy(self, row: Project) -> ProjectRequirements:
         domain = self._project_to_domain(row)
         cap_rows = {
-            cap.capability_id: cap.name
-            for cap in self._session.scalars(select(Capability)).all()
+            cap.capability_id: cap.name for cap in self._session.scalars(select(Capability)).all()
         }
         return ProjectRequirements(
             name=row.name,
             required_skills=[
-                cap_rows.get(req.capability_id, req.capability_id)
-                for req in domain.requirements
+                cap_rows.get(req.capability_id, req.capability_id) for req in domain.requirements
             ],
             description=row.description or "",
         )
@@ -578,9 +581,7 @@ def _to_leadership_brief_record(row: LeadershipBriefRow) -> LeadershipBriefRecor
         provider_mode=ProviderMode(row.provider_mode),
         generation_status=GenerationStatus(row.generation_status),
         failure_category=(
-            LeadershipBriefFailureCategory(row.failure_category)
-            if row.failure_category
-            else None
+            LeadershipBriefFailureCategory(row.failure_category) if row.failure_category else None
         ),
         evidence_package_snapshot=row.evidence_package_snapshot,
         evidence_package_hash=row.evidence_package_hash,

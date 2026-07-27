@@ -22,8 +22,7 @@ def _recommended_team(
     engineers: list[EngineerProfile],
 ) -> list[EngineerProfile]:
     scored = [
-        (engineer, _score_fit(project.required_skills, engineer)[0])
-        for engineer in engineers
+        (engineer, _score_fit(project.required_skills, engineer)[0]) for engineer in engineers
     ]
     scored.sort(key=lambda item: (-item[1], item[0].name))
     return [engineer for engineer, _ in scored[:3]]

@@ -3,6 +3,8 @@
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
+from app.db.types import new_uuid
+from app.db.unit_of_work import UnitOfWork
 from app.domain.enums import AuditAggregateType, AuditEventType
 from app.domain.persistence_models import (
     SNAPSHOT_SCHEMA_VERSION,
@@ -11,10 +13,7 @@ from app.domain.persistence_models import (
     AuditEventRecord,
     PaginatedAssessmentList,
 )
-from app.db.types import new_uuid
-from app.db.unit_of_work import UnitOfWork
 from app.schemas.api_v2 import ReadinessAssessRequest, ReadinessAssessResponse
-from app.services.identifiers import build_assessment_id
 from app.services.persistence.snapshot_service import (
     build_assessment_input_snapshot,
     build_assessment_result_snapshot,

@@ -6,13 +6,11 @@ from uuid import UUID
 from app.domain.enums import HumanReviewState
 from app.domain.leadership_brief_models import LeadershipBriefRecord
 from app.domain.persistence_models import (
-    AssessmentListItem,
     AssessmentRecord,
     AuditEventRecord,
     HumanReviewRecord,
     PaginatedAssessmentList,
     PaginatedSimulationList,
-    SimulationListItem,
     SimulationRecord,
 )
 

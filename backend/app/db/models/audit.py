@@ -27,6 +27,8 @@ class AuditEvent(Base):
     aggregate_record_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
     actor_reference: Mapped[str | None] = mapped_column(String(256), nullable=True)
     event_version: Mapped[str] = mapped_column(String(16), nullable=False, default="1")
-    metadata_json: Mapped[dict] = mapped_column("metadata", PortableJSON, nullable=False, default=dict)
+    metadata_json: Mapped[dict] = mapped_column(
+        "metadata", PortableJSON, nullable=False, default=dict
+    )
     payload_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)

@@ -4,7 +4,6 @@ from fastapi import HTTPException
 
 from app.domain.evidence import deduplicate_team
 from app.domain.policy import DEFAULT_POLICY_VERSION, get_policy
-from app.domain.simulation_models import SimulationOperation
 from app.repositories.catalog_repository import CatalogRepository
 from app.schemas.api_v2 import SimulationRequest, SimulationResponse
 from app.services.identifiers import build_assessment_id, build_simulation_id

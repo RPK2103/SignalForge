@@ -1,6 +1,6 @@
 """Fixtures for Phase 2 intelligence domain tests."""
 
-from app.domain.enums import CapabilityCategory, EvidenceSource
+from app.domain.enums import EvidenceSource
 from app.domain.models import (
     EngineerCapability,
     EngineerProfile,
@@ -82,10 +82,14 @@ def balanced_team_request() -> ReadinessAssessmentRequest:
 def missing_critical_request() -> ReadinessAssessmentRequest:
     request = balanced_team_request()
     request.team.engineers[0].capabilities = [
-        cap for cap in request.team.engineers[0].capabilities if cap.capability_id != "generative_ai"
+        cap
+        for cap in request.team.engineers[0].capabilities
+        if cap.capability_id != "generative_ai"
     ]
     request.team.engineers[1].capabilities = [
-        cap for cap in request.team.engineers[1].capabilities if cap.capability_id != "generative_ai"
+        cap
+        for cap in request.team.engineers[1].capabilities
+        if cap.capability_id != "generative_ai"
     ]
     return request
 

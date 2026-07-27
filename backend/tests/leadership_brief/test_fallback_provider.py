@@ -7,20 +7,22 @@ from app.domain.leadership_brief_models import (
     LeadershipDecision,
     ProviderMode,
 )
+from app.schemas.api_v2 import ReadinessAssessResponse
+from app.services.identifiers import build_assessment_id
+from app.services.intelligence.readiness_assessment_service import ReadinessAssessmentService
+from app.services.leadership_brief.evidence_package import build_evidence_package
 from app.services.leadership_brief.fallback_provider import DeterministicFallbackProvider
 from app.services.leadership_brief.prompt_templates import PROMPT_VERSION, load_prompt_bundle
-from app.services.intelligence.readiness_assessment_service import ReadinessAssessmentService
 from tests.intelligence.fixtures import (
     empty_team_request,
     key_person_request,
 )
 from tests.leadership_brief.conftest import sample_assessment_result, sample_evidence_package
-from app.services.leadership_brief.evidence_package import build_evidence_package
-from app.schemas.api_v2 import ReadinessAssessResponse
-from app.services.identifiers import build_assessment_id
 
 
-def _assessment_response_from_domain(assessment, *, team, assessment_id: str) -> ReadinessAssessResponse:
+def _assessment_response_from_domain(
+    assessment, *, team, assessment_id: str
+) -> ReadinessAssessResponse:
     return ReadinessAssessResponse(
         assessment_id=assessment_id,
         team=team,

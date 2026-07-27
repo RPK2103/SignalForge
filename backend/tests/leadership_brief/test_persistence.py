@@ -1,14 +1,12 @@
 """Leadership Brief persistence tests."""
 
-from uuid import UUID
-
 from app.domain.enums import AuditEventType
+from app.schemas.api_v2 import ReadinessAssessRequest
 from app.services.leadership_brief.orchestrator import LeadershipBriefOrchestrator
 from app.services.persistence.assessment_persistence_service import AssessmentPersistenceService
 from app.services.persistence.leadership_brief_persistence_service import (
     LeadershipBriefPersistenceService,
 )
-from app.schemas.api_v2 import ReadinessAssessRequest
 
 
 class TestLeadershipBriefPersistence:
@@ -60,7 +58,7 @@ class TestLeadershipBriefPersistence:
             unit_of_work,
             orchestrator=LeadershipBriefOrchestrator(),
         )
-        generated = brief_service.generate_leadership_brief(created.assessment_record_id)
+        brief_service.generate_leadership_brief(created.assessment_record_id)
         from app.db.repositories.sql_repositories import SqlAuditEventRepository
 
         audit = SqlAuditEventRepository(db_session)

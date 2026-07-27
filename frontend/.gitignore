@@ -40,3 +40,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# playwright browser e2e artifacts
+/playwright-report/
+/blob-report/
+/test-results/
+/playwright/.cache/
+/e2e/**/videos/
+/e2e/**/screenshots/
+/e2e/**/traces/

@@ -1,8 +1,7 @@
 """SQL catalog repository parity with mock catalog."""
 
-from app.repositories.mock_catalog_repository import MockCatalogRepository
-from app.schemas.api_v2 import ReadinessAssessRequest, SimulationRequest
 from app.domain.simulation_models import RemoveSimulationOperation
+from app.schemas.api_v2 import ReadinessAssessRequest, SimulationRequest
 from app.services.readiness_orchestrator import ReadinessOrchestrator
 from app.services.simulation_orchestrator import SimulationOrchestrator
 

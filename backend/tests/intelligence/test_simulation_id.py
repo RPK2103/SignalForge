@@ -1,11 +1,11 @@
 """Unit tests for deterministic simulation identifiers."""
 
+from app.domain.policy import DEFAULT_POLICY_VERSION
 from app.domain.simulation_models import (
     AddSimulationOperation,
     CompareSimulationOperation,
     RemoveSimulationOperation,
 )
-from app.domain.policy import DEFAULT_POLICY_VERSION
 from app.services.simulation.simulation_id import build_simulation_id
 
 
@@ -54,9 +54,7 @@ class TestSimulationIdDeterminism:
         assert _sim_id() != _sim_id(project_id="other_project")
 
     def test_different_proposed_team_different_id(self):
-        assert _sim_id(proposed_engineer_ids=["vikram"]) != _sim_id(
-            proposed_engineer_ids=["arjun"]
-        )
+        assert _sim_id(proposed_engineer_ids=["vikram"]) != _sim_id(proposed_engineer_ids=["arjun"])
 
     def test_policy_version_participates(self):
         assert _sim_id(policy_version="v1") != _sim_id(policy_version="v2")

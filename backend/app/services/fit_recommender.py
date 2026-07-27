@@ -45,7 +45,9 @@ def _recommendation_for_score(score: int) -> str:
     return "Not Recommended"
 
 
-def _score_fit(required_skills: list[str], profile: EngineerProfile) -> tuple[int, list[str], list[str]]:
+def _score_fit(
+    required_skills: list[str], profile: EngineerProfile
+) -> tuple[int, list[str], list[str]]:
     if not required_skills:
         return 100, [], []
 
@@ -86,7 +88,8 @@ def _build_reasoning(
 
     return (
         f"{profile.name} scores {fit_score}/100 for {project.name} ({recommendation}). "
-        f"Matched {len(matched)} of {len(project.required_skills)} required skills: {matched_text}. "
+        f"Matched {len(matched)} of {len(project.required_skills)} "
+        f"required skills: {matched_text}. "
         f"Missing skills: {missing_text}."
     )
 

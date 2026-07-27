@@ -4,11 +4,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from app.api.v2.router import router as api_v2_router
 from app.core.config import get_settings
 from app.core.exceptions import register_exception_handlers
 from app.core.logging_config import configure_logging, log_startup
 from app.core.paths import DASHBOARD_DIR
-from app.api.v2.router import router as api_v2_router
 from app.routes.copilot import router as copilot_router
 from app.routes.engineer import router as engineer_router
 from app.routes.insight import router as insight_router

@@ -84,9 +84,7 @@ def _build_summary(
         )
     if success_probability >= 70:
         coverage_note = (
-            "solid capability coverage"
-            if coverage >= 80
-            else "partial capability coverage"
+            "solid capability coverage" if coverage >= 80 else "partial capability coverage"
         )
         return (
             f"This project has a moderate delivery outlook with {coverage_note}, "
@@ -116,23 +114,17 @@ def predict_success(request: SuccessPredictionRequest) -> SuccessPredictionRespo
     coverage_results = CapabilityCoverageService().analyze(domain_project, domain_team)
     coverage = legacy_coverage_percentage(coverage_results, len(required_skills))
     covered_skills = [
-        result.capability_name
-        for result in coverage_results
-        if result.level.value != "missing"
+        result.capability_name for result in coverage_results if result.level.value != "missing"
     ]
     missing_skills = [
-        result.capability_name
-        for result in coverage_results
-        if result.level.value == "missing"
+        result.capability_name for result in coverage_results if result.level.value == "missing"
     ]
 
     risk_level = legacy_risk_level_from_coverage(coverage)
     risk_score = legacy_delivery_risk_score(coverage)
     team_quality = _team_quality_score(required_skills, team)
 
-    raw_probability = (
-        0.5 * coverage + 0.3 * team_quality + 0.2 * (100 - risk_score)
-    )
+    raw_probability = 0.5 * coverage + 0.3 * team_quality + 0.2 * (100 - risk_score)
     success_probability = max(0, min(100, round(raw_probability)))
 
     reasoning = _generate_reasoning(

@@ -15,9 +15,7 @@ from app.db.types import PortableJSON
 class LeadershipBrief(Base):
     __tablename__ = "leadership_briefs"
 
-    leadership_brief_record_id: Mapped[UUID] = mapped_column(
-        Uuid(as_uuid=True), primary_key=True
-    )
+    leadership_brief_record_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True)
     assessment_record_id: Mapped[UUID] = mapped_column(
         Uuid(as_uuid=True),
         ForeignKey("assessments.assessment_record_id", ondelete="RESTRICT"),

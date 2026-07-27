@@ -2,14 +2,14 @@
 
 from unittest.mock import patch
 
+from app.db.repositories.sql_repositories import SqlAuditEventRepository
+from app.domain.enums import AuditEventType
+from app.schemas.api_v2 import ReadinessAssessRequest
 from app.services.leadership_brief.orchestrator import LeadershipBriefOrchestrator
 from app.services.persistence.assessment_persistence_service import AssessmentPersistenceService
 from app.services.persistence.leadership_brief_persistence_service import (
     LeadershipBriefPersistenceService,
 )
-from app.schemas.api_v2 import ReadinessAssessRequest
-from app.domain.enums import AuditEventType
-from app.db.repositories.sql_repositories import SqlAuditEventRepository
 
 
 class TestLeadershipBriefTransactions:
@@ -41,9 +41,7 @@ class TestLeadershipBriefTransactions:
         assert listed == []
         audit = SqlAuditEventRepository(db_session)
         events = audit.list_for_aggregate("assessment", created.assessment_record_id)
-        assert all(
-            event.event_type != AuditEventType.LEADERSHIP_BRIEF_CREATED for event in events
-        )
+        assert all(event.event_type != AuditEventType.LEADERSHIP_BRIEF_CREATED for event in events)
 
     def test_subsequent_transaction_succeeds_after_rollback(self, unit_of_work):
         created = self._create_assessment(unit_of_work)

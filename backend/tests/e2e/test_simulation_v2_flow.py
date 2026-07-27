@@ -15,17 +15,13 @@ PROJECTS_URL = "/api/v2/projects"
 
 def _readiness_trace_total(body: dict) -> float:
     return sum(
-        entry["contribution"]
-        for entry in body["decision_trace"]
-        if entry["step"] == "readiness"
+        entry["contribution"] for entry in body["decision_trace"] if entry["step"] == "readiness"
     )
 
 
 def _confidence_trace_total(body: dict) -> float:
     return sum(
-        entry["contribution"]
-        for entry in body["decision_trace"]
-        if entry["step"] == "confidence"
+        entry["contribution"] for entry in body["decision_trace"] if entry["step"] == "confidence"
     )
 
 
@@ -144,11 +140,11 @@ class TestSimulationV2CatalogFlow:
         assert response.status_code == 200, response.text
         body = response.json()
         assert body["readiness_score_delta"] < 0
-        assert body["baseline_assessment"]["readiness_score"] > body["proposed_assessment"]["readiness_score"]
-        assert any(
-            gap.get("is_critical")
-            for gap in body["newly_introduced_gaps"]
-        ) or any(
+        assert (
+            body["baseline_assessment"]["readiness_score"]
+            > body["proposed_assessment"]["readiness_score"]
+        )
+        assert any(gap.get("is_critical") for gap in body["newly_introduced_gaps"]) or any(
             change["change_type"] in {"degraded", "modified"}
             for change in body["capability_coverage_changes"]
         )

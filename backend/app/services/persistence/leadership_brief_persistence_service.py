@@ -113,9 +113,7 @@ class LeadershipBriefPersistenceService:
                         "provider_mode": outcome.provider_mode.value,
                         "generation_status": outcome.generation_status.value,
                         "failure_category": (
-                            outcome.failure_category.value
-                            if outcome.failure_category
-                            else None
+                            outcome.failure_category.value if outcome.failure_category else None
                         ),
                         "evidence_package_hash": package_hash,
                         "output_snapshot_hash": output_hash,

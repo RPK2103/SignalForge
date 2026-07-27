@@ -1,8 +1,9 @@
 """End-to-end Leadership Brief flow."""
 
-from app.domain.enums import AuditEventType
-from app.db.repositories.sql_repositories import SqlAuditEventRepository
 from uuid import UUID
+
+from app.db.repositories.sql_repositories import SqlAuditEventRepository
+from app.domain.enums import AuditEventType
 
 ASSESSMENTS_URL = "/api/v2/assessments"
 
@@ -33,7 +34,9 @@ class TestLeadershipBriefV2Flow:
         known_refs = set(first_body["brief"]["evidence_references"])
         for risk in first_body["brief"]["top_risks"]:
             assert all(ref in known_refs for ref in risk["evidence_references"])
-        for action in first_body["brief"]["staffing_actions"] + first_body["brief"]["mitigation_actions"]:
+        for action in (
+            first_body["brief"]["staffing_actions"] + first_body["brief"]["mitigation_actions"]
+        ):
             assert all(ref in known_refs for ref in action["evidence_references"])
 
         detail_before = persistence_client.get(f"{ASSESSMENTS_URL}/{record_id}").json()
@@ -66,8 +69,9 @@ class TestLeadershipBriefV2Flow:
         ).json()
         assert brief_after_review[0]["output_snapshot_hash"] == first_body["output_snapshot_hash"]
 
-        from app.db.models.catalog import EngineerCapability
         from sqlalchemy import select
+
+        from app.db.models.catalog import EngineerCapability
 
         cap = db_session.scalar(
             select(EngineerCapability).where(
@@ -82,7 +86,10 @@ class TestLeadershipBriefV2Flow:
         assert third.status_code == 200
         third_body = third.json()
         assert third_body["brief"]["provider_mode"] == "deterministic_fallback"
-        assert str(detail_after["result"]["readiness_score"]) in third_body["brief"]["executive_summary"]
+        assert (
+            str(detail_after["result"]["readiness_score"])
+            in third_body["brief"]["executive_summary"]
+        )
         final_detail = persistence_client.get(f"{ASSESSMENTS_URL}/{record_id}").json()
         assert final_detail["result_snapshot_hash"] == assessment["result_snapshot_hash"]
 

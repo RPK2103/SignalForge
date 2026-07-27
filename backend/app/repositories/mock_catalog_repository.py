@@ -57,7 +57,4 @@ class MockCatalogRepository:
         return None
 
     def list_domain_projects(self) -> list[ProjectProfile]:
-        return [
-            legacy_project_to_domain(project)
-            for project in MOCK_PROJECTS.values()
-        ]
+        return [legacy_project_to_domain(project) for project in MOCK_PROJECTS.values()]

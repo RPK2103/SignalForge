@@ -1,6 +1,5 @@
 """Prompt template tests."""
 
-import os
 from pathlib import Path
 
 from app.services.leadership_brief.prompt_templates import (

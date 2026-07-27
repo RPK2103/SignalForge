@@ -6,7 +6,6 @@ from app.schemas.api_v2 import ReadinessAssessRequest, SimulationRequest
 from app.services.readiness_orchestrator import ReadinessOrchestrator
 from app.services.simulation_orchestrator import SimulationOrchestrator
 
-
 CATALOG = MockCatalogRepository()
 READINESS = ReadinessOrchestrator(catalog=CATALOG)
 SIMULATION = SimulationOrchestrator(catalog=CATALOG)
@@ -38,13 +37,8 @@ class TestSimulationAssessmentEquivalence:
                 engineer_ids=BASELINE_IDS,
             )
         )
-        assert _domain_fields(simulation.baseline_assessment) == _domain_fields(
-            direct_baseline
-        )
-        assert (
-            simulation.baseline_assessment.assessment_id
-            == direct_baseline.assessment_id
-        )
+        assert _domain_fields(simulation.baseline_assessment) == _domain_fields(direct_baseline)
+        assert simulation.baseline_assessment.assessment_id == direct_baseline.assessment_id
 
     def test_proposed_assessment_matches_direct_readiness(self):
         simulation = SIMULATION.simulate(
@@ -60,10 +54,5 @@ class TestSimulationAssessmentEquivalence:
                 engineer_ids=["vikram"],
             )
         )
-        assert _domain_fields(simulation.proposed_assessment) == _domain_fields(
-            direct_proposed
-        )
-        assert (
-            simulation.proposed_assessment.assessment_id
-            == direct_proposed.assessment_id
-        )
+        assert _domain_fields(simulation.proposed_assessment) == _domain_fields(direct_proposed)
+        assert simulation.proposed_assessment.assessment_id == direct_proposed.assessment_id
