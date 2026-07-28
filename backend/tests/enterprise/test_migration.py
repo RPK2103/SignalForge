@@ -16,7 +16,8 @@ from app.db.models import enterprise as orm
 from app.db.session import reset_engine
 
 PHASE_2_HEAD = "a1b2c3d4e5f6"
-P3_HEAD = "p3_connector_ingestion_foundation"
+P3_DELIVERY_GRAPH = "p3_delivery_graph"
+CURRENT_ALEMBIC_HEAD = P3_DELIVERY_GRAPH
 P3_PROMPT1 = "p3_enterprise_foundation"
 _NOW = datetime(2026, 1, 1, tzinfo=timezone.utc)
 
@@ -59,7 +60,7 @@ def test_exactly_one_head():
 
     script = ScriptDirectory.from_config(_alembic_config())
     heads = script.get_heads()
-    assert heads == [P3_HEAD]
+    assert heads == [CURRENT_ALEMBIC_HEAD]
 
 
 def test_upgrade_downgrade_reupgrade(temp_url: str):
