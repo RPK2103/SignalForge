@@ -76,13 +76,13 @@ engineering leader owns delivery outcomes across multiple initiatives and teams.
 - Additive Alembic revision `p3_enterprise_foundation` (one head) that adds a
   nullable `tenant_id` to Phase 2 tables and backfills a `legacy-default` tenant;
   Phase 2 data, snapshots and scores are never rewritten.
-- Deterministic, idempotent **NovaBank** demo tenant (223 rows; second run = 0).
+- Deterministic, idempotent **NovaBank** demo tenant (233 rows; second run = 0).
 - Additive `/api/v3` enterprise routes behind an `X-SignalForge-Tenant-ID`
   header (local dev only), leaving all v2 contracts unchanged.
 
 See
 [`architecture/phase-3-enterprise-data-foundation.md`](architecture/phase-3-enterprise-data-foundation.md).
-Authentication, RBAC, Entra ID, PostgreSQL row-level security, delivery graph,
+Authentication, RBAC, Entra ID, PostgreSQL row-level security, delivery
 prediction and production multi-tenancy remain **deferred**.
 
 ## 9b. Implemented — Phase 3 Prompt 2 (Connector Ingestion Foundation)
@@ -110,10 +110,33 @@ prediction and production multi-tenancy remain **deferred**.
 See
 [`architecture/phase-3-connector-ingestion-foundation.md`](architecture/phase-3-connector-ingestion-foundation.md).
 
+## 9c. Implemented — Phase 3 Prompt 3 (Delivery Graph)
+
+- Relational, tenant-scoped Delivery Graph projections (`ent_delivery_graph_*`,
+  projection/analysis runs, findings) — **no graph database**.
+- Deterministic full rebuild (durable rebuild lock), incremental edge refresh
+  with inclusive high-watermark overlap, and bounded subject refresh; temporal
+  edges retain closed historical snapshots; re-projection is idempotent.
+- Bounded query service: neighbors, shortest path, reachability, blast radius,
+  dependency cycles, ownership concentration, active-at-time.
+- Deterministic graph findings (concentration, single-person dependency,
+  cross-team / derived-unmodeled dependencies, cycles, availability blast
+  radius, knowledge concentration) with evidence references and reconciliation.
+- Read-only `/api/v3/delivery-graph/*` routes and local CLI
+  (`python -m app.graph`). Graph confidence is **rule-based**, not calibrated,
+  and is distinct from Phase 2 assessment confidence.
+- NovaBank graph scenarios (fraud concentration, payment↔platform path, Azure
+  capability bottleneck, incident blast radius, demo cycle).
+
+See
+[`architecture/phase-3-delivery-graph.md`](architecture/phase-3-delivery-graph.md).
+Authentication, RBAC, Entra ID, PostgreSQL RLS, delivery **probability**, LLM
+graph queries and production multi-tenancy remain **deferred**.
+
 ## 10. Planned Capabilities (Phase 3)
 
-- Jira / Azure DevOps **HTTP** connectors, GitHub webhooks/OAuth/Apps, delivery
-  graph, calibrated ML prediction, continuous scenarios, AI Chief of Staff,
+- Jira / Azure DevOps **HTTP** connectors, GitHub webhooks/OAuth/Apps,
+  calibrated ML prediction, continuous scenarios, AI Chief of Staff,
   production multi-tenancy, auth/RBAC, Entra ID, secret vault, production
   observability. See
   [`architecture/phase-3-enterprise-product-roadmap.md`](architecture/phase-3-enterprise-product-roadmap.md).
@@ -324,7 +347,7 @@ Idempotent: first run seeds `capabilities=11, engineers=3, projects=5,
 scenarios=8`; a second run inserts nothing.
 
 The Phase 3 NovaBank enterprise demo tenant is seeded separately and is also
-idempotent (first run creates 223 rows across the enterprise entities; a second
+idempotent (first run creates 233 rows across the enterprise entities; a second
 run creates 0):
 
 ```bash
@@ -400,7 +423,9 @@ See
 - GitHub polling is implemented; GitHub webhooks/OAuth/Apps are not.
 - Jira and Azure DevOps HTTP connectors are not implemented (staged contracts only).
 - Tenant header is a data boundary only — not authentication, RBAC or Entra ID.
-- Secret vault, queues/distributed workers, delivery graph and prediction deferred.
+- Secret vault, queues/distributed workers, and prediction deferred.
+- Delivery graph relational projection is implemented; graph DB / LLM graph
+  queries / calibrated delivery probability are not.
 - Live PostgreSQL and live Azure OpenAI not validated in this pass.
 
 ## 39. Phase 3 Roadmap

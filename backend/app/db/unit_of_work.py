@@ -22,6 +22,13 @@ from app.db.repositories.enterprise_repositories import (
     OrganizationRepository,
     RelationshipRepository,
 )
+from app.db.repositories.graph_repositories import (
+    GraphAnalysisRunRepository,
+    GraphEdgeRepository,
+    GraphFindingRepository,
+    GraphNodeRepository,
+    GraphProjectionRunRepository,
+)
 from app.db.repositories.sql_repositories import (
     SqlAssessmentRepository,
     SqlAuditEventRepository,
@@ -59,6 +66,12 @@ class UnitOfWork:
         self.ingestion_receipts = IngestionReceiptRepository(session)
         self.ingestion_dead_letters = IngestionDeadLetterRepository(session)
         self.pull_requests = PullRequestRepository(session)
+        # Phase 3 Prompt 3 delivery graph repositories.
+        self.graph_nodes = GraphNodeRepository(session)
+        self.graph_edges = GraphEdgeRepository(session)
+        self.graph_projection_runs = GraphProjectionRunRepository(session)
+        self.graph_analysis_runs = GraphAnalysisRunRepository(session)
+        self.graph_findings = GraphFindingRepository(session)
 
     def commit(self) -> None:
         self.session.commit()
