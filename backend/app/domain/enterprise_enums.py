@@ -180,6 +180,7 @@ class EnterpriseEntityType(str, Enum):
     SKILL = "skill"
     REPOSITORY = "repository"
     WORK_ITEM = "work_item"
+    PULL_REQUEST = "pull_request"
     SPRINT = "sprint"
     INCIDENT = "incident"
     DEPLOYMENT = "deployment"
@@ -268,3 +269,56 @@ class EvidenceSignalType(str, Enum):
     DEPLOYMENT_EVENT = "deployment_event"
     INCIDENT_EVENT = "incident_event"
     OWNERSHIP_SIGNAL = "ownership_signal"
+    # Snapshot signal types used by connector polling (Prompt 2).
+    REPOSITORY_SNAPSHOT = "repository_snapshot"
+    ISSUE_SNAPSHOT = "issue_snapshot"
+    RELEASE_SNAPSHOT = "release_snapshot"
+
+
+class PullRequestState(str, Enum):
+    OPEN = "open"
+    CLOSED = "closed"
+    MERGED = "merged"
+
+
+class IngestionReceiptOutcome(str, Enum):
+    CREATED = "created"
+    DEDUPLICATED = "deduplicated"
+    PROJECTED = "projected"
+    DEAD_LETTERED = "dead_lettered"
+    SKIPPED = "skipped"
+
+
+class DeadLetterReplayState(str, Enum):
+    PENDING = "pending"
+    REPLAYED = "replayed"
+    FAILED = "failed"
+    ABANDONED = "abandoned"
+
+
+class FreshnessState(str, Enum):
+    NEVER_SYNCED = "never_synced"
+    FRESH = "fresh"
+    AGING = "aging"
+    STALE = "stale"
+    FAILED = "failed"
+
+
+class ConnectorErrorCategory(str, Enum):
+    INVALID_CONFIGURATION = "invalid_configuration"
+    MISSING_CREDENTIAL = "missing_credential"
+    AUTHENTICATION_ERROR = "authentication_error"
+    PERMISSION_DENIED = "permission_denied"
+    REPOSITORY_NOT_FOUND = "repository_not_found"
+    RATE_LIMITED = "rate_limited"
+    TIMEOUT = "timeout"
+    TRANSPORT_ERROR = "transport_error"
+    PROVIDER_UNAVAILABLE = "provider_unavailable"
+    MALFORMED_RESPONSE = "malformed_response"
+    NORMALIZATION_FAILED = "normalization_failed"
+    PAYLOAD_TOO_LARGE = "payload_too_large"
+    CHECKPOINT_CONFLICT = "checkpoint_conflict"
+    PERSISTENCE_ERROR = "persistence_error"
+    PROJECTION_ERROR = "projection_error"
+    CONNECTOR_NOT_IMPLEMENTED = "connector_not_implemented"
+    UNKNOWN_CONNECTOR_ERROR = "unknown_connector_error"

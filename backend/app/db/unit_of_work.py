@@ -5,6 +5,12 @@ from typing import TypeVar
 
 from sqlalchemy.orm import Session
 
+from app.db.repositories.connector_repositories import (
+    ConnectorCheckpointRepository,
+    IngestionDeadLetterRepository,
+    IngestionReceiptRepository,
+    PullRequestRepository,
+)
 from app.db.repositories.enterprise_repositories import (
     DataSourceRepository,
     DeliveryRepository,
@@ -48,6 +54,11 @@ class UnitOfWork:
         self.data_sources = DataSourceRepository(session)
         self.ingestion_runs = IngestionRunRepository(session)
         self.evidence_signals = EvidenceSignalRepository(session)
+        # Phase 3 Prompt 2 connector ingestion repositories.
+        self.connector_checkpoints = ConnectorCheckpointRepository(session)
+        self.ingestion_receipts = IngestionReceiptRepository(session)
+        self.ingestion_dead_letters = IngestionDeadLetterRepository(session)
+        self.pull_requests = PullRequestRepository(session)
 
     def commit(self) -> None:
         self.session.commit()

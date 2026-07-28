@@ -16,7 +16,8 @@ from app.db.models import enterprise as orm
 from app.db.session import reset_engine
 
 PHASE_2_HEAD = "a1b2c3d4e5f6"
-P3_HEAD = "p3_enterprise_foundation"
+P3_HEAD = "p3_connector_ingestion_foundation"
+P3_PROMPT1 = "p3_enterprise_foundation"
 _NOW = datetime(2026, 1, 1, tzinfo=timezone.utc)
 
 
@@ -77,6 +78,7 @@ def test_upgrade_downgrade_reupgrade(temp_url: str):
     _upgrade(temp_url, "head")
     engine = create_engine(temp_url)
     assert "ent_evidence_signals" in inspect(engine).get_table_names()
+    assert "ent_connector_checkpoints" in inspect(engine).get_table_names()
     engine.dispose()
 
 

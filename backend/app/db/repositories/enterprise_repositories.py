@@ -408,6 +408,32 @@ class DeliveryRepository(_TenantRepository):
         row = self._tenant_get(orm.Repository, orm.Repository.repository_id, repository_id, ctx)
         return _to_dto(dm.Repository, row) if row else None
 
+    def get_repository_by_external(
+        self, ctx: TenantContext, *, provider: str, external_reference: str
+    ) -> dm.Repository | None:
+        row = self._session.scalar(
+            select(orm.Repository).where(
+                orm.Repository.tenant_id == ctx.tenant_id,
+                orm.Repository.provider == provider,
+                orm.Repository.external_reference == external_reference,
+            )
+        )
+        return _to_dto(dm.Repository, row) if row else None
+
+    def update_repository(self, ctx: TenantContext, repo: dm.Repository) -> dm.Repository:
+        row = self._tenant_get(
+            orm.Repository, orm.Repository.repository_id, repo.repository_id, ctx
+        )
+        if row is None:
+            raise EnterpriseNotFoundError("Repository not found for this tenant")
+        payload = _dump(repo, ctx)
+        for key, value in payload.items():
+            if key in {"repository_id", "tenant_id", "created_at"}:
+                continue
+            setattr(row, key, value)
+        self._session.flush()
+        return _to_dto(dm.Repository, row)
+
     def list_repositories(
         self, ctx: TenantContext, *, limit: int = 20, offset: int = 0
     ) -> dm.Page[dm.Repository]:
@@ -441,6 +467,30 @@ class DeliveryRepository(_TenantRepository):
         with self._insert_guard("Work item external reference already exists"):
             self._session.add(orm.WorkItem(**_dump(work_item, ctx)))
         return work_item
+
+    def get_work_item_by_external(
+        self, ctx: TenantContext, *, provider: str, external_reference: str
+    ) -> dm.WorkItem | None:
+        row = self._session.scalar(
+            select(orm.WorkItem).where(
+                orm.WorkItem.tenant_id == ctx.tenant_id,
+                orm.WorkItem.provider == provider,
+                orm.WorkItem.external_reference == external_reference,
+            )
+        )
+        return _to_dto(dm.WorkItem, row) if row else None
+
+    def update_work_item(self, ctx: TenantContext, work_item: dm.WorkItem) -> dm.WorkItem:
+        row = self._tenant_get(orm.WorkItem, orm.WorkItem.work_item_id, work_item.work_item_id, ctx)
+        if row is None:
+            raise EnterpriseNotFoundError("Work item not found for this tenant")
+        payload = _dump(work_item, ctx)
+        for key, value in payload.items():
+            if key in {"work_item_id", "tenant_id", "created_at"}:
+                continue
+            setattr(row, key, value)
+        self._session.flush()
+        return _to_dto(dm.WorkItem, row)
 
     def add_incident(self, ctx: TenantContext, incident: dm.Incident) -> dm.Incident:
         self._require_ref(
@@ -518,6 +568,22 @@ class DataSourceRepository(_TenantRepository):
     def get_data_source(self, ctx: TenantContext, data_source_id: str) -> dm.DataSource | None:
         row = self._tenant_get(orm.DataSource, orm.DataSource.data_source_id, data_source_id, ctx)
         return _to_dto(dm.DataSource, row) if row else None
+
+    def update_data_source(self, ctx: TenantContext, source: dm.DataSource) -> dm.DataSource:
+        row = self._tenant_get(
+            orm.DataSource, orm.DataSource.data_source_id, source.data_source_id, ctx
+        )
+        if row is None:
+            raise EnterpriseNotFoundError(
+                f"Data source '{source.data_source_id}' not found for tenant"
+            )
+        payload = _dump(source, ctx)
+        for key, value in payload.items():
+            if key in {"data_source_id", "tenant_id", "created_at"}:
+                continue
+            setattr(row, key, value)
+        self._session.flush()
+        return _to_dto(dm.DataSource, row)
 
     def list_data_sources(
         self, ctx: TenantContext, *, limit: int = 20, offset: int = 0

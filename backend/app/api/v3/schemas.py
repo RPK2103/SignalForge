@@ -34,8 +34,15 @@ class RegisterDataSourceRequest(BaseModel):
             "example": {
                 "source_type": "github",
                 "display_name": "NovaBank GitHub Org",
-                "credential_reference": "vault://novabank/github#deferred",
+                "credential_reference": "env://SIGNALFORGE_GITHUB_TOKEN",
                 "permission_classification": "internal",
+                "connector_config": {
+                    "owner": "octocat",
+                    "repository": "Hello-World",
+                    "enabled_streams": ["repository", "issues"],
+                    "page_size": 30,
+                    "maximum_pages": 2,
+                },
             }
         },
     )
@@ -44,6 +51,7 @@ class RegisterDataSourceRequest(BaseModel):
     display_name: str = Field(min_length=1, max_length=128)
     credential_reference: str | None = Field(default=None, max_length=256)
     config_reference: str | None = Field(default=None, max_length=256)
+    connector_config: dict | None = None
     permission_classification: PermissionClassification = PermissionClassification.INTERNAL
 
 

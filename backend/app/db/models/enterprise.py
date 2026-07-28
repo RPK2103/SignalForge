@@ -13,6 +13,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from sqlalchemy import (
+    Boolean,
     CheckConstraint,
     DateTime,
     Float,
@@ -401,6 +402,8 @@ class Repository(_TenantBase):
     visibility: Mapped[str] = mapped_column(String(16), nullable=False, default="private")
     state: Mapped[str] = mapped_column(String(16), nullable=False, default="active")
     archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_evidence_signal_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    source_precedence: Mapped[str] = mapped_column(String(32), nullable=False, default="manual")
 
 
 class Sprint(_TenantBase):
@@ -456,6 +459,7 @@ class WorkItem(_TenantBase):
     )
     provider: Mapped[str] = mapped_column(String(32), nullable=False)
     external_reference: Mapped[str] = mapped_column(String(256), nullable=False)
+    title: Mapped[str | None] = mapped_column(String(256), nullable=True)
     work_item_type: Mapped[str] = mapped_column(String(16), nullable=False, default="story")
     status: Mapped[str] = mapped_column(String(16), nullable=False, default="backlog")
     priority: Mapped[str] = mapped_column(String(8), nullable=False, default="p2")
@@ -466,6 +470,8 @@ class WorkItem(_TenantBase):
         DateTime(timezone=True), nullable=True
     )
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_evidence_signal_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    source_precedence: Mapped[str] = mapped_column(String(32), nullable=False, default="manual")
 
 
 class Incident(_TenantBase):
@@ -649,10 +655,28 @@ class DataSource(_TenantBase):
     # Opaque, future-safe reference to a secret store. NEVER a plaintext secret.
     credential_reference: Mapped[str | None] = mapped_column(String(256), nullable=True)
     config_reference: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    # Validated non-secret connector configuration JSON (Prompt 2). Never tokens.
+    connector_config: Mapped[dict | None] = mapped_column(PortableJSON, nullable=True)
+    connector_config_schema_version: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    connector_config_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     status: Mapped[str] = mapped_column(String(16), nullable=False, default="registered")
     permission_classification: Mapped[str] = mapped_column(
         String(16), nullable=False, default="internal"
     )
+    last_attempted_sync_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    last_successful_sync_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    last_source_event_time: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    last_ingestion_time: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    freshness_state: Mapped[str] = mapped_column(String(32), nullable=False, default="never_synced")
+    stale_after_seconds: Mapped[int] = mapped_column(Integer, nullable=False, default=86_400)
     archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
@@ -675,6 +699,14 @@ class IngestionRun(_TenantBase):
     records_read: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     records_written: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     records_skipped: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    records_normalized: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    records_created: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    records_deduplicated: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    records_projected: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    records_dead_lettered: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    records_retried: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    request_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    rate_limit_waits: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     error_category: Mapped[str] = mapped_column(String(32), nullable=False, default="none")
     error_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     processing_version: Mapped[str] = mapped_column(String(16), nullable=False, default="1")
@@ -725,3 +757,164 @@ class EvidenceSignal(_TenantBase):
     payload: Mapped[dict] = mapped_column(PortableJSON, nullable=False, default=dict)
     payload_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     provenance: Mapped[dict] = mapped_column(PortableJSON, nullable=False, default=dict)
+
+
+class PullRequest(_TenantBase):
+    __tablename__ = "ent_pull_requests"
+    __table_args__ = (
+        UniqueConstraint(
+            "tenant_id", "provider", "external_id", name="uq_ent_pull_requests_external"
+        ),
+        Index("ix_ent_pull_requests_repo", "tenant_id", "repository_id"),
+        CheckConstraint(
+            "additions IS NULL OR (additions >= 0 AND additions <= 10000000)",
+            name="pr_additions_bounds",
+        ),
+        CheckConstraint(
+            "deletions IS NULL OR (deletions >= 0 AND deletions <= 10000000)",
+            name="pr_deletions_bounds",
+        ),
+        CheckConstraint(
+            "changed_files IS NULL OR (changed_files >= 0 AND changed_files <= 100000)",
+            name="pr_changed_files_bounds",
+        ),
+    )
+
+    pull_request_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    repository_id: Mapped[str | None] = mapped_column(
+        String(64),
+        ForeignKey("ent_repositories.repository_id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    provider: Mapped[str] = mapped_column(String(32), nullable=False)
+    external_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    number: Mapped[int] = mapped_column(Integer, nullable=False)
+    title: Mapped[str] = mapped_column(String(512), nullable=False)
+    state: Mapped[str] = mapped_column(String(16), nullable=False, default="open")
+    draft: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    author_external_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    created_at_source: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    updated_at_source: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    closed_at_source: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    merged_at_source: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    additions: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    deletions: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    changed_files: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_evidence_signal_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    source_precedence: Mapped[str] = mapped_column(String(32), nullable=False, default="connector")
+
+
+class ConnectorCheckpoint(_TenantBase):
+    __tablename__ = "ent_connector_checkpoints"
+    __table_args__ = (
+        UniqueConstraint(
+            "tenant_id",
+            "data_source_id",
+            "stream_name",
+            name="uq_ent_connector_checkpoints_stream",
+        ),
+        Index("ix_ent_connector_checkpoints_source", "tenant_id", "data_source_id"),
+        CheckConstraint("version >= 1", name="connector_checkpoint_version_positive"),
+    )
+
+    connector_checkpoint_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    data_source_id: Mapped[str] = mapped_column(
+        String(64),
+        ForeignKey("ent_data_sources.data_source_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    stream_name: Mapped[str] = mapped_column(String(64), nullable=False)
+    cursor_schema_version: Mapped[str] = mapped_column(String(16), nullable=False, default="1")
+    cursor_payload: Mapped[dict] = mapped_column(PortableJSON, nullable=False, default=dict)
+    cursor_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    high_watermark_time: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    high_watermark_source_id: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    etag: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    last_successful_run_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+
+
+class IngestionReceipt(_TenantBase):
+    __tablename__ = "ent_ingestion_receipts"
+    __table_args__ = (
+        UniqueConstraint(
+            "tenant_id",
+            "ingestion_run_id",
+            "stream_name",
+            "source_record_id",
+            "payload_hash",
+            name="uq_ent_ingestion_receipts_obs",
+        ),
+        Index("ix_ent_ingestion_receipts_run", "tenant_id", "ingestion_run_id"),
+        Index("ix_ent_ingestion_receipts_source", "tenant_id", "data_source_id"),
+    )
+
+    ingestion_receipt_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    ingestion_run_id: Mapped[str] = mapped_column(
+        String(64),
+        ForeignKey("ent_ingestion_runs.ingestion_run_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    data_source_id: Mapped[str] = mapped_column(
+        String(64),
+        ForeignKey("ent_data_sources.data_source_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    stream_name: Mapped[str] = mapped_column(String(64), nullable=False)
+    source_record_id: Mapped[str] = mapped_column(String(256), nullable=False)
+    normalized_event_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    evidence_signal_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    payload_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    outcome: Mapped[str] = mapped_column(String(32), nullable=False)
+    checkpoint_position: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    error_category: Mapped[str | None] = mapped_column(String(64), nullable=True)
+
+
+class IngestionDeadLetter(_TenantBase):
+    __tablename__ = "ent_ingestion_dead_letters"
+    __table_args__ = (
+        Index("ix_ent_ingestion_dead_letters_run", "tenant_id", "ingestion_run_id"),
+        Index("ix_ent_ingestion_dead_letters_source", "tenant_id", "data_source_id"),
+        Index("ix_ent_ingestion_dead_letters_replay", "tenant_id", "replay_state"),
+    )
+
+    dead_letter_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    ingestion_run_id: Mapped[str] = mapped_column(
+        String(64),
+        ForeignKey("ent_ingestion_runs.ingestion_run_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    data_source_id: Mapped[str] = mapped_column(
+        String(64),
+        ForeignKey("ent_data_sources.data_source_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    stream_name: Mapped[str] = mapped_column(String(64), nullable=False)
+    source_record_id: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    normalized_event_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    event_type: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    payload_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    redacted_payload: Mapped[dict] = mapped_column(PortableJSON, nullable=False, default=dict)
+    error_category: Mapped[str] = mapped_column(String(64), nullable=False)
+    sanitized_error_summary: Mapped[str] = mapped_column(String(1024), nullable=False)
+    attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    replay_state: Mapped[str] = mapped_column(String(32), nullable=False, default="pending")
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
