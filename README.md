@@ -82,14 +82,40 @@ engineering leader owns delivery outcomes across multiple initiatives and teams.
 
 See
 [`architecture/phase-3-enterprise-data-foundation.md`](architecture/phase-3-enterprise-data-foundation.md).
-Authentication, RBAC, Entra ID, PostgreSQL row-level security, real connectors,
-delivery graph, prediction and production multi-tenancy remain **deferred**.
+Authentication, RBAC, Entra ID, PostgreSQL row-level security, delivery graph,
+prediction and production multi-tenancy remain **deferred**.
+
+## 9b. Implemented — Phase 3 Prompt 2 (Connector Ingestion Foundation)
+
+- Provider-neutral connector SDK (protocol, registry, credentials, retry,
+  config validation, error taxonomy) with HTTP / normalize / orchestrate /
+  persist separation.
+- One complete **GitHub REST polling** connector (repository, pull requests,
+  reviews, issues, releases) with public unauthenticated mode, Link-header
+  pagination, bounded retries, rate-limit handling and SSRF-resistant host
+  checks. **Webhooks and OAuth are not implemented.**
+- Normalized snapshot events → `EvidenceSignal` + append-only
+  `IngestionReceipt` (repeated observations remain auditable after dedup) +
+  per-stream `ConnectorCheckpoint` + `IngestionDeadLetter` with manual replay.
+- Domain projections for repositories, work items and first-class pull
+  requests; releases/reviews remain evidence-first. Manual data is protected by
+  source precedence.
+- Additive Alembic revision `p3_connector_ingestion_foundation` (single head).
+- Local CLI (`python -m app.connectors`) and read-only `/api/v3` connector
+  observation routes. **No** public sync-trigger endpoint and **no** credential
+  exposure to the frontend.
+- Jira / Azure DevOps: staged descriptors + config contracts only
+  (`connector_not_implemented` — no false success).
+
+See
+[`architecture/phase-3-connector-ingestion-foundation.md`](architecture/phase-3-connector-ingestion-foundation.md).
 
 ## 10. Planned Capabilities (Phase 3)
 
-- Real connectors (GitHub / Jira / Azure DevOps), delivery graph, calibrated ML
-  prediction, continuous scenarios, AI Chief of Staff, production multi-tenancy,
-  auth/RBAC, Entra ID, production observability. See
+- Jira / Azure DevOps **HTTP** connectors, GitHub webhooks/OAuth/Apps, delivery
+  graph, calibrated ML prediction, continuous scenarios, AI Chief of Staff,
+  production multi-tenancy, auth/RBAC, Entra ID, secret vault, production
+  observability. See
   [`architecture/phase-3-enterprise-product-roadmap.md`](architecture/phase-3-enterprise-product-roadmap.md).
 
 ## 11. Deterministic Intelligence
@@ -282,8 +308,9 @@ python -m alembic current
 python -m alembic check
 ```
 
-Single head: `p3_enterprise_foundation` (down-revision `a1b2c3d4e5f6`, the Phase
-2 head). Downgrade with `python -m alembic downgrade -1` (validated on disposable
+Single head: `p3_connector_ingestion_foundation` (down-revision
+`p3_enterprise_foundation`). Downgrade with
+`python -m alembic downgrade p3_enterprise_foundation` (validated on disposable
 SQLite; do not downgrade a long-lived DB without a backup).
 
 ## 30. Seed Command
@@ -368,9 +395,12 @@ See
 
 ## 38. Limitations
 
-- Synthetic catalog/identities (toy seed IDs), not real data.
+- Synthetic catalog/identities (toy seed IDs), not real customer data.
 - Deterministic policy scores, not calibrated ML prediction.
-- No real connectors, multi-tenancy, auth, RBAC or Entra ID.
+- GitHub polling is implemented; GitHub webhooks/OAuth/Apps are not.
+- Jira and Azure DevOps HTTP connectors are not implemented (staged contracts only).
+- Tenant header is a data boundary only — not authentication, RBAC or Entra ID.
+- Secret vault, queues/distributed workers, delivery graph and prediction deferred.
 - Live PostgreSQL and live Azure OpenAI not validated in this pass.
 
 ## 39. Phase 3 Roadmap

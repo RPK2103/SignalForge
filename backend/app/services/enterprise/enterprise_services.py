@@ -659,9 +659,36 @@ class IngestionService(_BaseService):
         display_name: str,
         credential_reference: str | None = None,
         config_reference: str | None = None,
+        connector_config: dict | None = None,
         permission_classification: PermissionClassification = PermissionClassification.INTERNAL,
         status: DataSourceStatus = DataSourceStatus.REGISTERED,
     ) -> dm.DataSource:
+        from app.connectors.config import hash_connector_config, validate_connector_config
+        from app.connectors.credentials import validate_credential_reference
+
+        if credential_reference is not None:
+            try:
+                validate_credential_reference(credential_reference)
+            except Exception as exc:
+                from app.connectors.errors import ConnectorError
+
+                if isinstance(exc, ConnectorError):
+                    raise EnterpriseValidationError(exc.safe_message) from exc
+                raise
+        validated_config = None
+        config_hash = None
+        schema_version = None
+        if connector_config is not None:
+            try:
+                validated_config = validate_connector_config(source_type.value, connector_config)
+            except Exception as exc:
+                from app.connectors.errors import ConnectorError
+
+                if isinstance(exc, ConnectorError):
+                    raise EnterpriseValidationError(exc.safe_message) from exc
+                raise
+            config_hash = hash_connector_config(validated_config)
+            schema_version = "1"
         source = dm.DataSource(
             data_source_id=build_entity_id("ds", ctx.tenant_id, source_type.value, display_name),
             tenant_id=ctx.tenant_id,
@@ -669,6 +696,9 @@ class IngestionService(_BaseService):
             display_name=display_name,
             credential_reference=credential_reference,
             config_reference=config_reference,
+            connector_config=validated_config,
+            connector_config_schema_version=schema_version,
+            connector_config_hash=config_hash,
             status=status,
             permission_classification=permission_classification,
         )

@@ -27,6 +27,7 @@ from app.domain.enterprise_enums import (
     Criticality,
     DataSourceStatus,
     DataSourceType,
+    DeadLetterReplayState,
     DependencyStatus,
     DependencyType,
     DeploymentEnvironment,
@@ -36,9 +37,11 @@ from app.domain.enterprise_enums import (
     EnterpriseEntityType,
     EvidenceSignalType,
     EvidenceStrengthSource,
+    FreshnessState,
     IncidentSeverity,
     IncidentState,
     IngestionErrorCategory,
+    IngestionReceiptOutcome,
     IngestionRunStatus,
     IngestionRunType,
     InitiativeStatus,
@@ -46,6 +49,7 @@ from app.domain.enterprise_enums import (
     OwnershipType,
     PermissionClassification,
     ProjectStatus,
+    PullRequestState,
     RepositoryState,
     RepositoryVisibility,
     RequirementSubjectType,
@@ -302,6 +306,8 @@ class Repository(TenantScoped):
     visibility: RepositoryVisibility = RepositoryVisibility.PRIVATE
     state: RepositoryState = RepositoryState.ACTIVE
     archived_at: datetime | None = None
+    last_evidence_signal_id: str | None = Field(default=None, max_length=64)
+    source_precedence: str = Field(default="manual", max_length=32)
 
 
 class Sprint(TenantScoped):
@@ -326,12 +332,39 @@ class WorkItem(TenantScoped):
     sprint_id: str | None = None
     provider: DataSourceType = DataSourceType.JIRA
     external_reference: str = Field(min_length=1, max_length=256)
+    title: str | None = Field(default=None, max_length=256)
     work_item_type: WorkItemType = WorkItemType.STORY
     status: WorkItemStatus = WorkItemStatus.BACKLOG
     priority: WorkItemPriority = WorkItemPriority.P2
     source_created_at: datetime | None = None
     source_updated_at: datetime | None = None
     completed_at: datetime | None = None
+    last_evidence_signal_id: str | None = Field(default=None, max_length=64)
+    source_precedence: str = Field(default="manual", max_length=32)
+
+
+class PullRequest(TenantScoped):
+    """First-class PR projection (Prompt 2). Not an employee-performance score."""
+
+    pull_request_id: str
+    repository_id: str | None = None
+    provider: DataSourceType = DataSourceType.GITHUB
+    external_id: str = Field(min_length=1, max_length=128)
+    number: int = Field(ge=1)
+    title: str = Field(min_length=1, max_length=512)
+    state: PullRequestState = PullRequestState.OPEN
+    draft: bool = False
+    author_external_id: str | None = Field(default=None, max_length=128)
+    created_at_source: datetime | None = None
+    updated_at_source: datetime | None = None
+    closed_at_source: datetime | None = None
+    merged_at_source: datetime | None = None
+    additions: int | None = Field(default=None, ge=0, le=10_000_000)
+    deletions: int | None = Field(default=None, ge=0, le=10_000_000)
+    changed_files: int | None = Field(default=None, ge=0, le=100_000)
+    archived_at: datetime | None = None
+    last_evidence_signal_id: str | None = Field(default=None, max_length=64)
+    source_precedence: str = Field(default="connector", max_length=32)
 
 
 class Incident(TenantScoped):
@@ -438,8 +471,18 @@ class DataSource(TenantScoped):
     display_name: str = Field(min_length=1, max_length=128)
     credential_reference: str | None = Field(default=None, max_length=256)
     config_reference: str | None = Field(default=None, max_length=256)
+    # Validated non-secret connector configuration (Prompt 2). Never stores tokens.
+    connector_config: dict | None = None
+    connector_config_schema_version: str | None = Field(default=None, max_length=16)
+    connector_config_hash: str | None = Field(default=None, max_length=64)
     status: DataSourceStatus = DataSourceStatus.REGISTERED
     permission_classification: PermissionClassification = PermissionClassification.INTERNAL
+    last_attempted_sync_at: datetime | None = None
+    last_successful_sync_at: datetime | None = None
+    last_source_event_time: datetime | None = None
+    last_ingestion_time: datetime | None = None
+    freshness_state: FreshnessState = FreshnessState.NEVER_SYNCED
+    stale_after_seconds: int = Field(default=86_400, ge=60, le=31_536_000)
     created_at: datetime | None = None
     updated_at: datetime | None = None
     archived_at: datetime | None = None
@@ -456,6 +499,15 @@ class IngestionRun(TenantScoped):
     records_read: int = Field(default=0, ge=0)
     records_written: int = Field(default=0, ge=0)
     records_skipped: int = Field(default=0, ge=0)
+    # Extended Prompt 2 counters (non-negative; validated by services).
+    records_normalized: int = Field(default=0, ge=0)
+    records_created: int = Field(default=0, ge=0)
+    records_deduplicated: int = Field(default=0, ge=0)
+    records_projected: int = Field(default=0, ge=0)
+    records_dead_lettered: int = Field(default=0, ge=0)
+    records_retried: int = Field(default=0, ge=0)
+    request_count: int = Field(default=0, ge=0)
+    rate_limit_waits: int = Field(default=0, ge=0)
     error_category: IngestionErrorCategory = IngestionErrorCategory.NONE
     error_summary: str | None = Field(default=None, max_length=1024)
     processing_version: str = "1"
@@ -486,6 +538,57 @@ class EvidenceSignal(TenantScoped):
     payload: dict = Field(default_factory=dict)
     payload_hash: str = Field(min_length=64, max_length=64)
     provenance: dict = Field(default_factory=dict)
+
+
+class ConnectorCheckpoint(TenantScoped):
+    connector_checkpoint_id: str
+    data_source_id: str
+    stream_name: str = Field(min_length=1, max_length=64)
+    cursor_schema_version: str = Field(default="1", max_length=16)
+    cursor_payload: dict = Field(default_factory=dict)
+    cursor_hash: str = Field(min_length=64, max_length=64)
+    high_watermark_time: datetime | None = None
+    high_watermark_source_id: str | None = Field(default=None, max_length=256)
+    etag: str | None = Field(default=None, max_length=256)
+    last_successful_run_id: str | None = Field(default=None, max_length=64)
+    version: int = Field(default=1, ge=1)
+    updated_at: datetime | None = None
+
+
+class IngestionReceipt(TenantScoped):
+    """Append-only observation receipt. Survives EvidenceSignal deduplication."""
+
+    ingestion_receipt_id: str
+    ingestion_run_id: str
+    data_source_id: str
+    stream_name: str = Field(min_length=1, max_length=64)
+    source_record_id: str = Field(min_length=1, max_length=256)
+    normalized_event_id: str = Field(min_length=1, max_length=128)
+    evidence_signal_id: str | None = Field(default=None, max_length=64)
+    payload_hash: str = Field(min_length=64, max_length=64)
+    observed_at: datetime
+    outcome: IngestionReceiptOutcome
+    checkpoint_position: str | None = Field(default=None, max_length=512)
+    error_category: str | None = Field(default=None, max_length=64)
+    created_at: datetime | None = None
+
+
+class IngestionDeadLetter(TenantScoped):
+    dead_letter_id: str
+    ingestion_run_id: str
+    data_source_id: str
+    stream_name: str = Field(min_length=1, max_length=64)
+    source_record_id: str | None = Field(default=None, max_length=256)
+    normalized_event_id: str | None = Field(default=None, max_length=128)
+    event_type: str | None = Field(default=None, max_length=128)
+    payload_hash: str | None = Field(default=None, max_length=64)
+    redacted_payload: dict = Field(default_factory=dict)
+    error_category: str = Field(min_length=1, max_length=64)
+    sanitized_error_summary: str = Field(min_length=1, max_length=1024)
+    attempt_count: int = Field(default=1, ge=1)
+    replay_state: DeadLetterReplayState = DeadLetterReplayState.PENDING
+    created_at: datetime | None = None
+    resolved_at: datetime | None = None
 
 
 # ---------------------------------------------------------------------------

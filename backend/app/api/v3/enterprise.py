@@ -200,6 +200,7 @@ def register_data_source(
         display_name=request.display_name,
         credential_reference=request.credential_reference,
         config_reference=request.config_reference,
+        connector_config=request.connector_config,
         permission_classification=request.permission_classification,
     )
 
