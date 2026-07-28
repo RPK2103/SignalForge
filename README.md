@@ -60,11 +60,36 @@ engineering leader owns delivery outcomes across multiple initiatives and teams.
 - Typed Next.js frontend wired to the live v2 API.
 - Quality + automation: Ruff, pytest, Vitest, Playwright E2E, GitHub Actions CI.
 
+## 9a. Implemented — Phase 3 Prompt 1 (Enterprise Data Foundation)
+
+- Tenant-scoped enterprise domain (20 foundational entities: organization
+  hierarchy, engineer profiles, capability/skill catalog, initiatives/projects,
+  delivery entities, dependencies/ownership/availability, and a provenance/
+  evidence model) with strictly-typed domain DTOs and no ORM leakage.
+- Shared-schema multi-tenancy via an explicit `TenantContext`: tenant-qualified
+  reads/writes/updates, tenant-scoped composite uniqueness, cross-tenant
+  rejection, and non-disclosure of cross-tenant existence (data boundary only —
+  **not** authentication).
+- Append-only `EvidenceSignal` provenance with canonical SHA-256 hashing and
+  deterministic deduplication; `DataSource`/`IngestionRun` foundations with
+  **no** external connector calls and **no** plaintext secrets.
+- Additive Alembic revision `p3_enterprise_foundation` (one head) that adds a
+  nullable `tenant_id` to Phase 2 tables and backfills a `legacy-default` tenant;
+  Phase 2 data, snapshots and scores are never rewritten.
+- Deterministic, idempotent **NovaBank** demo tenant (223 rows; second run = 0).
+- Additive `/api/v3` enterprise routes behind an `X-SignalForge-Tenant-ID`
+  header (local dev only), leaving all v2 contracts unchanged.
+
+See
+[`architecture/phase-3-enterprise-data-foundation.md`](architecture/phase-3-enterprise-data-foundation.md).
+Authentication, RBAC, Entra ID, PostgreSQL row-level security, real connectors,
+delivery graph, prediction and production multi-tenancy remain **deferred**.
+
 ## 10. Planned Capabilities (Phase 3)
 
 - Real connectors (GitHub / Jira / Azure DevOps), delivery graph, calibrated ML
-  prediction, continuous scenarios, AI Chief of Staff, multi-tenancy, auth/RBAC,
-  Entra ID, production observability. See
+  prediction, continuous scenarios, AI Chief of Staff, production multi-tenancy,
+  auth/RBAC, Entra ID, production observability. See
   [`architecture/phase-3-enterprise-product-roadmap.md`](architecture/phase-3-enterprise-product-roadmap.md).
 
 ## 11. Deterministic Intelligence
@@ -179,6 +204,12 @@ in-memory mock repository and seeded for demos.
 
 Legacy v1 routes remain mounted for backward compatibility.
 
+Phase 3 adds **additive** `/api/v3` enterprise-foundation routes (organization
+hierarchy, engineer profiles, capabilities, initiatives, projects, repositories,
+data sources, ingestion runs, evidence signals, and a demo-tenant summary),
+gated by a local-only `X-SignalForge-Tenant-ID` header. v2 contracts are
+unchanged.
+
 ## 24. Demo Scenarios
 
 Seeded scenarios include readiness and simulation cases such as
@@ -251,9 +282,9 @@ python -m alembic current
 python -m alembic check
 ```
 
-Single head: `a1b2c3d4e5f6`. Downgrade with `python -m alembic downgrade -1`
-(validated on disposable SQLite; do not downgrade a long-lived DB without a
-backup).
+Single head: `p3_enterprise_foundation` (down-revision `a1b2c3d4e5f6`, the Phase
+2 head). Downgrade with `python -m alembic downgrade -1` (validated on disposable
+SQLite; do not downgrade a long-lived DB without a backup).
 
 ## 30. Seed Command
 
@@ -264,6 +295,15 @@ python -m app.db.seed
 
 Idempotent: first run seeds `capabilities=11, engineers=3, projects=5,
 scenarios=8`; a second run inserts nothing.
+
+The Phase 3 NovaBank enterprise demo tenant is seeded separately and is also
+idempotent (first run creates 223 rows across the enterprise entities; a second
+run creates 0):
+
+```bash
+cd backend
+python -m app.db.enterprise_seed
+```
 
 ## 31. Tests and Exact Verified Results
 

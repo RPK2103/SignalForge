@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.api.v2.router import router as api_v2_router
+from app.api.v3.router import router as api_v3_router
 from app.core.config import get_settings
 from app.core.exceptions import register_exception_handlers
 from app.core.logging_config import configure_logging, log_startup
@@ -57,6 +58,7 @@ app.include_router(simulator_router, tags=["Staffing Simulator"])
 app.include_router(predictor_router, tags=["Delivery Success Predictor"])
 app.include_router(copilot_router, tags=["AI Leadership Copilot"])
 app.include_router(api_v2_router)
+app.include_router(api_v3_router)
 
 
 @app.get("/")
