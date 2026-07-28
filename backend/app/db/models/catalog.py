@@ -7,6 +7,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 from app.db.types import PortableJSON
+from app.domain.tenant_context import LEGACY_TENANT_ID
 
 
 def _utcnow() -> datetime:
@@ -17,6 +18,11 @@ class Capability(Base):
     __tablename__ = "capabilities"
 
     capability_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    # Phase 3 compatibility: nullable tenant column backfilled to the legacy
+    # tenant. Kept nullable so Phase 2 write paths remain non-breaking.
+    tenant_id: Mapped[str | None] = mapped_column(
+        String(64), nullable=True, default=LEGACY_TENANT_ID, index=True
+    )
     name: Mapped[str] = mapped_column(String(128), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     category: Mapped[str] = mapped_column(String(64), nullable=False)
@@ -31,6 +37,9 @@ class Engineer(Base):
     __tablename__ = "engineers"
 
     engineer_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    tenant_id: Mapped[str | None] = mapped_column(
+        String(64), nullable=True, default=LEGACY_TENANT_ID, index=True
+    )
     name: Mapped[str] = mapped_column(String(128), nullable=False)
     role_title: Mapped[str | None] = mapped_column(String(128), nullable=True)
     experience_years: Mapped[float] = mapped_column(Float, nullable=False, default=0)
@@ -75,6 +84,9 @@ class Project(Base):
     __tablename__ = "projects"
 
     project_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    tenant_id: Mapped[str | None] = mapped_column(
+        String(64), nullable=True, default=LEGACY_TENANT_ID, index=True
+    )
     name: Mapped[str] = mapped_column(String(128), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     schema_version: Mapped[str] = mapped_column(String(16), nullable=False, default="1")

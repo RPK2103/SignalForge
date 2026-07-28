@@ -1,25 +1,11 @@
 from logging.config import fileConfig
 
-from alembic import context
 from sqlalchemy import engine_from_config, pool
 
+from alembic import context
 from app.core.config import get_settings
+from app.db import models as _models  # noqa: F401  (register all tables on metadata)
 from app.db.base import Base
-from app.db.models import (  # noqa: F401
-    Assessment,
-    AssessmentDecisionTrace,
-    AssessmentRiskFinding,
-    AuditEvent,
-    Capability,
-    DemoScenario,
-    Engineer,
-    EngineerCapability,
-    HumanReview,
-    LeadershipBrief,
-    Project,
-    ProjectRequirement,
-    Simulation,
-)
 from app.db.session import normalize_database_url
 
 config = context.config

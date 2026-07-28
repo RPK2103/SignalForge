@@ -5,6 +5,17 @@ from typing import TypeVar
 
 from sqlalchemy.orm import Session
 
+from app.db.repositories.enterprise_repositories import (
+    DataSourceRepository,
+    DeliveryRepository,
+    EngineerProfileRepository,
+    EnterpriseCatalogRepository,
+    EvidenceSignalRepository,
+    IngestionRunRepository,
+    InitiativeProjectRepository,
+    OrganizationRepository,
+    RelationshipRepository,
+)
 from app.db.repositories.sql_repositories import (
     SqlAssessmentRepository,
     SqlAuditEventRepository,
@@ -27,6 +38,16 @@ class UnitOfWork:
         self.reviews = SqlHumanReviewRepository(session)
         self.leadership_briefs = SqlLeadershipBriefRepository(session)
         self.audit_events = SqlAuditEventRepository(session)
+        # Phase 3 enterprise data-foundation repositories (all tenant-scoped).
+        self.organizations = OrganizationRepository(session)
+        self.engineer_profiles = EngineerProfileRepository(session)
+        self.enterprise_catalog = EnterpriseCatalogRepository(session)
+        self.initiatives_projects = InitiativeProjectRepository(session)
+        self.delivery = DeliveryRepository(session)
+        self.relationships = RelationshipRepository(session)
+        self.data_sources = DataSourceRepository(session)
+        self.ingestion_runs = IngestionRunRepository(session)
+        self.evidence_signals = EvidenceSignalRepository(session)
 
     def commit(self) -> None:
         self.session.commit()
