@@ -109,7 +109,7 @@ CAPABILITY_SKILLS = [
 INITIATIVES = [
     ("Payment Modernization", "payment-modernization", "critical", "critical"),
     ("Azure Migration", "azure-migration", "high", "high"),
-    ("Fraud Detection Uplift", "fraud-detection-uplift", "high", "high"),
+    ("Fraud Detection Uplift", "fraud-detection-uplift", "critical", "critical"),
     ("Mobile Refresh", "mobile-refresh", "medium", "medium"),
     ("Reliability Program", "reliability-program", "medium", "high"),
 ]
@@ -456,6 +456,7 @@ def _seed_delivery(session: Session, ids: dict[str, str], summary: dict) -> None
 
 def _seed_relationships(session: Session, ids: dict[str, str], summary: dict) -> None:
     # Payment-modernization dependency risk + Azure migration coupling.
+    # Prompt 3 scenarios: platform cross-team path + small demo dependency cycle.
     dependencies = [
         ("project", "proj:rt-payments-rail", "project", "proj:ledger-modernization", "depends_on"),
         ("project", "proj:ledger-modernization", "project", "proj:core-banking-azure", "blocks"),
@@ -475,6 +476,36 @@ def _seed_relationships(session: Session, ids: dict[str, str], summary: dict) ->
             "shares_capability",
         ),
         ("project", "proj:mobile-app-4", "repository", "repo:mobile-android", "depends_on"),
+        # Payment modernization blocked by shared platform repository (cross-team).
+        (
+            "project",
+            "proj:rt-payments-rail",
+            "repository",
+            "repo:cloud-landing-zone",
+            "depends_on",
+        ),
+        (
+            "project",
+            "proj:rt-payments-rail",
+            "team",
+            "team:cloud-foundations",
+            "depends_on",
+        ),
+        # Deterministic non-production demo cycle for cycle detection.
+        (
+            "project",
+            "proj:slo-platform",
+            "project",
+            "proj:payments-observability",
+            "depends_on",
+        ),
+        (
+            "project",
+            "proj:payments-observability",
+            "project",
+            "proj:slo-platform",
+            "depends_on",
+        ),
     ]
     for s_type, s_key, t_type, t_key, dep_type in dependencies:
         s_id = ids[s_key]
@@ -497,16 +528,21 @@ def _seed_relationships(session: Session, ids: dict[str, str], summary: dict) ->
                 "status": "active",
             },
         )
-    # Ownership: teams own repositories; fraud ownership concentration on Maya.
+    # Ownership: fraud concentration on Maya (eng-13); Azure capability bottleneck.
     ownerships = [
         ("team", "team:cloud-foundations", "repository", "repo:payments-core-svc", "primary"),
         ("team", "team:payments-rails", "repository", "repo:payments-rails-svc", "primary"),
         ("team", "team:mobile-banking", "repository", "repo:mobile-android", "primary"),
-        ("team", "team:fraud-detection", "repository", "repo:fraud-scoring", "primary"),
+        # Team supporting only — engineer is sole primary for concentration scenario.
+        ("team", "team:fraud-detection", "repository", "repo:fraud-scoring", "supporting"),
         ("engineer_profile", "eng:eng-13", "repository", "repo:fraud-scoring", "primary"),
         ("engineer_profile", "eng:eng-13", "repository", "repo:data-lake-pipelines", "primary"),
+        ("engineer_profile", "eng:eng-13", "capability", "cap:fraud-modeling", "primary"),
+        ("engineer_profile", "eng:eng-07", "capability", "cap:azure-platform", "primary"),
+        ("engineer_profile", "eng:eng-08", "capability", "cap:azure-platform", "secondary"),
         ("engineer_profile", "eng:eng-12", "repository", "repo:fraud-scoring", "secondary"),
         ("team", "team:site-reliability", "repository", "repo:slo-controller", "primary"),
+        ("team", "team:cloud-foundations", "repository", "repo:cloud-landing-zone", "primary"),
     ]
     for o_type, o_key, r_type, r_key, own_type in ownerships:
         o_id = ids[o_key]
@@ -529,12 +565,14 @@ def _seed_relationships(session: Session, ids: dict[str, str], summary: dict) ->
             },
         )
     # Availability: incident-driven capacity reduction for SRE + Azure shortage.
+    # Windows extend through mid-2026 so live validation / analysis overlap "now".
     availabilities = [
         ("engineer_profile", "eng:eng-10", 40, "incident_response"),
         ("engineer_profile", "eng:eng-11", 60, "incident_response"),
         ("engineer_profile", "eng:eng-07", 50, "allocation"),
         ("engineer_profile", "eng:eng-08", 70, "allocation"),
         ("engineer_profile", "eng:eng-06", 0, "planned_leave"),
+        ("engineer_profile", "eng:eng-13", 30, "allocation"),
         ("team", "team:cloud-foundations", 65, "allocation"),
     ]
     for t_type, t_key, pct, reason in availabilities:
@@ -552,12 +590,34 @@ def _seed_relationships(session: Session, ids: dict[str, str], summary: dict) ->
                 "availability_percentage": pct,
                 "capacity_units": None,
                 "start_time": start,
-                "end_time": _dt(45),
+                "end_time": _dt(400),
                 "reason": reason,
                 "source": "imported",
                 "confidence": 0.8,
             },
         )
+
+
+def _seed_graph_scenario_incident(session: Session, ids: dict[str, str], summary: dict) -> None:
+    """Shared platform incident for blast-radius scenario (Prompt 3)."""
+    ref = "INC-PLATFORM-500"
+    inc_id = _tid("inc", "manual", ref)
+    summary["incidents"] += _ensure(
+        session,
+        orm.Incident,
+        inc_id,
+        {
+            "incident_id": inc_id,
+            "repository_id": ids["repo:payments-core-svc"],
+            "team_id": ids["team:cloud-foundations"],
+            "provider": "manual",
+            "external_reference": ref,
+            "severity": "sev1",
+            "started_at": _dt(25),
+            "resolved_at": None,
+            "state": "open",
+        },
+    )
 
 
 def _seed_provenance(session: Session, ids: dict[str, str], summary: dict) -> None:
@@ -690,6 +750,7 @@ def seed_enterprise(session: Session) -> dict[str, int]:
     _seed_initiatives_projects(session, ids, summary)
     _seed_delivery(session, ids, summary)
     _seed_relationships(session, ids, summary)
+    _seed_graph_scenario_incident(session, ids, summary)
     _seed_provenance(session, ids, summary)
     summary["total_created"] = sum(summary[key] for key in _COUNT_KEYS)
     return summary

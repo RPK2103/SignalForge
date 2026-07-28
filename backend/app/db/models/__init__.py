@@ -35,6 +35,14 @@ from app.db.models.enterprise import (
     Team,
     WorkItem,
 )
+from app.db.models.graph import (
+    DeliveryGraphEdge,
+    DeliveryGraphNode,
+    GraphAnalysisRun,
+    GraphFinding,
+    GraphFindingEvidence,
+    GraphProjectionRun,
+)
 from app.db.models.leadership_brief import LeadershipBrief
 from app.db.models.review import HumanReview
 from app.db.models.scenario import DemoScenario
@@ -51,6 +59,8 @@ __all__ = [
     "CapabilityRequirement",
     "CapabilitySkill",
     "DataSource",
+    "DeliveryGraphEdge",
+    "DeliveryGraphNode",
     "DemoScenario",
     "Department",
     "Dependency",
@@ -64,6 +74,10 @@ __all__ = [
     "EnterpriseProject",
     "EnterpriseSkill",
     "EvidenceSignal",
+    "GraphAnalysisRun",
+    "GraphFinding",
+    "GraphFindingEvidence",
+    "GraphProjectionRun",
     "HumanReview",
     "Incident",
     "IngestionRun",

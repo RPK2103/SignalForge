@@ -49,7 +49,7 @@ def test_demo_summary_counts(client):
     assert counts["projects"] == 8
     assert counts["repositories"] == 10
     assert counts["work_items"] == 30
-    assert counts["incidents"] == 4
+    assert counts["incidents"] == 5
     assert counts["deployments"] == 10
     assert counts["data_sources"] == 3
     assert counts["ingestion_runs"] == 4
