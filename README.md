@@ -161,16 +161,42 @@ is not a delivery probability.
 
 See
 [`architecture/phase-3-delivery-prediction.md`](architecture/phase-3-delivery-prediction.md).
-Authentication, RBAC, Entra ID, PostgreSQL RLS, continuous scenarios
-(Prompt 5), and production multi-tenancy remain **deferred**.
+Authentication, RBAC, Entra ID, PostgreSQL RLS, and production multi-tenancy
+remain **deferred**. Continuous scenarios are implemented in Prompt 5 (see §9e).
+
+## 9e. Implemented — Phase 3 Prompt 5 (Continuous Scenario Intelligence)
+
+- Immutable scenario definitions/versions with bounded assumption validation
+  (eight kinds including combined; no LLM scenario agent).
+- Overlay-only execution: baseline vs simulated graph + feature overlays never
+  mutate enterprise, graph, evidence, models, or historical prediction rows.
+  Baseline capture may materialize deterministic Prompt 4 feature snapshots
+  (same extractor path; existing snapshot contents unchanged).
+  Scenario feature overlays are always `training_eligible=false`.
+- Prediction integration preserves Prompt 4 gates: rejected/candidate models
+  are ignored; NovaBank normally uses `uncalibrated_score` fallback (not a
+  probability). Estimate comparability prevents mixing scores with probabilities.
+- Watches + target-scoped source fingerprints + trigger events for change-driven
+  re-evaluation (minimum 60-minute interval; no queues/workers/real-time claims).
+  Wall-clock `as_of` drift alone does not re-trigger watches.
+- Read-only `/api/v3/scenarios/*` and local CLI (`python -m app.scenarios`).
+  Mutation/execution remain CLI/service-only.
+- Deterministic NovaBank demo scenarios (8) with idempotent seed.
+- Bounded large-graph overlay harness (500 nodes / 2,000 edges) asserts traversal
+  and impact budgets; live PostgreSQL remains deferred.
+
+See
+[`architecture/phase-3-continuous-scenario-intelligence.md`](architecture/phase-3-continuous-scenario-intelligence.md).
+AI Chief of Staff (Prompt 6), autonomous recommendations, causal inference,
+auth/RBAC/Entra/RLS, and production multi-tenancy remain **deferred**.
 
 ## 10. Planned Capabilities (Phase 3)
 
 - Jira / Azure DevOps **HTTP** connectors, GitHub webhooks/OAuth/Apps,
-  continuous scenarios, AI Chief of Staff, production multi-tenancy,
-  auth/RBAC, Entra ID, secret vault, production observability. Demo-scoped
-  calibrated delivery prediction is implemented (Prompt 4); production-eligible
-  customer models and continuous scenario recompute remain ahead. See
+  AI Chief of Staff, production multi-tenancy, auth/RBAC, Entra ID, secret
+  vault, production observability. Demo-scoped calibrated delivery prediction
+  is implemented (Prompt 4); continuous scenario intelligence is implemented
+  (Prompt 5). Production-eligible customer models remain ahead. See
   [`architecture/phase-3-enterprise-product-roadmap.md`](architecture/phase-3-enterprise-product-roadmap.md).
 
 ## 11. Deterministic Intelligence
