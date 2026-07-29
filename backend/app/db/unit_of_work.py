@@ -29,6 +29,16 @@ from app.db.repositories.graph_repositories import (
     GraphNodeRepository,
     GraphProjectionRunRepository,
 )
+from app.db.repositories.prediction_repositories import (
+    DeliveryOutcomeRepository,
+    DeliveryPredictionRepository,
+    PredictionDatasetManifestRepository,
+    PredictionFactorRepository,
+    PredictionFeatureSnapshotRepository,
+    PredictionModelEvaluationRepository,
+    PredictionModelRepository,
+    PredictionRunRepository,
+)
 from app.db.repositories.sql_repositories import (
     SqlAssessmentRepository,
     SqlAuditEventRepository,
@@ -72,6 +82,15 @@ class UnitOfWork:
         self.graph_projection_runs = GraphProjectionRunRepository(session)
         self.graph_analysis_runs = GraphAnalysisRunRepository(session)
         self.graph_findings = GraphFindingRepository(session)
+        # Phase 3 Prompt 4 delivery prediction repositories.
+        self.delivery_outcomes = DeliveryOutcomeRepository(session)
+        self.prediction_feature_snapshots = PredictionFeatureSnapshotRepository(session)
+        self.prediction_datasets = PredictionDatasetManifestRepository(session)
+        self.prediction_models = PredictionModelRepository(session)
+        self.prediction_evaluations = PredictionModelEvaluationRepository(session)
+        self.prediction_runs = PredictionRunRepository(session)
+        self.delivery_predictions = DeliveryPredictionRepository(session)
+        self.prediction_factors = PredictionFactorRepository(session)
 
     def commit(self) -> None:
         self.session.commit()

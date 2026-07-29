@@ -44,6 +44,16 @@ from app.db.models.graph import (
     GraphProjectionRun,
 )
 from app.db.models.leadership_brief import LeadershipBrief
+from app.db.models.prediction import (
+    DeliveryOutcome,
+    DeliveryPrediction,
+    PredictionDatasetManifest,
+    PredictionFactor,
+    PredictionFeatureSnapshot,
+    PredictionModel,
+    PredictionModelEvaluation,
+    PredictionRun,
+)
 from app.db.models.review import HumanReview
 from app.db.models.scenario import DemoScenario
 from app.db.models.simulation import Simulation
@@ -61,6 +71,8 @@ __all__ = [
     "DataSource",
     "DeliveryGraphEdge",
     "DeliveryGraphNode",
+    "DeliveryOutcome",
+    "DeliveryPrediction",
     "DemoScenario",
     "Department",
     "Dependency",
@@ -85,6 +97,12 @@ __all__ = [
     "LeadershipBrief",
     "Organization",
     "Ownership",
+    "PredictionDatasetManifest",
+    "PredictionFactor",
+    "PredictionFeatureSnapshot",
+    "PredictionModel",
+    "PredictionModelEvaluation",
+    "PredictionRun",
     "Project",
     "ProjectRequirement",
     "Repository",

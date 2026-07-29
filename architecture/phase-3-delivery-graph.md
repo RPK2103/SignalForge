@@ -236,7 +236,9 @@ fragile wall-clock thresholds.
 ## 24. Known limitations
 
 - Relational projection only — not a production graph database
-- Delivery probability / Prompt 4 prediction **not implemented**
+- Delivery probability is implemented separately in Prompt 4 — see
+  [`phase-3-delivery-prediction.md`](phase-3-delivery-prediction.md);
+  graph confidence is still **not** a delivery probability
 - LLM graph queries **not implemented**
 - Graph confidence is rule-based, not calibrated
 - Authentication / RBAC / Entra ID / RLS deferred
@@ -248,9 +250,11 @@ fragile wall-clock thresholds.
 
 ## 25. Prompt 4 prediction readiness
 
-The graph provides versioned, evidence-backed structural inputs suitable for a
-future prediction milestone. Prompt 4 must **not** mutate readiness/confidence
-semantics and must not treat graph confidence as calibrated risk probability.
+The graph provides versioned, evidence-backed structural inputs consumed by the
+Delivery Prediction Engine (Prompt 4). See
+[`phase-3-delivery-prediction.md`](phase-3-delivery-prediction.md). Prediction
+must **not** mutate readiness/confidence semantics and must not treat graph
+confidence as calibrated risk probability.
 
 ## API (read-only)
 
