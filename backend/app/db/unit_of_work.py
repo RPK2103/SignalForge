@@ -39,6 +39,12 @@ from app.db.repositories.prediction_repositories import (
     PredictionModelRepository,
     PredictionRunRepository,
 )
+from app.db.repositories.chief_of_staff_repositories import (
+    CosBriefRepository,
+    CosEvidenceSnapshotRepository,
+    CosReviewRepository,
+    CosRunRepository,
+)
 from app.db.repositories.scenario_repositories import (
     ScenarioDefinitionRepository,
     ScenarioFeatureOverlayRepository,
@@ -110,6 +116,11 @@ class UnitOfWork:
         self.scenario_feature_overlays = ScenarioFeatureOverlayRepository(session)
         self.scenario_results = ScenarioResultRepository(session)
         self.scenario_impacts = ScenarioImpactRepository(session)
+        # Phase 3 Prompt 6 AI Chief of Staff repositories.
+        self.cos_evidence_snapshots = CosEvidenceSnapshotRepository(session)
+        self.cos_runs = CosRunRepository(session)
+        self.cos_briefs = CosBriefRepository(session)
+        self.cos_reviews = CosReviewRepository(session)
 
     def commit(self) -> None:
         self.session.commit()

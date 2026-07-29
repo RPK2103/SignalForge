@@ -9,6 +9,14 @@ from app.db.models.catalog import (
     Project,
     ProjectRequirement,
 )
+from app.db.models.chief_of_staff import (
+    CosBrief,
+    CosCitation,
+    CosClaim,
+    CosEvidenceSnapshot,
+    CosReview,
+    CosRun,
+)
 from app.db.models.enterprise import (
     Availability,
     BusinessUnit,
@@ -78,6 +86,12 @@ __all__ = [
     "Capability",
     "CapabilityRequirement",
     "CapabilitySkill",
+    "CosBrief",
+    "CosCitation",
+    "CosClaim",
+    "CosEvidenceSnapshot",
+    "CosReview",
+    "CosRun",
     "DataSource",
     "DeliveryGraphEdge",
     "DeliveryGraphNode",

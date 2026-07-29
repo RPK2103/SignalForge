@@ -1,0 +1,112 @@
+"""Fixtures for AI Chief of Staff tests (Phase 3 Prompt 6)."""
+
+from __future__ import annotations
+
+import os
+from collections.abc import Generator
+from datetime import datetime, timezone
+from pathlib import Path
+
+import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
+
+from app.core.config import get_settings
+from app.db.enterprise_seed import TENANT_ID as NOVABANK_TENANT_ID
+from app.db.enterprise_seed import seed_enterprise
+from app.db.scenario_seed import seed_novabank_scenarios
+from app.db.session import get_engine, init_engine, reset_engine
+from app.db.unit_of_work import UnitOfWork
+from app.domain.tenant_context import TenantContext
+from app.main import app
+from app.services.graph.analysis_service import GraphAnalysisService
+from app.services.graph.projection_service import GraphProjectionService
+
+AS_OF = datetime(2026, 3, 1, 12, 0, tzinfo=timezone.utc)
+
+
+def _run_alembic(url: str, revision: str) -> None:
+    from alembic.config import Config
+
+    from alembic import command
+
+    os.environ["DATABASE_URL"] = url
+    get_settings.cache_clear()
+    reset_engine()
+    init_engine(url)
+    command.upgrade(Config("alembic.ini"), revision)
+
+
+@pytest.fixture
+def temp_database_url(tmp_path: Path) -> str:
+    return f"sqlite:///{(tmp_path / 'cos.db').as_posix()}"
+
+
+@pytest.fixture
+def migrated_db(temp_database_url: str) -> Generator[str, None, None]:
+    _run_alembic(temp_database_url, "head")
+    yield temp_database_url
+    reset_engine()
+    get_settings.cache_clear()
+    os.environ.pop("DATABASE_URL", None)
+
+
+@pytest.fixture
+def db_session(migrated_db: str) -> Generator[Session, None, None]:
+    reset_engine()
+    init_engine(migrated_db)
+    engine = get_engine(migrated_db)
+    session = Session(engine)
+    try:
+        yield session
+    finally:
+        session.rollback()
+        session.close()
+        engine.dispose()
+        reset_engine()
+
+
+@pytest.fixture
+def uow(db_session: Session) -> UnitOfWork:
+    return UnitOfWork(db_session)
+
+
+@pytest.fixture
+def tenant_a() -> TenantContext:
+    return TenantContext.require("tenant-a")
+
+
+@pytest.fixture
+def tenant_b() -> TenantContext:
+    return TenantContext.require("tenant-b")
+
+
+@pytest.fixture
+def novabank_tenant() -> TenantContext:
+    return TenantContext.require(NOVABANK_TENANT_ID)
+
+
+@pytest.fixture
+def seeded_novabank(db_session: Session, novabank_tenant: TenantContext) -> dict:
+    summary = seed_enterprise(db_session)
+    db_session.commit()
+    uow = UnitOfWork(db_session)
+    GraphProjectionService(uow).full_rebuild(novabank_tenant)
+    GraphAnalysisService(uow).analyze(novabank_tenant)
+    uow.commit()
+    scenario_summary = seed_novabank_scenarios(db_session)
+    db_session.commit()
+    return {"enterprise": summary, "scenarios": scenario_summary}
+
+
+@pytest.fixture
+def client(migrated_db: str) -> Generator[TestClient, None, None]:
+    os.environ["DATABASE_URL"] = migrated_db
+    get_settings.cache_clear()
+    reset_engine()
+    init_engine(migrated_db)
+    with TestClient(app) as test_client:
+        yield test_client
+    reset_engine()
+    get_settings.cache_clear()
+    os.environ.pop("DATABASE_URL", None)

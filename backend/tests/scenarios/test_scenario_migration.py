@@ -59,4 +59,4 @@ def test_single_alembic_head():
 
     script = ScriptDirectory.from_config(Config("alembic.ini"))
     heads = script.get_heads()
-    assert heads == ["p3_continuous_scenario_intelligence"]
+    assert heads == ["p3_ai_chief_of_staff"]
