@@ -82,8 +82,9 @@ engineering leader owns delivery outcomes across multiple initiatives and teams.
 
 See
 [`architecture/phase-3-enterprise-data-foundation.md`](architecture/phase-3-enterprise-data-foundation.md).
-Authentication, RBAC, Entra ID, PostgreSQL row-level security, delivery
-prediction and production multi-tenancy remain **deferred**.
+Authentication, RBAC, Entra ID, PostgreSQL row-level security, and production
+multi-tenancy remain **deferred**. Delivery prediction is implemented in
+Prompt 4 (see §9d).
 
 ## 9b. Implemented — Phase 3 Prompt 2 (Connector Ingestion Foundation)
 
@@ -130,15 +131,46 @@ See
 
 See
 [`architecture/phase-3-delivery-graph.md`](architecture/phase-3-delivery-graph.md).
-Authentication, RBAC, Entra ID, PostgreSQL RLS, delivery **probability**, LLM
-graph queries and production multi-tenancy remain **deferred**.
+Authentication, RBAC, Entra ID, PostgreSQL RLS, LLM graph queries and
+production multi-tenancy remain **deferred**. Calibrated delivery prediction
+is implemented in Prompt 4 (see §9d); graph confidence remains rule-based and
+is not a delivery probability.
+
+## 9d. Implemented — Phase 3 Prompt 4 (Delivery Prediction Engine)
+
+- Target `DELIVERY_SUCCESS_WITHIN_HORIZON` for projects/initiatives with
+  horizons `{30, 60, 90, 180}` (default **90**) and label version
+  `delivery_success_label_v1` (unknown/censored stay unlabeled).
+- Feature schema `delivery_features_v1` (~53 features across readiness, graph,
+  ownership, workflow, data-quality, and project-context families) with
+  as-of snapshots, lineage, and leakage rejection.
+- Temporal datasets (`temporal_60_20_20_grouped`), pure-Python
+  `logistic_delivery_v1` + Platt calibration, deterministic
+  `delivery_scorecard_v1` fallback (**uncalibrated score**, not a probability),
+  and `insufficient_data` when critical features are missing.
+- Model registry with `demo_gates_v1` (Brier primary), backtesting harness,
+  deterministic explanations (no LLM), tenant-scoped training
+  (`tenant_count=1`), and NovaBank synthetic outcome seed
+  (`production_eligible=false` — synthetic metrics ≠ real-world accuracy).
+  On NovaBank synthetic data the candidate **fails** `demo_gates_v1` (ECE)
+  and remains **unpromoted**; inference uses the uncalibrated scorecard
+  fallback (not a probability) until a validated active model exists.
+- Read-only `/api/v3/predictions/*` and local CLI (`python -m app.prediction`).
+  Predictions are decision-support, not guarantees. Employee-performance
+  prediction is **not** implemented. No public train/promote HTTP endpoints.
+
+See
+[`architecture/phase-3-delivery-prediction.md`](architecture/phase-3-delivery-prediction.md).
+Authentication, RBAC, Entra ID, PostgreSQL RLS, continuous scenarios
+(Prompt 5), and production multi-tenancy remain **deferred**.
 
 ## 10. Planned Capabilities (Phase 3)
 
 - Jira / Azure DevOps **HTTP** connectors, GitHub webhooks/OAuth/Apps,
-  calibrated ML prediction, continuous scenarios, AI Chief of Staff,
-  production multi-tenancy, auth/RBAC, Entra ID, secret vault, production
-  observability. See
+  continuous scenarios, AI Chief of Staff, production multi-tenancy,
+  auth/RBAC, Entra ID, secret vault, production observability. Demo-scoped
+  calibrated delivery prediction is implemented (Prompt 4); production-eligible
+  customer models and continuous scenario recompute remain ahead. See
   [`architecture/phase-3-enterprise-product-roadmap.md`](architecture/phase-3-enterprise-product-roadmap.md).
 
 ## 11. Deterministic Intelligence
@@ -419,13 +451,18 @@ See
 ## 38. Limitations
 
 - Synthetic catalog/identities (toy seed IDs), not real customer data.
-- Deterministic policy scores, not calibrated ML prediction.
+- Deterministic Phase 2 policy scores remain distinct from Prompt 4 calibrated
+  delivery probabilities; readiness / assessment confidence / graph confidence
+  are never redefined as probability.
+- Demo prediction uses synthetic NovaBank outcomes
+  (`production_eligible=false`); synthetic metrics ≠ real-world accuracy.
 - GitHub polling is implemented; GitHub webhooks/OAuth/Apps are not.
 - Jira and Azure DevOps HTTP connectors are not implemented (staged contracts only).
 - Tenant header is a data boundary only — not authentication, RBAC or Entra ID.
-- Secret vault, queues/distributed workers, and prediction deferred.
+- Secret vault, queues/distributed workers, and continuous scenarios
+  (Prompt 5) remain deferred.
 - Delivery graph relational projection is implemented; graph DB / LLM graph
-  queries / calibrated delivery probability are not.
+  queries are not.
 - Live PostgreSQL and live Azure OpenAI not validated in this pass.
 
 ## 39. Phase 3 Roadmap

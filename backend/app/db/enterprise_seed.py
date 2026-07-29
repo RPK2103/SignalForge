@@ -739,7 +739,30 @@ _COUNT_KEYS = [
     "data_sources",
     "ingestion_runs",
     "evidence_signals",
+    "delivery_outcomes",
 ]
+
+
+def _seed_prediction_outcomes(session: Session, ids: dict[str, str], summary: dict) -> None:
+    """Seed synthetic labeled DeliveryOutcome history for NovaBank (Prompt 4).
+
+    Skipped when the prediction migration has not been applied yet so Prompt 3
+    databases can still seed enterprise/graph data cleanly.
+    """
+    from sqlalchemy import inspect
+
+    from app.db.prediction_seed import seed_prediction_history
+
+    _ = ids
+    bind = session.get_bind()
+    if bind is None or "ent_delivery_outcomes" not in inspect(bind).get_table_names():
+        return
+    counts = seed_prediction_history(session)
+    summary["delivery_outcomes"] += counts.get("delivery_outcomes", 0)
+    for key, value in counts.items():
+        if key == "delivery_outcomes":
+            continue
+        summary[key] = value
 
 
 def seed_enterprise(session: Session) -> dict[str, int]:
@@ -752,6 +775,7 @@ def seed_enterprise(session: Session) -> dict[str, int]:
     _seed_relationships(session, ids, summary)
     _seed_graph_scenario_incident(session, ids, summary)
     _seed_provenance(session, ids, summary)
+    _seed_prediction_outcomes(session, ids, summary)
     summary["total_created"] = sum(summary[key] for key in _COUNT_KEYS)
     return summary
 
@@ -767,6 +791,15 @@ def main() -> int:
     print("NovaBank enterprise seed complete (created rows):")
     for key in _COUNT_KEYS:
         print(f"  {key}={summary[key]}")
+    for key in (
+        "delivery_outcomes_labeled",
+        "delivery_outcomes_positive",
+        "delivery_outcomes_negative",
+        "delivery_outcomes_censored_or_excluded",
+        "delivery_outcomes_total",
+    ):
+        if key in summary:
+            print(f"  {key}={summary[key]}")
     print(f"  total_created={summary['total_created']}")
     return 0
 
