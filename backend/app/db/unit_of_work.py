@@ -39,6 +39,16 @@ from app.db.repositories.prediction_repositories import (
     PredictionModelRepository,
     PredictionRunRepository,
 )
+from app.db.repositories.scenario_repositories import (
+    ScenarioDefinitionRepository,
+    ScenarioFeatureOverlayRepository,
+    ScenarioImpactRepository,
+    ScenarioResultRepository,
+    ScenarioRunRepository,
+    ScenarioTriggerEventRepository,
+    ScenarioVersionRepository,
+    ScenarioWatchRepository,
+)
 from app.db.repositories.sql_repositories import (
     SqlAssessmentRepository,
     SqlAuditEventRepository,
@@ -91,6 +101,15 @@ class UnitOfWork:
         self.prediction_runs = PredictionRunRepository(session)
         self.delivery_predictions = DeliveryPredictionRepository(session)
         self.prediction_factors = PredictionFactorRepository(session)
+        # Phase 3 Prompt 5 continuous scenario intelligence repositories.
+        self.scenario_definitions = ScenarioDefinitionRepository(session)
+        self.scenario_versions = ScenarioVersionRepository(session)
+        self.scenario_watches = ScenarioWatchRepository(session)
+        self.scenario_trigger_events = ScenarioTriggerEventRepository(session)
+        self.scenario_runs = ScenarioRunRepository(session)
+        self.scenario_feature_overlays = ScenarioFeatureOverlayRepository(session)
+        self.scenario_results = ScenarioResultRepository(session)
+        self.scenario_impacts = ScenarioImpactRepository(session)
 
     def commit(self) -> None:
         self.session.commit()

@@ -56,6 +56,16 @@ from app.db.models.prediction import (
 )
 from app.db.models.review import HumanReview
 from app.db.models.scenario import DemoScenario
+from app.db.models.scenario_intelligence import (
+    ScenarioDefinition,
+    ScenarioFeatureOverlay,
+    ScenarioImpact,
+    ScenarioResult,
+    ScenarioRun,
+    ScenarioTriggerEvent,
+    ScenarioVersion,
+    ScenarioWatch,
+)
 from app.db.models.simulation import Simulation
 
 __all__ = [
@@ -106,6 +116,14 @@ __all__ = [
     "Project",
     "ProjectRequirement",
     "Repository",
+    "ScenarioDefinition",
+    "ScenarioFeatureOverlay",
+    "ScenarioImpact",
+    "ScenarioResult",
+    "ScenarioRun",
+    "ScenarioTriggerEvent",
+    "ScenarioVersion",
+    "ScenarioWatch",
     "Simulation",
     "Sprint",
     "Team",

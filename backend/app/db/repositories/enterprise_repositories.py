@@ -558,6 +558,45 @@ class RelationshipRepository(_TenantRepository):
         )
         return _page(dm.Dependency, rows, total, limit, offset)
 
+    def list_ownerships(
+        self,
+        ctx: TenantContext,
+        *,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> dm.Page[dm.Ownership]:
+        base = select(orm.Ownership).where(orm.Ownership.tenant_id == ctx.tenant_id)
+        count = (
+            select(func.count())
+            .select_from(orm.Ownership)
+            .where(orm.Ownership.tenant_id == ctx.tenant_id)
+        )
+        rows, total = self._paginate(
+            base.order_by(orm.Ownership.ownership_id.asc()), count, limit=limit, offset=offset
+        )
+        return _page(dm.Ownership, rows, total, limit, offset)
+
+    def list_availabilities(
+        self,
+        ctx: TenantContext,
+        *,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> dm.Page[dm.Availability]:
+        base = select(orm.Availability).where(orm.Availability.tenant_id == ctx.tenant_id)
+        count = (
+            select(func.count())
+            .select_from(orm.Availability)
+            .where(orm.Availability.tenant_id == ctx.tenant_id)
+        )
+        rows, total = self._paginate(
+            base.order_by(orm.Availability.availability_id.asc()),
+            count,
+            limit=limit,
+            offset=offset,
+        )
+        return _page(dm.Availability, rows, total, limit, offset)
+
 
 class DataSourceRepository(_TenantRepository):
     def add_data_source(self, ctx: TenantContext, source: dm.DataSource) -> dm.DataSource:

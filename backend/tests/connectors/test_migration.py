@@ -15,6 +15,7 @@ P3_PROMPT1 = "p3_enterprise_foundation"
 P3_PROMPT2 = "p3_connector_ingestion_foundation"
 P3_DELIVERY_GRAPH = "p3_delivery_graph"
 P3_DELIVERY_PREDICTION = "p3_delivery_prediction"
+P3_CONTINUOUS_SCENARIO_INTELLIGENCE = "p3_continuous_scenario_intelligence"
 
 
 def _alembic_config():
@@ -50,12 +51,12 @@ def temp_url(tmp_path: Path) -> str:
     os.environ.pop("DATABASE_URL", None)
 
 
-def test_exactly_one_head_is_delivery_prediction():
+def test_exactly_one_head_is_continuous_scenario_intelligence():
     from alembic.script import ScriptDirectory
 
     script = ScriptDirectory.from_config(_alembic_config())
     heads = script.get_heads()
-    assert heads == [P3_DELIVERY_PREDICTION]
+    assert heads == [P3_CONTINUOUS_SCENARIO_INTELLIGENCE]
 
 
 def test_upgrade_from_populated_prompt1_preserves_data(temp_url: str):
