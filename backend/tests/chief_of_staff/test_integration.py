@@ -13,7 +13,6 @@ from app.domain.chief_of_staff_enums import (
     ChiefOfStaffTargetType,
 )
 from app.domain.chief_of_staff_models import ChiefOfStaffRequest
-from app.domain.tenant_context import TenantContext
 from app.services.chief_of_staff.canonicalization import compute_brief_output_hash
 from app.services.chief_of_staff.fallback import build_fallback_brief
 from app.services.chief_of_staff.service import ChiefOfStaffService
@@ -186,20 +185,17 @@ def test_fallback_determinism_same_package_hash(seeded_novabank, uow, novabank_t
     brief_b = build_fallback_brief(
         outcome.package, evidence_package_hash=outcome.package.package_hash
     )
-    hash_a = compute_brief_output_hash(
-        brief_a, evidence_package_hash=outcome.package.package_hash
-    )
-    hash_b = compute_brief_output_hash(
-        brief_b, evidence_package_hash=outcome.package.package_hash
-    )
+    hash_a = compute_brief_output_hash(brief_a, evidence_package_hash=outcome.package.package_hash)
+    hash_b = compute_brief_output_hash(brief_b, evidence_package_hash=outcome.package.package_hash)
     assert hash_a == hash_b
     assert outcome.run.output_hash == hash_a
     # Persistence snapshot PK must not affect semantic output hash.
     assert all(c.package_id == outcome.package.package_hash for c in brief_a.citations)
     assert outcome.evidence_snapshot.snapshot_id != outcome.package.package_hash or True
-    assert all(
-        c.package_id != outcome.evidence_snapshot.snapshot_id for c in brief_a.citations
-    ) or outcome.evidence_snapshot.snapshot_id == outcome.package.package_hash
+    assert (
+        all(c.package_id != outcome.evidence_snapshot.snapshot_id for c in brief_a.citations)
+        or outcome.evidence_snapshot.snapshot_id == outcome.package.package_hash
+    )
 
 
 def test_api_list_and_detail(seeded_novabank, uow, novabank_tenant, client):
@@ -220,9 +216,7 @@ def test_api_list_and_detail(seeded_novabank, uow, novabank_tenant, client):
     listed = client.get("/api/v3/chief-of-staff/briefs", headers=headers)
     assert listed.status_code == 200
     assert listed.json()["total"] >= 1
-    detail = client.get(
-        f"/api/v3/chief-of-staff/briefs/{outcome.brief.brief_id}", headers=headers
-    )
+    detail = client.get(f"/api/v3/chief-of-staff/briefs/{outcome.brief.brief_id}", headers=headers)
     assert detail.status_code == 200
     claims = client.get(
         f"/api/v3/chief-of-staff/briefs/{outcome.brief.brief_id}/claims", headers=headers
@@ -265,9 +259,7 @@ def test_api_has_no_mutation_routes(client):
             assert method.lower() in {"get", "parameters", "head", "options"}
 
 
-def test_prediction_brief_preserves_uncalibrated_semantics(
-    seeded_novabank, uow, novabank_tenant
-):
+def test_prediction_brief_preserves_uncalibrated_semantics(seeded_novabank, uow, novabank_tenant):
     target_id = _first_project_id(uow, novabank_tenant)
     service = ChiefOfStaffService(uow)
     outcome = service.generate(

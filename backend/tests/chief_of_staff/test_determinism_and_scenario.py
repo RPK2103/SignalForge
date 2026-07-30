@@ -147,12 +147,8 @@ def test_database_a_b_output_hash_independent_of_persistence_ids(tmp_path: Path)
     assert [c.ordering_index for c in out_a.structured_brief.citations] == [
         c.ordering_index for c in out_b.structured_brief.citations
     ]
-    assert all(
-        c.package_id == out_a.package.package_hash for c in out_a.structured_brief.citations
-    )
-    assert all(
-        c.package_id == out_b.package.package_hash for c in out_b.structured_brief.citations
-    )
+    assert all(c.package_id == out_a.package.package_hash for c in out_a.structured_brief.citations)
+    assert all(c.package_id == out_b.package.package_hash for c in out_b.structured_brief.citations)
 
     package_hash = out_a.package.package_hash
     output_hash = out_a.run.output_hash
@@ -167,9 +163,7 @@ def test_database_a_b_output_hash_independent_of_persistence_ids(tmp_path: Path)
     )
     mutated = attach_package_hash(mutated)
     assert mutated.package_hash != package_hash
-    mutated_brief = build_fallback_brief(
-        mutated, evidence_package_hash=mutated.package_hash
-    )
+    mutated_brief = build_fallback_brief(mutated, evidence_package_hash=mutated.package_hash)
     mutated_output = compute_brief_output_hash(
         mutated_brief, evidence_package_hash=mutated.package_hash
     )
@@ -265,9 +259,7 @@ def test_novabank_scenario_comparison_brief_proof(
         )
         assert versions.items
         version_id = versions.items[0].scenario_version_id
-        bundle = orch.run(
-            novabank_tenant, scenario_version_id=version_id, as_of_at=AS_OF
-        )
+        bundle = orch.run(novabank_tenant, scenario_version_id=version_id, as_of_at=AS_OF)
         assert bundle.run is not None
         assert bundle.result is not None
         run_ids.append(bundle.run.scenario_run_id)
@@ -299,8 +291,7 @@ def test_novabank_scenario_comparison_brief_proof(
     assert outcome.package.scenario_comparability is not None
     estimate_kinds = list(outcome.package.scenario_comparability.estimate_kinds)
     assert all(
-        c.package_id == outcome.package.package_hash
-        for c in outcome.structured_brief.citations
+        c.package_id == outcome.package.package_hash for c in outcome.structured_brief.citations
     )
 
     scenario_claims = [

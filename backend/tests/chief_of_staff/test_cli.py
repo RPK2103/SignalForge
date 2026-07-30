@@ -24,8 +24,8 @@ def test_cli_generate_and_quality(seeded_novabank, uow, novabank_tenant, monkeyp
     # Point CLI session at the same migrated DB by monkeypatching session factory.
     from sqlalchemy.orm import Session
 
-    from app.db.session import get_engine
     import app.chief_of_staff.cli as cli
+    from app.db.session import get_engine
 
     def _session():
         return Session(get_engine())
@@ -64,9 +64,9 @@ def test_cli_generate_and_quality(seeded_novabank, uow, novabank_tenant, monkeyp
 
 
 def test_cli_validate_review_compare(seeded_novabank, uow, novabank_tenant, monkeypatch, capsys):
-    import app.chief_of_staff.cli as cli
     from sqlalchemy.orm import Session
 
+    import app.chief_of_staff.cli as cli
     from app.db.session import get_engine
 
     monkeypatch.setattr(cli, "_session", lambda: Session(get_engine()))
@@ -95,7 +95,18 @@ def test_cli_validate_review_compare(seeded_novabank, uow, novabank_tenant, monk
             requested_provider=ChiefOfStaffProviderMode.DETERMINISTIC_FALLBACK,
         ),
     )
-    assert main(["validate", "--tenant-id", novabank_tenant.tenant_id, "--brief-id", current.brief.brief_id]) == 0
+    assert (
+        main(
+            [
+                "validate",
+                "--tenant-id",
+                novabank_tenant.tenant_id,
+                "--brief-id",
+                current.brief.brief_id,
+            ]
+        )
+        == 0
+    )
     assert (
         main(
             [

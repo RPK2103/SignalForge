@@ -181,7 +181,9 @@ def cmd_seed_novabank(args: argparse.Namespace) -> int:
     with _session() as session:
         uow = UnitOfWork(session)
         try:
-            result = seed_novabank_briefs(uow, ctx, as_of=_parse_as_of(args.as_of) if args.as_of else None)
+            result = seed_novabank_briefs(
+                uow, ctx, as_of=_parse_as_of(args.as_of) if args.as_of else None
+            )
             uow.commit()
             _print({"synthetic": _SYNTHETIC_BANNER, **result})
             return 0

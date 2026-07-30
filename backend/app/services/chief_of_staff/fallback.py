@@ -130,7 +130,9 @@ def build_fallback_brief(
             )
         return cid
 
-    target_ids = [e.evidence_id for e in evidence_by_type.get(EvidenceEntryType.TARGET_METADATA, [])]
+    target_ids = [
+        e.evidence_id for e in evidence_by_type.get(EvidenceEntryType.TARGET_METADATA, [])
+    ]
     risk_ids = [e.evidence_id for e in package.deterministic_risks]
     finding_ids = [e.evidence_id for e in package.graph_findings]
     gap_ids = [
@@ -183,9 +185,7 @@ def build_fallback_brief(
                 f"({package.target_type.value}) as of {as_of.isoformat()}; "
                 f"target metadata evidence unavailable."
             ),
-            (package_ids or gap_ids)[:5] or [
-                e.evidence_id for e in package.evidence_entries[:1]
-            ],
+            (package_ids or gap_ids)[:5] or [e.evidence_id for e in package.evidence_entries[:1]],
         )
 
     posture_bits = []
@@ -228,11 +228,7 @@ def build_fallback_brief(
     change_claim_ids = []
     if package.intent == ChiefOfStaffIntent.CHANGE_SINCE_LAST_REVIEW:
         for change in package.deterministic_changes[:10]:
-            evid = [
-                eid
-                for eid in (change.current_evidence_id, change.prior_evidence_id)
-                if eid
-            ]
+            evid = [eid for eid in (change.current_evidence_id, change.prior_evidence_id) if eid]
             change_entry_ids = change_ids[:1] + evid
             # Prefer deterministic_change entries.
             preferred = [
@@ -287,7 +283,8 @@ def build_fallback_brief(
             scenario_text = (
                 f"{len(package.scenario_runs)} scenario run evidence items and "
                 f"{len(package.scenario_impacts)} impacts included. "
-                "Scenario outputs are counterfactual decision support and do not establish causation."
+                "Scenario outputs are counterfactual decision support and "
+                "do not establish causation."
             )
         scenario_claim = add_claim(
             ChiefOfStaffClaimType.SCENARIO_IMPLICATION,

@@ -26,7 +26,6 @@ from app.services.chief_of_staff.canonicalization import (
 )
 from app.services.chief_of_staff.decision_options import compute_decision_options
 
-
 AS_OF = datetime(2026, 3, 1, 12, 0, tzinfo=timezone.utc)
 
 
@@ -136,8 +135,6 @@ def test_default_sections_applied():
 
 
 def test_canonical_hash_independent_of_dict_order():
-    pkg_a = attach_package_hash(_minimal_package(missing_data_warnings=["b", "a"]))
-    pkg_b = attach_package_hash(_minimal_package(missing_data_warnings=["a", "b"]))
     # Different list order changes hash — assembly must pre-sort. Verify same sorted input.
     pkg_c = attach_package_hash(_minimal_package(missing_data_warnings=["a", "b"]))
     pkg_d = attach_package_hash(_minimal_package(missing_data_warnings=["a", "b"]))

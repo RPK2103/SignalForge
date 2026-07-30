@@ -35,7 +35,6 @@ from app.domain.chief_of_staff_models import (
     QualitySummary,
 )
 from app.domain.enterprise_models import Page
-from app.domain.prediction_enums import EstimateKind
 from app.domain.tenant_context import TenantContext
 from app.services.enterprise.exceptions import (
     EnterpriseConflictError,
@@ -78,7 +77,9 @@ class _CosTenantRepository:
 
 
 class CosEvidenceSnapshotRepository(_CosTenantRepository):
-    def get(self, ctx: TenantContext, snapshot_id: str) -> ChiefOfStaffEvidenceSnapshotRecord | None:
+    def get(
+        self, ctx: TenantContext, snapshot_id: str
+    ) -> ChiefOfStaffEvidenceSnapshotRecord | None:
         row = self._tenant_get(
             orm.CosEvidenceSnapshot,
             orm.CosEvidenceSnapshot.snapshot_id,
@@ -490,7 +491,9 @@ class CosBriefRepository(_CosTenantRepository):
                 orm.CosEvidenceSnapshot.snapshot_id == brief.evidence_snapshot_id,
             )
         )
-        semantic_package_id = snapshot.package_hash if snapshot is not None else brief.evidence_snapshot_id
+        semantic_package_id = (
+            snapshot.package_hash if snapshot is not None else brief.evidence_snapshot_id
+        )
         rows = self._session.scalars(
             select(orm.CosCitation)
             .where(
@@ -508,9 +511,7 @@ class CosBriefRepository(_CosTenantRepository):
                 citation_id=r.citation_id.split(":", 1)[-1]
                 if ":" in r.citation_id
                 else r.citation_id,
-                claim_id=(
-                    r.claim_id.split(":", 1)[-1] if ":" in r.claim_id else r.claim_id
-                ),
+                claim_id=(r.claim_id.split(":", 1)[-1] if ":" in r.claim_id else r.claim_id),
                 evidence_id=r.evidence_id,
                 evidence_type=r.evidence_type,
                 # API returns content-canonical hash, not the snapshot FK.
@@ -591,9 +592,7 @@ class CosReviewRepository(_CosTenantRepository):
             created_at=row.created_at,
         )
 
-    def list_for_brief(
-        self, ctx: TenantContext, brief_id: str
-    ) -> Sequence[ChiefOfStaffReview]:
+    def list_for_brief(self, ctx: TenantContext, brief_id: str) -> Sequence[ChiefOfStaffReview]:
         rows = self._session.scalars(
             select(orm.CosReview)
             .where(

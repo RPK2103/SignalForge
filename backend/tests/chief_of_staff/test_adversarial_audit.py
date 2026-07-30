@@ -9,9 +9,9 @@ import pytest
 from pydantic import ValidationError
 
 from app.core.config import Settings
+from app.db.models import enterprise as ent_orm
 from app.db.models.assessment import Assessment, AssessmentRiskFinding
 from app.db.models.catalog import Project
-from app.db.models import enterprise as ent_orm
 from app.domain.chief_of_staff_constants import (
     MAX_CITATIONS_PER_CLAIM,
     MAX_DETERMINISTIC_RISKS,
@@ -29,10 +29,10 @@ from app.domain.chief_of_staff_enums import (
     ChiefOfStaffIntent,
     ChiefOfStaffProviderMode,
     ChiefOfStaffTargetType,
+    CitationResult,
     DecisionOptionType,
     EvidenceEntryType,
     GroundingResult,
-    CitationResult,
 )
 from app.domain.chief_of_staff_models import (
     ChiefOfStaffBrief,
@@ -48,7 +48,6 @@ from app.domain.chief_of_staff_models import (
     TruncationMetadata,
 )
 from app.domain.prediction_enums import EstimateKind
-from app.domain.tenant_context import TenantContext
 from app.services.chief_of_staff.canonicalization import (
     attach_package_hash,
     compute_brief_output_hash,
@@ -161,8 +160,7 @@ def _brief_from_claim(
         sections=[],
         claims=[claim],
         citations=citations,
-        decision_option_types=options
-        or [DecisionOptionType.CONTINUE_MONITORING],
+        decision_option_types=options or [DecisionOptionType.CONTINUE_MONITORING],
         limitations=["synthetic"],
         provider_mode=ChiefOfStaffProviderMode.AZURE_OPENAI,
         generation_state=ChiefOfStaffGenerationState.GENERATED,
@@ -265,9 +263,7 @@ def test_maximum_bound_package_truncates_and_hashes(seeded_novabank, uow, novaba
     brief = build_fallback_brief(hashed, evidence_package_hash=hashed.package_hash)
     assert len(brief.claims) <= 30
     assert all(len(c.evidence_ids) <= MAX_CITATIONS_PER_CLAIM for c in brief.claims)
-    validate_brief_grounding(
-        brief, hashed, evidence_package_hash=hashed.package_hash
-    )
+    validate_brief_grounding(brief, hashed, evidence_package_hash=hashed.package_hash)
 
     # Overflow at model boundary must reject.
     with pytest.raises(ValidationError):
@@ -301,9 +297,7 @@ def test_assessment_included_when_legacy_link_present(
     target_id = _first_project_id(uow, novabank_tenant)
     legacy_id = "cos_audit_project"
     if db_session.get(Project, legacy_id) is None:
-        db_session.add(
-            Project(project_id=legacy_id, name="CoS Audit Project", schema_version="1")
-        )
+        db_session.add(Project(project_id=legacy_id, name="CoS Audit Project", schema_version="1"))
     row = db_session.get(ent_orm.EnterpriseProject, target_id)
     assert row is not None
     row.legacy_project_id = legacy_id
@@ -351,8 +345,7 @@ def test_assessment_included_when_legacy_link_present(
     assert package.assessment_confidence == 61.0
     assert package.assessment_evidence_id is not None
     assert any(
-        e.evidence_type == EvidenceEntryType.READINESS_ASSESSMENT
-        for e in package.evidence_entries
+        e.evidence_type == EvidenceEntryType.READINESS_ASSESSMENT for e in package.evidence_entries
     )
     assert any(
         e.evidence_type == EvidenceEntryType.ASSESSMENT_RISK for e in package.deterministic_risks
@@ -377,9 +370,7 @@ def test_missing_assessment_is_explicit(seeded_novabank, uow, novabank_tenant):
     assert any("readiness assessment" in w.lower() for w in package.missing_data_warnings)
 
 
-def test_prior_brief_wrong_target_equivalent_to_missing(
-    seeded_novabank, uow, novabank_tenant
-):
+def test_prior_brief_wrong_target_equivalent_to_missing(seeded_novabank, uow, novabank_tenant):
     projects = uow.initiatives_projects.list_projects(novabank_tenant, limit=5, offset=0)
     assert len(projects.items) >= 2
     service = ChiefOfStaffService(uow)
@@ -531,9 +522,7 @@ def test_responsible_language_rejects_overstatements(text, exc_type):
     brief = build_fallback_brief(package, evidence_package_hash=PACKAGE_ID)
     poisoned = brief.model_copy(
         update={
-            "claims": [
-                brief.claims[0].model_copy(update={"text": text})
-            ]
+            "claims": [brief.claims[0].model_copy(update={"text": text})]
             if brief.claims
             else [
                 ChiefOfStaffClaim(

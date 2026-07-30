@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from app.domain.chief_of_staff_models import ChiefOfStaffBrief, ChiefOfStaffEvidencePackage
 from app.domain.chief_of_staff_constants import FALLBACK_TEMPLATE_VERSION, OUTPUT_SCHEMA_VERSION
+from app.domain.chief_of_staff_models import ChiefOfStaffBrief, ChiefOfStaffEvidencePackage
 from app.services.persistence.snapshot_service import canonical_json, snapshot_hash
 
 

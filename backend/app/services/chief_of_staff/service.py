@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 import time
-from datetime import datetime, timezone
 
 from app.db.types import new_uuid
 from app.db.unit_of_work import UnitOfWork
@@ -15,7 +14,6 @@ from app.domain.chief_of_staff_constants import (
     PROMPT_VERSION,
 )
 from app.domain.chief_of_staff_enums import (
-    ChiefOfStaffGenerationState,
     ChiefOfStaffProviderMode,
     ChiefOfStaffReviewState,
 )
@@ -32,7 +30,6 @@ from app.services.chief_of_staff.canonicalization import compute_brief_output_ha
 from app.services.chief_of_staff.evidence_assembly import EvidenceAssemblyService
 from app.services.chief_of_staff.orchestration import ChiefOfStaffOrchestrator
 from app.services.enterprise.exceptions import (
-    EnterpriseNotFoundError,
     EnterpriseValidationError,
 )
 
@@ -177,9 +174,7 @@ class ChiefOfStaffService:
         from app.services.chief_of_staff.responsible_language import validate_responsible_language
 
         structured = ChiefOfStaffBrief.model_validate(brief.brief_json)
-        validate_brief_grounding(
-            structured, package, evidence_package_hash=snapshot.package_hash
-        )
+        validate_brief_grounding(structured, package, evidence_package_hash=snapshot.package_hash)
         validate_responsible_language(structured)
         return {
             "brief_id": brief.brief_id,
@@ -191,13 +186,13 @@ class ChiefOfStaffService:
             "probability": brief.probability,
         }
 
-    def compare_briefs(self, ctx: TenantContext, current_brief_id: str, prior_brief_id: str) -> dict:
+    def compare_briefs(
+        self, ctx: TenantContext, current_brief_id: str, prior_brief_id: str
+    ) -> dict:
         current = self._uow.cos_briefs.require(ctx, current_brief_id)
         prior = self._uow.cos_briefs.require(ctx, prior_brief_id)
         if current.target_type != prior.target_type or current.target_id != prior.target_id:
-            raise EnterpriseValidationError(
-                "Compared briefs must share the same tenant target"
-            )
+            raise EnterpriseValidationError("Compared briefs must share the same tenant target")
         current_snap = self._uow.cos_evidence_snapshots.require(ctx, current.evidence_snapshot_id)
         prior_snap = self._uow.cos_evidence_snapshots.require(ctx, prior.evidence_snapshot_id)
         current_pkg = ChiefOfStaffEvidencePackage.model_validate(current_snap.package_json)

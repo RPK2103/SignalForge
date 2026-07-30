@@ -37,9 +37,7 @@ CLAIM_SUPPORT_MATRIX: dict[ChiefOfStaffClaimType, frozenset[EvidenceEntryType]] 
             EvidenceEntryType.EVIDENCE_SIGNAL,
         }
     ),
-    ChiefOfStaffClaimType.PREDICTION_ESTIMATE: frozenset(
-        {EvidenceEntryType.DELIVERY_PREDICTION}
-    ),
+    ChiefOfStaffClaimType.PREDICTION_ESTIMATE: frozenset({EvidenceEntryType.DELIVERY_PREDICTION}),
     ChiefOfStaffClaimType.SCENARIO_IMPLICATION: frozenset(
         {
             EvidenceEntryType.SCENARIO_RUN,
@@ -113,9 +111,7 @@ def validate_brief_grounding(
         raise GroundingValidationError("evidence package hash mismatch")
 
     evidence_by_id = {e.evidence_id: e for e in package.evidence_entries}
-    allowed_options = {
-        c.option_type for c in package.decision_option_candidates if c.eligible
-    }
+    allowed_options = {c.option_type for c in package.decision_option_candidates if c.eligible}
 
     seen_claim_ids: set[str] = set()
     seen_citation_ids: set[str] = set()
@@ -126,9 +122,7 @@ def validate_brief_grounding(
         seen_claim_ids.add(claim.claim_id)
 
         if claim.support_status != ChiefOfStaffClaimSupportStatus.SUPPORTED:
-            raise UnsupportedClaimError(
-                f"Claim {claim.claim_id} is not fully supported"
-            )
+            raise UnsupportedClaimError(f"Claim {claim.claim_id} is not fully supported")
 
         if not claim.evidence_ids:
             raise CitationValidationError(f"Claim {claim.claim_id} missing citations")

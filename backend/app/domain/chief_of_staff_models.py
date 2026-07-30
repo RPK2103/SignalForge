@@ -20,6 +20,7 @@ from app.domain.chief_of_staff_constants import (
     INTENT_REQUIRES_PRIOR_BRIEF,
     MAX_CITATIONS_PER_CLAIM,
     MAX_CLAIM_TEXT_CHARS,
+    MAX_CLAIMS,
     MAX_DECISION_OPTION_CANDIDATES,
     MAX_DECISION_OPTION_RATIONALE_CHARS,
     MAX_DETERMINISTIC_RISKS,
@@ -31,7 +32,6 @@ from app.domain.chief_of_staff_constants import (
     MAX_REVIEW_NOTES_CHARS,
     MAX_SCENARIO_IMPACTS,
     MAX_SCENARIO_RUNS,
-    MAX_CLAIMS,
     OUTPUT_SCHEMA_VERSION,
     SUPPORTED_HORIZONS,
 )
@@ -130,22 +130,16 @@ class ChiefOfStaffRequest(BaseModel):
         if requires_prior and not self.prior_brief_id:
             raise ValueError(f"prior_brief_id is required for intent={self.intent.value}")
         if not requires_prior and self.prior_brief_id:
-            raise ValueError(
-                f"prior_brief_id is not accepted for intent={self.intent.value}"
-            )
+            raise ValueError(f"prior_brief_id is not accepted for intent={self.intent.value}")
         if self.prior_brief_id is not None:
             # Explicit max-one prior brief (scalar field already enforces).
             _ = MAX_PRIOR_BRIEFS
 
         allows_scenarios = self.intent in INTENT_ALLOWS_SCENARIO_RUNS
         if self.scenario_run_ids and not allows_scenarios:
-            raise ValueError(
-                f"scenario_run_ids are not accepted for intent={self.intent.value}"
-            )
+            raise ValueError(f"scenario_run_ids are not accepted for intent={self.intent.value}")
         if allows_scenarios and not self.scenario_run_ids:
-            raise ValueError(
-                f"scenario_run_ids are required for intent={self.intent.value}"
-            )
+            raise ValueError(f"scenario_run_ids are required for intent={self.intent.value}")
 
         if self.intent == ChiefOfStaffIntent.DELIVERY_PREDICTION_BRIEF:
             if self.horizon_days is None:
@@ -336,14 +330,10 @@ class ChiefOfStaffEvidencePackage(BaseModel):
     deterministic_risks: list[EvidenceEntry] = Field(
         default_factory=list, max_length=MAX_DETERMINISTIC_RISKS
     )
-    graph_findings: list[EvidenceEntry] = Field(
-        default_factory=list, max_length=MAX_GRAPH_FINDINGS
-    )
+    graph_findings: list[EvidenceEntry] = Field(default_factory=list, max_length=MAX_GRAPH_FINDINGS)
     prediction: PredictionProvenanceSummary | None = None
     prediction_evidence_id: str | None = None
-    scenario_runs: list[EvidenceEntry] = Field(
-        default_factory=list, max_length=MAX_SCENARIO_RUNS
-    )
+    scenario_runs: list[EvidenceEntry] = Field(default_factory=list, max_length=MAX_SCENARIO_RUNS)
     scenario_impacts: list[EvidenceEntry] = Field(
         default_factory=list, max_length=MAX_SCENARIO_IMPACTS
     )

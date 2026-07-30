@@ -28,9 +28,7 @@ def validate_responsible_language(brief: ChiefOfStaffBrief) -> None:
     # Structured semantic checks (primary control).
     if brief.estimate_kind == EstimateKind.UNCALIBRATED_SCORE:
         if brief.probability is not None:
-            raise ResponsibleLanguageError(
-                "Uncalibrated score must not populate probability"
-            )
+            raise ResponsibleLanguageError("Uncalibrated score must not populate probability")
         if "calibrated probability" in blob and "not a calibrated" not in blob:
             # Allow explicit negation; reject affirmative calibrated claims.
             if "is a calibrated" in blob or "calibrated probability of" in blob:

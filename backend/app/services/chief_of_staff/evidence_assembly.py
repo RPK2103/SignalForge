@@ -30,8 +30,8 @@ from app.domain.chief_of_staff_models import (
     DeterministicChangeRecord,
     EvidenceEntry,
     FreshnessSummary,
-    PriorBriefReference,
     PredictionProvenanceSummary,
+    PriorBriefReference,
     ScenarioComparability,
     TargetLifecycleInfo,
     TruncationMetadata,
@@ -78,9 +78,7 @@ def _entry(
     valid_to: datetime | None = None,
     extra_hash_parts: tuple[str, ...] = (),
 ) -> EvidenceEntry:
-    eid = build_evidence_id(
-        evidence_type, tenant_id, source_record_id, *extra_hash_parts
-    )
+    eid = build_evidence_id(evidence_type, tenant_id, source_record_id, *extra_hash_parts)
     return EvidenceEntry(
         evidence_id=eid,
         evidence_type=evidence_type,
@@ -154,9 +152,14 @@ class EvidenceAssemblyService:
             risks, risk_trunc = self._risks_from_findings(findings, ctx, missing)
         signals, signal_trunc = self._load_evidence_signals(ctx, request, as_of, missing)
         prediction_summary, pred_entry = self._load_prediction(ctx, request, as_of, missing)
-        scenario_runs, scenario_results, scenario_impacts, scen_run_trunc, scen_imp_trunc, comparability = (
-            self._load_scenarios(ctx, request, as_of, missing)
-        )
+        (
+            scenario_runs,
+            scenario_results,
+            scenario_impacts,
+            scen_run_trunc,
+            scen_imp_trunc,
+            comparability,
+        ) = self._load_scenarios(ctx, request, as_of, missing)
 
         if assessment_entry:
             entries.append(assessment_entry)
@@ -226,9 +229,12 @@ class EvidenceAssemblyService:
                     source_record_id=f"truncation:{request.target_id}",
                     summary=(
                         "Evidence truncated under package bounds; "
-                        f"risks={truncation.risks_included}/{truncation.risks_total}, "
-                        f"findings={truncation.graph_findings_included}/{truncation.graph_findings_total}, "
-                        f"signals={truncation.evidence_signals_included}/{truncation.evidence_signals_total}"
+                        f"risks={truncation.risks_included}/"
+                        f"{truncation.risks_total}, "
+                        f"findings={truncation.graph_findings_included}/"
+                        f"{truncation.graph_findings_total}, "
+                        f"signals={truncation.evidence_signals_included}/"
+                        f"{truncation.evidence_signals_total}"
                     ),
                     semantic_classification="truncation",
                     provenance="evidence_assembly",
@@ -401,7 +407,9 @@ class EvidenceAssemblyService:
             target_id=initiative.initiative_id,
             display_name=normalize_untrusted_text(initiative.name, 200),
             lifecycle_state=str(
-                initiative.status.value if hasattr(initiative.status, "value") else initiative.status
+                initiative.status.value
+                if hasattr(initiative.status, "value")
+                else initiative.status
             ),
             valid_from=initiative.planned_start,
             valid_to=initiative.planned_target,
@@ -517,9 +525,7 @@ class EvidenceAssemblyService:
         )
         # Filter to findings whose primary/affected nodes relate to target.
         # Fail closed when no target nodes are found — never include unrelated findings.
-        target_nodes = self._uow.graph_nodes.list_nodes(
-            ctx, active_at=as_of, limit=200, offset=0
-        )
+        target_nodes = self._uow.graph_nodes.list_nodes(ctx, active_at=as_of, limit=200, offset=0)
         related_node_ids = {
             n.graph_node_id
             for n in target_nodes.items
@@ -527,17 +533,13 @@ class EvidenceAssemblyService:
             or getattr(n, "stable_entity_id", None) == request.target_id
         }
         if not related_node_ids:
-            missing.append(
-                "No graph nodes for target at cutoff; graph findings omitted"
-            )
+            missing.append("No graph nodes for target at cutoff; graph findings omitted")
             return [], (False, 0)
 
         # One-hop expansion via edges so work-item/team findings tied to the
         # target project/initiative are included without tenant-wide leakage.
         expanded = set(related_node_ids)
-        edges = self._uow.graph_edges.list_edges(
-            ctx, active_at=as_of, limit=500, offset=0
-        )
+        edges = self._uow.graph_edges.list_edges(ctx, active_at=as_of, limit=500, offset=0)
         for edge in edges.items:
             if edge.source_node_id in related_node_ids:
                 expanded.add(edge.target_node_id)
@@ -555,7 +557,9 @@ class EvidenceAssemblyService:
 
         selected.sort(
             key=lambda f: (
-                severity_rank(str(f.severity.value if hasattr(f.severity, "value") else f.severity)),
+                severity_rank(
+                    str(f.severity.value if hasattr(f.severity, "value") else f.severity)
+                ),
                 -(f.detected_at.timestamp() if f.detected_at else float("-inf")),
                 f.graph_finding_id,
             )
@@ -641,8 +645,7 @@ class EvidenceAssemblyService:
         eligible = [
             s
             for s in page.items
-            if _utc(s.event_time) <= as_of
-            and (s.expires_at is None or _utc(s.expires_at) > as_of)
+            if _utc(s.event_time) <= as_of and (s.expires_at is None or _utc(s.expires_at) > as_of)
         ]
         eligible.sort(
             key=lambda s: (
@@ -726,14 +729,15 @@ class EvidenceAssemblyService:
         if str(getattr(pred.data_scope, "value", pred.data_scope)) in {"synthetic", "demo"}:
             notes.append("synthetic/demo scoped data")
 
+        probability_value = (
+            None
+            if pred.estimate_kind == EstimateKind.UNCALIBRATED_SCORE
+            else pred.probability_of_delivery_success
+        )
         summary = PredictionProvenanceSummary(
             prediction_id=pred.delivery_prediction_id,
             estimate_kind=pred.estimate_kind,
-            probability=(
-                None
-                if pred.estimate_kind == EstimateKind.UNCALIBRATED_SCORE
-                else pred.probability_of_delivery_success
-            ),
+            probability=probability_value,
             uncalibrated_score=pred.uncalibrated_risk_score,
             model_id=pred.model_id,
             model_state=model_state,
@@ -750,8 +754,7 @@ class EvidenceAssemblyService:
             summary=(
                 f"estimate_kind={pred.estimate_kind.value}; "
                 f"score={pred.uncalibrated_risk_score}; "
-                f"probability="
-                f"{None if pred.estimate_kind == EstimateKind.UNCALIBRATED_SCORE else pred.probability_of_delivery_success}; "
+                f"probability={probability_value}; "
                 f"horizon={pred.horizon_days}; model_state={model_state}"
             ),
             semantic_classification=pred.estimate_kind.value,
@@ -780,12 +783,13 @@ class EvidenceAssemblyService:
                 run = self._uow.scenario_runs.get(ctx, run_id)
                 if run is None:
                     raise EnterpriseNotFoundError(_NOT_FOUND)
-                if run.target_id != request.target_id or run.target_type != request.target_type.value:
+                if (
+                    run.target_id != request.target_id
+                    or run.target_type != request.target_type.value
+                ):
                     raise EnterpriseNotFoundError(_NOT_FOUND)
                 if _utc(run.as_of_at) > as_of:
-                    raise EnterpriseValidationError(
-                        "Scenario run as_of_at is after request cutoff"
-                    )
+                    raise EnterpriseValidationError("Scenario run as_of_at is after request cutoff")
                 if str(getattr(run.state, "value", run.state)) not in {
                     "succeeded",
                     "partial",
@@ -822,8 +826,7 @@ class EvidenceAssemblyService:
                 source_type="scenario_run",
                 source_record_id=r.scenario_run_id,
                 summary=(
-                    f"scenario_run={r.scenario_run_id}; horizon={r.horizon_days}; "
-                    f"state={r.state}"
+                    f"scenario_run={r.scenario_run_id}; horizon={r.horizon_days}; state={r.state}"
                 ),
                 semantic_classification="scenario_run",
                 provenance=f"run_input_hash:{(r.run_input_hash or '')[:16]}",
@@ -914,9 +917,7 @@ class EvidenceAssemblyService:
             comparability,
         )
 
-    def _freshness_summary(
-        self, signals: list[EvidenceEntry], as_of: datetime
-    ) -> FreshnessSummary:
+    def _freshness_summary(self, signals: list[EvidenceEntry], as_of: datetime) -> FreshnessSummary:
         if not signals:
             return FreshnessSummary(overall_state="never_synced", notes=["No evidence signals"])
         times = [s.source_event_time for s in signals if s.source_event_time]

@@ -13,6 +13,7 @@ from app.domain.chief_of_staff_enums import (
     ChiefOfStaffIntent,
     ChiefOfStaffProviderMode,
     ChiefOfStaffTargetType,
+    DecisionOptionType,
     EvidenceEntryType,
 )
 from app.domain.chief_of_staff_models import (
@@ -23,7 +24,6 @@ from app.domain.chief_of_staff_models import (
     TargetLifecycleInfo,
     TruncationMetadata,
 )
-from app.domain.chief_of_staff_enums import DecisionOptionType
 from app.services.chief_of_staff.orchestration import ChiefOfStaffOrchestrator
 from app.services.chief_of_staff.parser import parse_chief_of_staff_brief
 from app.services.chief_of_staff.provider_interface import (

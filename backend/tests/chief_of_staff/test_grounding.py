@@ -14,6 +14,7 @@ from app.domain.chief_of_staff_enums import (
     ChiefOfStaffIntent,
     ChiefOfStaffProviderMode,
     ChiefOfStaffTargetType,
+    DecisionOptionType,
     EvidenceEntryType,
 )
 from app.domain.chief_of_staff_models import (
@@ -27,7 +28,6 @@ from app.domain.chief_of_staff_models import (
     TargetLifecycleInfo,
     TruncationMetadata,
 )
-from app.domain.chief_of_staff_enums import DecisionOptionType
 from app.domain.prediction_enums import EstimateKind
 from app.services.chief_of_staff.fallback import build_fallback_brief
 from app.services.chief_of_staff.grounding import (
@@ -143,9 +143,7 @@ def test_citation_outside_package_rejected():
     entries = [_entry("pkg:1", EvidenceEntryType.PACKAGE_METADATA)]
     package = _package(entries)
     brief = build_fallback_brief(package, package_id=PACKAGE_ID)
-    cites = [
-        c.model_copy(update={"package_id": "other-package"}) for c in brief.citations
-    ]
+    cites = [c.model_copy(update={"package_id": "other-package"}) for c in brief.citations]
     brief = brief.model_copy(update={"citations": cites})
     with pytest.raises(CitationValidationError):
         validate_brief_grounding(brief, package, package_id=PACKAGE_ID)

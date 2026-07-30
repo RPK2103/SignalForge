@@ -5,6 +5,12 @@ from typing import TypeVar
 
 from sqlalchemy.orm import Session
 
+from app.db.repositories.chief_of_staff_repositories import (
+    CosBriefRepository,
+    CosEvidenceSnapshotRepository,
+    CosReviewRepository,
+    CosRunRepository,
+)
 from app.db.repositories.connector_repositories import (
     ConnectorCheckpointRepository,
     IngestionDeadLetterRepository,
@@ -38,12 +44,6 @@ from app.db.repositories.prediction_repositories import (
     PredictionModelEvaluationRepository,
     PredictionModelRepository,
     PredictionRunRepository,
-)
-from app.db.repositories.chief_of_staff_repositories import (
-    CosBriefRepository,
-    CosEvidenceSnapshotRepository,
-    CosReviewRepository,
-    CosRunRepository,
 )
 from app.db.repositories.scenario_repositories import (
     ScenarioDefinitionRepository,

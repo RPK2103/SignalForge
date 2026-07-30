@@ -163,8 +163,7 @@ class ChiefOfStaffOrchestrator:
             brief = brief.model_copy(
                 update={
                     "citations": [
-                        c.model_copy(update={"package_id": package_hash})
-                        for c in brief.citations
+                        c.model_copy(update={"package_id": package_hash}) for c in brief.citations
                     ],
                     "provider_mode": ChiefOfStaffProviderMode.AZURE_OPENAI,
                     "generation_state": ChiefOfStaffGenerationState.GENERATED,
@@ -172,9 +171,7 @@ class ChiefOfStaffOrchestrator:
                 }
             )
             validate_responsible_language(brief)
-            validate_brief_grounding(
-                brief, package, evidence_package_hash=package_hash
-            )
+            validate_brief_grounding(brief, package, evidence_package_hash=package_hash)
             return CosGenerationOutcome(
                 brief=brief,
                 requested_provider=requested_provider,
@@ -257,9 +254,7 @@ class ChiefOfStaffOrchestrator:
             evidence_package_hash=evidence_package_hash,
             prompt_version=prompt_version,
         )
-        validate_brief_grounding(
-            brief, package, evidence_package_hash=evidence_package_hash
-        )
+        validate_brief_grounding(brief, package, evidence_package_hash=evidence_package_hash)
         validate_responsible_language(brief)
         return CosGenerationOutcome(
             brief=brief,
