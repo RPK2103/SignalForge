@@ -114,14 +114,14 @@ def test_availability_invalid_interval_rejected(uow, tenant_a):
         )
 
 
-def test_ingestion_run_state_transitions(uow, tenant_a):
+def test_ingestion_run_state_transitions(uow, sec_a):
     svc = IngestionService(uow)
     source = svc.register_data_source(
-        tenant_a, source_type=DataSourceType.GITHUB, display_name="GitHub"
+        sec_a, source_type=DataSourceType.GITHUB, display_name="GitHub"
     )
-    run = svc.start_run(tenant_a, data_source_id=source.data_source_id, run_key="r1")
+    run = svc.start_run(sec_a, data_source_id=source.data_source_id, run_key="r1")
     completed = svc.complete_run(
-        tenant_a,
+        sec_a,
         ingestion_run_id=run.ingestion_run_id,
         status=IngestionRunStatus.SUCCEEDED,
         records_read=10,
@@ -131,34 +131,32 @@ def test_ingestion_run_state_transitions(uow, tenant_a):
     # Re-completing a terminal run is rejected.
     with pytest.raises(EnterpriseValidationError):
         svc.complete_run(
-            tenant_a,
+            sec_a,
             ingestion_run_id=run.ingestion_run_id,
             status=IngestionRunStatus.SUCCEEDED,
         )
 
 
-def test_complete_run_requires_terminal_status(uow, tenant_a):
+def test_complete_run_requires_terminal_status(uow, sec_a):
     svc = IngestionService(uow)
-    source = svc.register_data_source(
-        tenant_a, source_type=DataSourceType.JIRA, display_name="Jira"
-    )
-    run = svc.start_run(tenant_a, data_source_id=source.data_source_id, run_key="r1")
+    source = svc.register_data_source(sec_a, source_type=DataSourceType.JIRA, display_name="Jira")
+    run = svc.start_run(sec_a, data_source_id=source.data_source_id, run_key="r1")
     with pytest.raises(EnterpriseValidationError):
         svc.complete_run(
-            tenant_a,
+            sec_a,
             ingestion_run_id=run.ingestion_run_id,
             status=IngestionRunStatus.RUNNING,
         )
 
 
-def test_failed_run_persists_sanitized_error(uow, tenant_a):
+def test_failed_run_persists_sanitized_error(uow, sec_a):
     svc = IngestionService(uow)
     source = svc.register_data_source(
-        tenant_a, source_type=DataSourceType.GITHUB, display_name="GitHub"
+        sec_a, source_type=DataSourceType.GITHUB, display_name="GitHub"
     )
-    run = svc.start_run(tenant_a, data_source_id=source.data_source_id, run_key="r1")
+    run = svc.start_run(sec_a, data_source_id=source.data_source_id, run_key="r1")
     completed = svc.complete_run(
-        tenant_a,
+        sec_a,
         ingestion_run_id=run.ingestion_run_id,
         status=IngestionRunStatus.FAILED,
         error_summary="connection failed token=supersecret",
@@ -167,14 +165,14 @@ def test_failed_run_persists_sanitized_error(uow, tenant_a):
     assert "redacted" in (completed.error_summary or "")
 
 
-def test_evidence_provenance_and_dedup(uow, tenant_a):
+def test_evidence_provenance_and_dedup(uow, sec_a):
     svc = IngestionService(uow)
     source = svc.register_data_source(
-        tenant_a, source_type=DataSourceType.GITHUB, display_name="GitHub"
+        sec_a, source_type=DataSourceType.GITHUB, display_name="GitHub"
     )
     payload = {"sha": "abc123", "message": "fix"}
     signal, created = svc.append_evidence(
-        tenant_a,
+        sec_a,
         data_source_id=source.data_source_id,
         source_record_id="commit-1",
         signal_type=EvidenceSignalType.COMMIT,
@@ -187,7 +185,7 @@ def test_evidence_provenance_and_dedup(uow, tenant_a):
     assert signal.provenance["recorded_by"] == "signalforge.ingestion_service"
     assert len(signal.payload_hash) == 64
     _, created_again = svc.append_evidence(
-        tenant_a,
+        sec_a,
         data_source_id=source.data_source_id,
         source_record_id="commit-1",
         signal_type=EvidenceSignalType.COMMIT,
@@ -199,11 +197,11 @@ def test_evidence_provenance_and_dedup(uow, tenant_a):
     assert created_again is False
 
 
-def test_ingestion_run_not_found_for_tenant(uow, tenant_a):
+def test_ingestion_run_not_found_for_tenant(uow, sec_a):
     svc = IngestionService(uow)
     with pytest.raises(EnterpriseNotFoundError):
         svc.complete_run(
-            tenant_a,
+            sec_a,
             ingestion_run_id="run_missing",
             status=IngestionRunStatus.SUCCEEDED,
         )

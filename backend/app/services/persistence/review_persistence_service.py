@@ -13,6 +13,9 @@ from app.domain.persistence_models import (
     AuditEventRecord,
     HumanReviewRecord,
 )
+from app.security.authorization import AuthorizationService
+from app.security.context import SecurityContext
+from app.security.enums import Permission
 from app.services.persistence.assessment_persistence_service import AssessmentPersistenceService
 from app.services.persistence.exceptions import RecordNotFoundError
 
@@ -38,12 +41,17 @@ class HumanReviewPersistenceService:
     def __init__(self, uow: UnitOfWork) -> None:
         self._uow = uow
         self._assessments = AssessmentPersistenceService(uow)
+        self._authz = AuthorizationService()
 
     def add_review(
         self,
+        context: SecurityContext,
         assessment_record_id: UUID,
         request: HumanReviewRequest,
     ) -> AssessmentRecordResponse:
+        # Service-layer authorization (deny-by-default): appending a human review
+        # of a leadership brief requires ``chief_of_staff.review``.
+        self._authz.require_context(context, Permission.CHIEF_OF_STAFF_REVIEW)
         try:
             self._uow.assessments.get_by_record_id(assessment_record_id)
         except RecordNotFoundError:

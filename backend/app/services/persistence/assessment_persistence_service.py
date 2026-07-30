@@ -14,6 +14,9 @@ from app.domain.persistence_models import (
     PaginatedAssessmentList,
 )
 from app.schemas.api_v2 import ReadinessAssessRequest, ReadinessAssessResponse
+from app.security.authorization import AuthorizationService
+from app.security.context import SecurityContext
+from app.security.enums import Permission
 from app.services.persistence.snapshot_service import (
     build_assessment_input_snapshot,
     build_assessment_result_snapshot,
@@ -27,13 +30,18 @@ class AssessmentPersistenceService:
     def __init__(self, uow: UnitOfWork) -> None:
         self._uow = uow
         self._orchestrator = ReadinessOrchestrator(catalog=uow.catalog)
+        self._authz = AuthorizationService()
 
     def create_assessment(
         self,
+        context: SecurityContext,
         request: ReadinessAssessRequest,
         *,
         actor_reference: str | None = None,
     ) -> AssessmentRecordResponse:
+        # Service-layer authorization (deny-by-default). Persisting assessment
+        # history is a sensitive mutation; fail closed without a valid context.
+        self._authz.require_context(context, Permission.ENTERPRISE_MANAGE)
         result = self._orchestrator.assess(request)
         policy_version = result.policy_version
         input_snapshot = build_assessment_input_snapshot(

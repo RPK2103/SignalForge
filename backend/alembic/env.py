@@ -5,6 +5,10 @@ from sqlalchemy import engine_from_config, pool
 from alembic import context
 from app.core.config import get_settings
 from app.db import models as _models  # noqa: F401  (register all tables on metadata)
+from app.db.alembic_version_table import (
+    install_wide_version_table,
+    widen_existing_version_table,
+)
 from app.db.base import Base
 from app.db.session import normalize_database_url
 
@@ -12,6 +16,11 @@ config = context.config
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
+
+# Cross-dialect fix: widen alembic_version.version_num so long Phase 3 revision
+# ids fit on PostgreSQL (VARCHAR length is enforced there, unlike SQLite). Applies
+# to both online and offline (--sql) generation.
+install_wide_version_table()
 
 target_metadata = Base.metadata
 
@@ -55,6 +64,9 @@ def run_migrations_online() -> None:
         )
 
         with context.begin_transaction():
+            # Widen a pre-existing narrower PostgreSQL version column before running
+            # migrations (safe no-op on SQLite / fresh databases).
+            widen_existing_version_table(connection)
             context.run_migrations()
 
 

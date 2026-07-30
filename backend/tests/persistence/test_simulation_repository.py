@@ -6,17 +6,21 @@ import pytest
 
 from app.domain.simulation_models import RemoveSimulationOperation
 from app.schemas.api_v2 import SimulationRequest
+from app.security.context import internal_system_context
 from app.services.persistence.simulation_persistence_service import SimulationPersistenceService
+
+CTX = internal_system_context("novabank", correlation_id="test")
 
 
 def test_create_and_retrieve_simulation(unit_of_work):
     service = SimulationPersistenceService(unit_of_work)
     created = service.create_simulation(
+        CTX,
         SimulationRequest(
             project_id="azure_ai_migration",
             baseline_engineer_ids=["kavi", "vikram"],
             operation=RemoveSimulationOperation(engineer_id="kavi"),
-        )
+        ),
     )
     loaded = service.get_simulation(created.simulation_record_id)
     assert loaded.simulation_id == created.simulation_id
@@ -30,8 +34,8 @@ def test_distinct_records_same_simulation_id(unit_of_work):
         baseline_engineer_ids=["kavi", "vikram"],
         operation=RemoveSimulationOperation(engineer_id="kavi"),
     )
-    first = service.create_simulation(request)
-    second = service.create_simulation(request)
+    first = service.create_simulation(CTX, request)
+    second = service.create_simulation(CTX, request)
     assert first.simulation_id == second.simulation_id
     assert first.simulation_record_id != second.simulation_record_id
 

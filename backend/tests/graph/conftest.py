@@ -19,6 +19,7 @@ from app.domain.tenant_context import TenantContext
 from app.main import app
 from app.services.graph.analysis_service import GraphAnalysisService
 from app.services.graph.projection_service import GraphProjectionService
+from tests.support.auth import broad_test_headers
 
 
 def _run_alembic(url: str, revision: str) -> None:
@@ -109,7 +110,7 @@ def client(projected_novabank: str) -> Generator[TestClient, None, None]:
     os.environ["DATABASE_URL"] = projected_novabank
     get_settings.cache_clear()
     reset_engine()
-    with TestClient(app) as test_client:
+    with TestClient(app, headers=broad_test_headers()) as test_client:
         yield test_client
     reset_engine()
     get_settings.cache_clear()

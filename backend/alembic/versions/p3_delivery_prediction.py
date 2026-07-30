@@ -268,7 +268,9 @@ def upgrade() -> None:
             name="ck_ent_pm_model_state",
         ),
         sa.CheckConstraint(
-            "NOT (data_scope = 'synthetic' AND production_eligible = 1)",
+            # Dialect-safe boolean predicate: comparing a Boolean column to the
+            # integer 1 fails on PostgreSQL. A bare boolean column is portable.
+            "NOT (data_scope = 'synthetic' AND production_eligible)",
             name="ck_ent_pm_synthetic_not_prod",
         ),
         sa.PrimaryKeyConstraint("prediction_model_id", name=op.f("pk_ent_prediction_models")),

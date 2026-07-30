@@ -16,6 +16,7 @@ from app.domain.enterprise_enums import (
     EvidenceSignalType,
 )
 from app.domain.tenant_context import TenantContext
+from app.security.context import SecurityContext, internal_system_context
 from app.services.enterprise.enterprise_services import (
     EnterpriseHierarchyService,
     IngestionService,
@@ -24,6 +25,9 @@ from app.services.enterprise.enterprise_services import (
 _NOW = datetime(2026, 1, 1, tzinfo=timezone.utc)
 _TENANT_A = TenantContext.require("tenant-a")
 _TENANT_B = TenantContext.require("tenant-b")
+# Authorized tenant-admin security contexts for ingestion writes (deny-by-default
+# service-layer authorization now requires a real SecurityContext).
+_SEC_A = internal_system_context("tenant-a", correlation_id="test-a")
 
 
 @contextmanager
@@ -37,7 +41,7 @@ def _session(url: str):
         engine.dispose()
 
 
-def _append(session: Session, ctx: TenantContext, ds_id: str, payload: dict):
+def _append(session: Session, ctx: SecurityContext, ds_id: str, payload: dict):
     svc = IngestionService(UnitOfWork(session))
     return svc.append_evidence(
         ctx,
@@ -55,12 +59,12 @@ def test_evidence_idempotent_across_independent_sessions(migrated_db):
     payload = {"sha": "abc", "kind": "commit"}
     with _session(migrated_db) as s1:
         ds = IngestionService(UnitOfWork(s1)).register_data_source(
-            _TENANT_A, source_type=DataSourceType.GITHUB, display_name="GitHub"
+            _SEC_A, source_type=DataSourceType.GITHUB, display_name="GitHub"
         )
-        _, created1 = _append(s1, _TENANT_A, ds.data_source_id, payload)
+        _, created1 = _append(s1, _SEC_A, ds.data_source_id, payload)
     # A second, independent session appends the identical signal.
     with _session(migrated_db) as s2:
-        _, created2 = _append(s2, _TENANT_A, ds.data_source_id, payload)
+        _, created2 = _append(s2, _SEC_A, ds.data_source_id, payload)
     assert created1 is True
     assert created2 is False
     # Exactly one row persisted.
@@ -75,7 +79,7 @@ def test_true_concurrent_duplicate_evidence_yields_single_row(migrated_db):
     not poison any session or leak an unhandled IntegrityError."""
     with _session(migrated_db) as s0:
         ds = IngestionService(UnitOfWork(s0)).register_data_source(
-            _TENANT_A, source_type=DataSourceType.GITHUB, display_name="GitHub"
+            _SEC_A, source_type=DataSourceType.GITHUB, display_name="GitHub"
         )
     ds_id = ds.data_source_id
     payload = {"kind": "commit", "sha": "deadbeef"}
@@ -90,7 +94,7 @@ def test_true_concurrent_duplicate_evidence_yields_single_row(migrated_db):
         try:
             barrier.wait(timeout=15)
             with _session(migrated_db) as s:
-                _, created = _append(s, _TENANT_A, ds_id, payload)
+                _, created = _append(s, _SEC_A, ds_id, payload)
             with lock:
                 created_flags.append(created)
         except Exception as exc:  # noqa: BLE001 - record for assertion

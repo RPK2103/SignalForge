@@ -74,6 +74,12 @@ from app.db.models.scenario_intelligence import (
     ScenarioVersion,
     ScenarioWatch,
 )
+from app.db.models.security import (
+    RoleAssignment,
+    SecurityAuditEvent,
+    SecurityPrincipal,
+    TenantIdentityProvider,
+)
 from app.db.models.simulation import Simulation
 
 __all__ = [
@@ -130,6 +136,7 @@ __all__ = [
     "Project",
     "ProjectRequirement",
     "Repository",
+    "RoleAssignment",
     "ScenarioDefinition",
     "ScenarioFeatureOverlay",
     "ScenarioImpact",
@@ -138,8 +145,11 @@ __all__ = [
     "ScenarioTriggerEvent",
     "ScenarioVersion",
     "ScenarioWatch",
+    "SecurityAuditEvent",
+    "SecurityPrincipal",
     "Simulation",
     "Sprint",
     "Team",
+    "TenantIdentityProvider",
     "WorkItem",
 ]

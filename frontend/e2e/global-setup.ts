@@ -7,8 +7,12 @@ import {
   BACKEND_PORT,
   BACKEND_ROOT,
   BACKEND_URL,
+  E2E_AUTH_TOKEN_FILE,
   E2E_DATABASE_URL,
   E2E_DB_PATH,
+  E2E_LOCAL_AUTH_SECRET,
+  E2E_READER_TOKEN_FILE,
+  E2E_TENANT_ID,
   FRONTEND_URL,
   PYTHON_BIN,
 } from "./constants";
@@ -29,6 +33,10 @@ function backendEnv(): NodeJS.ProcessEnv {
     AI_ENABLED: "false",
     APP_ENV: "development",
     LOG_LEVEL: "WARNING",
+    // Mandatory authentication: run the disposable backend in local_development
+    // mode so the browser can present a short-lived signed JWT. Never production.
+    AUTH_MODE: "local_development",
+    SIGNALFORGE_LOCAL_AUTH_SECRET: E2E_LOCAL_AUTH_SECRET,
     // Allow the disposable production frontend origin through CORS.
     // pydantic-settings JSON-decodes list fields from env, so pass a JSON array.
     CORS_ORIGINS: JSON.stringify([
@@ -48,6 +56,53 @@ function runBackendCommand(args: string[]): void {
     env: backendEnv(),
     stdio: "inherit",
   });
+}
+
+/**
+ * Mint a short-lived local-development JWT via the backend security CLI and hand
+ * it to the Playwright spec through a temp file. The signing secret is never
+ * written to disk; only the resulting token is.
+ */
+function mintDevToken(subject: string, roles: string): string {
+  const output = execFileSync(
+    PYTHON_BIN,
+    [
+      "-m",
+      "app.security",
+      "issue-dev-token",
+      "--subject",
+      subject,
+      "--tenant",
+      E2E_TENANT_ID,
+      "--roles",
+      roles,
+      "--ttl-seconds",
+      "3600",
+    ],
+    { cwd: BACKEND_ROOT, env: backendEnv(), encoding: "utf-8" }
+  );
+  return (JSON.parse(output) as { token: string }).token;
+}
+
+function mintE2eToken(): void {
+  // Privileged token drives the authenticated dashboard flow.
+  fs.writeFileSync(
+    E2E_AUTH_TOKEN_FILE,
+    JSON.stringify({
+      token: mintDevToken("e2e-dashboard-user", "tenant_admin"),
+      tenantId: E2E_TENANT_ID,
+    }),
+    "utf-8"
+  );
+  // Read-only token proves an authenticated-but-unauthorized role is denied 403.
+  fs.writeFileSync(
+    E2E_READER_TOKEN_FILE,
+    JSON.stringify({
+      token: mintDevToken("e2e-reader-user", "executive_reader"),
+      tenantId: E2E_TENANT_ID,
+    }),
+    "utf-8"
+  );
 }
 
 async function waitForHealth(url: string, timeoutMs: number): Promise<void> {
@@ -78,6 +133,8 @@ async function globalSetup(): Promise<void> {
   runBackendCommand(["-m", "alembic", "upgrade", "head"]);
   // 2. Seed deterministic catalog + scenarios.
   runBackendCommand(["-m", "app.db.seed"]);
+  // 2b. Mint the E2E bearer token for the authenticated dashboard flow.
+  mintE2eToken();
 
   // 3. Start the backend against the disposable DB with AI disabled.
   const backend = spawn(

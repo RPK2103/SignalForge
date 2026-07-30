@@ -211,6 +211,73 @@ See [`architecture/phase-3-ai-chief-of-staff.md`](architecture/phase-3-ai-chief-
 Auth/RBAC/Entra/RLS (Prompt 7), observability export (Prompt 8), and larger
 NovaBank scale remain **deferred**.
 
+## 9g. Implemented — Phase 3 Prompt 7 (Enterprise Security and Scale)
+
+- **Verified request identity.** Provider-independent authentication boundary
+  with three modes: `entra_oidc` (production, RS256 JWKS validation),
+  `local_development` (signed short-lived dev JWTs), and `test` (isolated
+  in-process tokens). Authentication is **default-deny**: only `/`, `/health`,
+  the `/dashboard/*` static SPA assets (which then authenticate their own API
+  calls), and — in dev/test only — the docs URLs are public. `/api/v2`, `/api/v3`
+  **and every legacy root route** (`/analyze`, `/simulate`, `/copilot`, …) require
+  a verified principal. **The `X-SignalForge-Tenant-ID` header alone no longer
+  authenticates a caller.**
+- **Entra JWT validation** of signature, algorithm allowlist (never `none`,
+  never symmetric for Entra), issuer, audience, `exp`/`nbf`/`iat`, tenant, stable
+  subject, and `kid`, with bounded JWKS caching (TTL, rotation refresh, size/
+  timeout limits). No bearer token is ever logged or persisted.
+- **Deny-by-default RBAC** — one versioned permission matrix (6 roles, 21
+  permissions); unknown roles/permissions, expired assignments and deactivated
+  principals grant nothing. `predictions.promote` and `security.*` administration
+  are restricted to `tenant_admin`. No employee-ranking permission exists.
+- **Explicit route RBAC on every reachable sensitive route** — legacy root
+  routes, `/api/v2` mutations (assessment create → `enterprise.manage`, simulation
+  run → `scenarios.run`, brief generate/review → `chief_of_staff.generate`/
+  `.review`) and `/api/v3` ingestion writes (data-source config →
+  `connectors.manage`; run/evidence execution → `connectors.sync`) each declare
+  an explicit permission. Read-only roles cannot write.
+- **Service-layer authorization** — every reachable sensitive mutation re-checks
+  `AuthorizationService` at its application-service entry point (ingestion,
+  assessment/simulation/brief/review persistence, security administration), not
+  only in the route; a direct service call with no context fails closed (proven by
+  tests). A permission-coverage audit (`app/security/coverage.py`) inventories
+  every sensitive permission against live route introspection. HTTP-unreachable
+  model-training / graph-rebuild / scenario-watch mutation is documented as
+  CLI/service-only and deferred.
+- **PostgreSQL row-level security** — RLS enabled and **forced** on ~45
+  tenant-qualified tables with transaction-local tenant context; missing context
+  fails closed; the application role is a **non-superuser** that cannot bypass
+  RLS. **SQLite does not enforce RLS** and is not proof of it.
+- **Append-only security auditing** (`ent_security_audit_events`) with secret
+  redaction/hashing, bounded keyset pagination, and a fail-closed audit-write
+  policy for security administration and model promotion.
+- **Production-safe configuration** — fail-closed startup validation (Entra
+  config, CORS, trusted hosts, docs visibility, dev-secret absence), security
+  headers, DB pool + statement-timeout safeguards.
+- **Minimal frontend auth boundary** — in-memory bearer token (never
+  localStorage / `NEXT_PUBLIC_*`), tenant selector, explicit 401/403 handling,
+  and a test-only signed-JWT adapter for Playwright.
+- **Mandatory PostgreSQL RLS CI** — a service-container job runs the RLS
+  integration tests as a non-superuser role (never silently skipped in CI).
+- Additive migration `p3_enterprise_security_scale` (single head, descends from
+  `p3_ai_chief_of_staff`). Synthetic **NovaBank** security principals validate the
+  RBAC personas.
+- **Cross-dialect migration portability** — the version table is widened to
+  `VARCHAR(128)` (long Phase 3 revision ids) and Boolean checks/defaults compile on
+  PostgreSQL (`sa.false()`, bare-boolean predicates). Validated on a live
+  disposable PostgreSQL 16 (migration to head as a non-superuser owner + full RLS
+  isolation suite) and via offline `--sql` compilation tests. No prior production
+  PostgreSQL deployment was ever claimed.
+
+See
+[`architecture/phase-3-enterprise-security-scale.md`](architecture/phase-3-enterprise-security-scale.md).
+This is a security **foundation**, not a completed security program:
+local-development mode is **not** production authentication; CI PostgreSQL
+validation is **not** a production security review; **no** penetration test,
+SOC 2 / ISO 27001 certification, SCIM, distributed rate limiter, or SIEM
+integration exists; **Microsoft has not endorsed the project**; Prompt 8
+observability remains deferred.
+
 ## 10. Planned Capabilities (Phase 3)
 
 - Jira / Azure DevOps **HTTP** connectors, GitHub webhooks/OAuth/Apps,
@@ -411,10 +478,12 @@ python -m alembic current
 python -m alembic check
 ```
 
-Single head: `p3_connector_ingestion_foundation` (down-revision
-`p3_enterprise_foundation`). Downgrade with
-`python -m alembic downgrade p3_enterprise_foundation` (validated on disposable
-SQLite; do not downgrade a long-lived DB without a backup).
+Single head: `p3_enterprise_security_scale` (down-revision
+`p3_ai_chief_of_staff`). Downgrade with
+`python -m alembic downgrade p3_ai_chief_of_staff` (validated on disposable
+SQLite; do not downgrade a long-lived DB without a backup). The security
+migration emits PostgreSQL RLS DDL (enable + FORCE + tenant-isolation policies)
+that is a no-op on SQLite.
 
 ## 30. Seed Command
 
@@ -462,8 +531,11 @@ traces, videos, screenshots) are git-ignored.
 `.github/workflows/`: `backend-ci.yml`, `frontend-ci.yml`, `e2e-ci.yml`,
 `security-ci.yml`. All use `permissions: contents: read`, explicit timeouts,
 concurrency cancellation, trigger on PR + push-to-main + manual dispatch, and use
-no secrets, no Azure and no production database. **The first remote run is
-pending until pushed.**
+no secrets, no Azure and no production database. `security-ci.yml` adds a
+**mandatory** `postgres-rls` job (PostgreSQL 16 service container, non-superuser
+application role) that runs the RLS integration tests without ever silently
+skipping them. **The first remote run is pending until pushed** — remote CI
+cannot yet be claimed as executed for Prompt 7.
 
 ## 34. Deployment
 
@@ -506,12 +578,19 @@ See
   (`production_eligible=false`); synthetic metrics ≠ real-world accuracy.
 - GitHub polling is implemented; GitHub webhooks/OAuth/Apps are not.
 - Jira and Azure DevOps HTTP connectors are not implemented (staged contracts only).
-- Tenant header is a data boundary only — not authentication, RBAC or Entra ID.
-- Secret vault, queues/distributed workers, and continuous scenarios
-  (Prompt 5) remain deferred.
+- Verified identity, deny-by-default RBAC, service-layer authorization and
+  PostgreSQL RLS are implemented (Prompt 7). Interactive Entra browser login
+  requires deployment-specific wiring not validated locally (provider boundary +
+  local/test adapter are implemented).
+- SQLite does **not** enforce RLS; RLS is proven only by the mandatory
+  PostgreSQL CI job. No penetration test, SOC 2 / ISO 27001 certification, SCIM,
+  distributed rate limiter, or SIEM integration exists.
+- Secret vault (Azure Key Vault) is documented as a deployment integration, not
+  implemented in code; secrets resolve from environment variables.
 - Delivery graph relational projection is implemented; graph DB / LLM graph
   queries are not.
-- Live PostgreSQL and live Azure OpenAI not validated in this pass.
+- Live PostgreSQL RLS is validated in CI (service container); it was deferred
+  locally in this pass. Live Azure OpenAI not validated in this pass.
 
 ## 39. Phase 3 Roadmap
 

@@ -5,21 +5,25 @@ from unittest.mock import patch
 from app.db.repositories.sql_repositories import SqlAuditEventRepository
 from app.domain.enums import AuditEventType
 from app.schemas.api_v2 import ReadinessAssessRequest
+from app.security.context import internal_system_context
 from app.services.leadership_brief.orchestrator import LeadershipBriefOrchestrator
 from app.services.persistence.assessment_persistence_service import AssessmentPersistenceService
 from app.services.persistence.leadership_brief_persistence_service import (
     LeadershipBriefPersistenceService,
 )
 
+CTX = internal_system_context("novabank", correlation_id="test")
+
 
 class TestLeadershipBriefTransactions:
     def _create_assessment(self, unit_of_work):
         service = AssessmentPersistenceService(unit_of_work)
         return service.create_assessment(
+            CTX,
             ReadinessAssessRequest(
                 project_id="azure_ai_migration",
                 engineer_ids=["kavi", "vikram"],
-            )
+            ),
         )
 
     def test_rollback_when_audit_append_fails(self, unit_of_work, db_session):
@@ -34,7 +38,7 @@ class TestLeadershipBriefTransactions:
             side_effect=RuntimeError("audit failed"),
         ):
             try:
-                brief_service.generate_leadership_brief(created.assessment_record_id)
+                brief_service.generate_leadership_brief(CTX, created.assessment_record_id)
             except RuntimeError:
                 pass
         listed = brief_service.list_leadership_briefs(created.assessment_record_id)
@@ -55,8 +59,8 @@ class TestLeadershipBriefTransactions:
             side_effect=RuntimeError("insert failed"),
         ):
             try:
-                brief_service.generate_leadership_brief(created.assessment_record_id)
+                brief_service.generate_leadership_brief(CTX, created.assessment_record_id)
             except RuntimeError:
                 pass
-        generated = brief_service.generate_leadership_brief(created.assessment_record_id)
+        generated = brief_service.generate_leadership_brief(CTX, created.assessment_record_id)
         assert generated.leadership_brief_record_id is not None

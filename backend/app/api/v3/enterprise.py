@@ -20,6 +20,7 @@ from app.api.v3.dependencies import (
     get_legacy_service,
     get_profile_service,
     get_unit_of_work,
+    require_permission,
 )
 from app.api.v3.schemas import (
     AppendEvidenceRequest,
@@ -33,6 +34,8 @@ from app.db.models import enterprise as orm
 from app.db.unit_of_work import UnitOfWork
 from app.domain import enterprise_models as dm
 from app.domain.enterprise_enums import EnterpriseEntityType
+from app.security.context import SecurityContext
+from app.security.enums import Permission
 from app.services.enterprise.enterprise_services import (
     DeliveryService,
     EnterpriseCatalogService,
@@ -191,11 +194,11 @@ def list_data_sources(
 @router.post("/data-sources", response_model=dm.DataSource, status_code=status.HTTP_201_CREATED)
 def register_data_source(
     request: RegisterDataSourceRequest,
-    ctx: TenantContextDep,
+    context: SecurityContext = Depends(require_permission(Permission.CONNECTORS_MANAGE)),
     service: IngestionService = Depends(get_ingestion_service),
 ) -> dm.DataSource:
     return service.register_data_source(
-        ctx,
+        context,
         source_type=request.source_type,
         display_name=request.display_name,
         credential_reference=request.credential_reference,
@@ -219,11 +222,11 @@ def list_ingestion_runs(
 @router.post("/ingestion-runs", response_model=dm.IngestionRun, status_code=status.HTTP_201_CREATED)
 def start_ingestion_run(
     request: StartIngestionRunRequest,
-    ctx: TenantContextDep,
+    context: SecurityContext = Depends(require_permission(Permission.CONNECTORS_SYNC)),
     service: IngestionService = Depends(get_ingestion_service),
 ) -> dm.IngestionRun:
     return service.start_run(
-        ctx,
+        context,
         data_source_id=request.data_source_id,
         run_type=request.run_type,
         run_key=request.run_key,
@@ -234,11 +237,11 @@ def start_ingestion_run(
 def complete_ingestion_run(
     ingestion_run_id: str,
     request: CompleteIngestionRunRequest,
-    ctx: TenantContextDep,
+    context: SecurityContext = Depends(require_permission(Permission.CONNECTORS_SYNC)),
     service: IngestionService = Depends(get_ingestion_service),
 ) -> dm.IngestionRun:
     return service.complete_run(
-        ctx,
+        context,
         ingestion_run_id=ingestion_run_id,
         status=request.status,
         records_read=request.records_read,
@@ -266,11 +269,11 @@ def list_evidence_signals(
 @router.post("/evidence-signals", response_model=EvidenceAppendResponse)
 def append_evidence(
     request: AppendEvidenceRequest,
-    ctx: TenantContextDep,
+    context: SecurityContext = Depends(require_permission(Permission.CONNECTORS_SYNC)),
     service: IngestionService = Depends(get_ingestion_service),
 ) -> EvidenceAppendResponse:
     signal, created = service.append_evidence(
-        ctx,
+        context,
         data_source_id=request.data_source_id,
         source_record_id=request.source_record_id,
         signal_type=request.signal_type,

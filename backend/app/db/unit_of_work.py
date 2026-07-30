@@ -55,6 +55,12 @@ from app.db.repositories.scenario_repositories import (
     ScenarioVersionRepository,
     ScenarioWatchRepository,
 )
+from app.db.repositories.security_repositories import (
+    IdentityProviderRepository,
+    RoleAssignmentRepository,
+    SecurityAuditEventRepository,
+    SecurityPrincipalRepository,
+)
 from app.db.repositories.sql_repositories import (
     SqlAssessmentRepository,
     SqlAuditEventRepository,
@@ -121,6 +127,11 @@ class UnitOfWork:
         self.cos_runs = CosRunRepository(session)
         self.cos_briefs = CosBriefRepository(session)
         self.cos_reviews = CosReviewRepository(session)
+        # Phase 3 Prompt 7 enterprise security repositories.
+        self.identity_providers = IdentityProviderRepository(session)
+        self.security_principals = SecurityPrincipalRepository(session)
+        self.role_assignments = RoleAssignmentRepository(session)
+        self.security_audit_events = SecurityAuditEventRepository(session)
 
     def commit(self) -> None:
         self.session.commit()

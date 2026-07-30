@@ -1,3 +1,4 @@
+import { getAccessToken, getSelectedTenant } from "./auth";
 import { buildApiUrl, getApiBaseUrl } from "./config";
 import {
   SignalForgeApiError,
@@ -5,6 +6,8 @@ import {
   isAbortError,
   parseApiErrorPayload,
 } from "./errors";
+
+const TENANT_HEADER = "X-SignalForge-Tenant-ID";
 
 export type RequestOptions = {
   signal?: AbortSignal;
@@ -99,6 +102,17 @@ async function request<T>(
 
   if (init.body !== undefined && init.body !== null) {
     headers.set("Content-Type", "application/json");
+  }
+
+  // Attach the bearer token from the in-memory auth provider (never stored in
+  // localStorage or a public env var) and the selected tenant selector.
+  const token = await getAccessToken();
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+  const tenantId = getSelectedTenant();
+  if (tenantId && !headers.has(TENANT_HEADER)) {
+    headers.set(TENANT_HEADER, tenantId);
   }
 
   const url = buildApiUrl(path, options.baseUrl ?? getApiBaseUrl());

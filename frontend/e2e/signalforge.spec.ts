@@ -1,6 +1,37 @@
+import fs from "node:fs";
+
 import { test, expect, type ConsoleMessage, type Request } from "@playwright/test";
 
-import { BACKEND_URL, FRONTEND_URL } from "./constants";
+import {
+  BACKEND_URL,
+  E2E_AUTH_TOKEN_FILE,
+  E2E_READER_TOKEN_FILE,
+  FRONTEND_URL,
+  LEGACY_PROTECTED_ROUTE,
+} from "./constants";
+
+type E2eAuth = { token: string; tenantId: string };
+
+function readE2eAuth(): E2eAuth {
+  const raw = fs.readFileSync(E2E_AUTH_TOKEN_FILE, "utf-8");
+  return JSON.parse(raw) as E2eAuth;
+}
+
+function readReaderAuth(): E2eAuth {
+  const raw = fs.readFileSync(E2E_READER_TOKEN_FILE, "utf-8");
+  return JSON.parse(raw) as E2eAuth;
+}
+
+// Inject the short-lived signed JWT into the browser BEFORE any app script runs,
+// so the API client attaches it as a bearer token. The token is never stored in
+// localStorage or a NEXT_PUBLIC_* variable.
+test.beforeEach(async ({ page }) => {
+  const auth = readE2eAuth();
+  await page.addInitScript((injected) => {
+    (window as unknown as Record<string, unknown>)["__SIGNALFORGE_TEST_AUTH__"] =
+      injected;
+  }, auth);
+});
 
 /**
  * Deterministic cross-service E2E for the SignalForge dashboard.
@@ -136,4 +167,48 @@ test("dashboard readiness, review, brief and simulation flow", async ({ page }) 
   // 19 + 20. No uncaught console errors and no unhandled failed requests.
   expect(consoleErrors, `Console errors:\n${consoleErrors.join("\n")}`).toEqual([]);
   expect(failedRequests, `Failed requests:\n${failedRequests.join("\n")}`).toEqual([]);
+});
+
+test("protected API rejects unauthenticated requests (401)", async ({ request }) => {
+  // The bare request context carries no bearer token, so the protected API must
+  // fail closed with 401 (the tenant header alone never authenticates).
+  const response = await request.get(`${BACKEND_URL}/api/v3/connectors`);
+  expect(response.status()).toBe(401);
+  expect(response.headers()["www-authenticate"]).toBe("Bearer");
+});
+
+test("public health endpoint stays reachable without auth", async ({ request }) => {
+  // `/health` is on the explicit public allowlist and must remain open.
+  const response = await request.get(`${BACKEND_URL}/health`);
+  expect(response.status()).toBe(200);
+});
+
+test("legacy root route is now behind default-deny auth (401)", async ({ request }) => {
+  // Under default-deny, legacy root routes are no longer public: no bearer token
+  // must fail closed with 401 rather than executing the deterministic compute.
+  const response = await request.post(`${BACKEND_URL}${LEGACY_PROTECTED_ROUTE}`, {
+    data: { project_name: "Azure AI Migration", remove_engineers: ["Kavi"] },
+  });
+  expect(response.status()).toBe(401);
+});
+
+test("no silent unauthenticated demo fallback for catalog data", async ({ request }) => {
+  // The dashboard loads its catalog from `/api/v2/projects`. Without a token the
+  // API must fail closed (401) — there is no anonymous demo data path.
+  const response = await request.get(`${BACKEND_URL}/api/v2/projects`);
+  expect(response.status()).toBe(401);
+});
+
+test("authenticated-but-unauthorized role is forbidden (403)", async ({ request }) => {
+  // A read-only `executive_reader` lacks scenarios.run, so an authenticated
+  // request to the legacy simulate route must be denied with 403 (not 401/200).
+  const reader = readReaderAuth();
+  const response = await request.post(`${BACKEND_URL}${LEGACY_PROTECTED_ROUTE}`, {
+    headers: {
+      Authorization: `Bearer ${reader.token}`,
+      "X-SignalForge-Tenant-ID": reader.tenantId,
+    },
+    data: { project_name: "Azure AI Migration", remove_engineers: ["Kavi"] },
+  });
+  expect(response.status()).toBe(403);
 });

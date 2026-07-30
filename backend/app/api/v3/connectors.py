@@ -4,13 +4,22 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Query
 
-from app.api.v3.dependencies import TenantContextDep, get_unit_of_work
+from app.api.v3.dependencies import (
+    TenantContextDep,
+    get_unit_of_work,
+    require_permission,
+)
 from app.connectors.registry import get_default_registry
 from app.db.unit_of_work import UnitOfWork
 from app.domain import enterprise_models as dm
+from app.security.enums import Permission
 from app.services.enterprise.exceptions import EnterpriseNotFoundError
 
 router = APIRouter(prefix="/api/v3", tags=["Connectors"])
+
+# Tenant-scoped connector reads require an explicit read permission. The
+# tenant-independent capability catalog below requires authentication only.
+_CONNECTORS_READ = Depends(require_permission(Permission.CONNECTORS_READ))
 
 _PAGE = Query(default=20, ge=1, le=100)
 _OFFSET = Query(default=0, ge=0)
@@ -44,6 +53,7 @@ def list_connectors() -> list[dict]:
 @router.get(
     "/data-sources/{data_source_id}/checkpoint-summary",
     summary="Checkpoint summary for a data source",
+    dependencies=[_CONNECTORS_READ],
 )
 def checkpoint_summary(
     data_source_id: str,
@@ -63,6 +73,7 @@ def checkpoint_summary(
 @router.get(
     "/data-sources/{data_source_id}/freshness",
     summary="Data source freshness summary",
+    dependencies=[_CONNECTORS_READ],
 )
 def data_source_freshness(
     data_source_id: str,
@@ -93,6 +104,7 @@ def data_source_freshness(
     "/ingestion-runs/{ingestion_run_id}",
     summary="Ingestion run detail",
     response_model=dm.IngestionRun,
+    dependencies=[_CONNECTORS_READ],
 )
 def get_ingestion_run(
     ingestion_run_id: str,
@@ -108,6 +120,7 @@ def get_ingestion_run(
 @router.get(
     "/ingestion-runs/{ingestion_run_id}/receipts",
     summary="Ingestion receipts for a run",
+    dependencies=[_CONNECTORS_READ],
 )
 def list_receipts(
     ingestion_run_id: str,
@@ -127,6 +140,7 @@ def list_receipts(
 @router.get(
     "/ingestion-runs/{ingestion_run_id}/dead-letters",
     summary="Dead letters for a run",
+    dependencies=[_CONNECTORS_READ],
 )
 def list_dead_letters(
     ingestion_run_id: str,

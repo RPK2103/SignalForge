@@ -10,18 +10,22 @@ from app.db.models.catalog import EngineerCapability
 from app.db.models.simulation import Simulation
 from app.domain.simulation_models import RemoveSimulationOperation
 from app.schemas.api_v2 import ReadinessAssessRequest, SimulationRequest
+from app.security.context import internal_system_context
 from app.services.persistence.assessment_persistence_service import AssessmentPersistenceService
 from app.services.persistence.exceptions import SnapshotIntegrityError
 from app.services.persistence.simulation_persistence_service import SimulationPersistenceService
+
+CTX = internal_system_context("novabank", correlation_id="test")
 
 
 def test_assessment_snapshot_survives_catalog_change(db_session, unit_of_work):
     service = AssessmentPersistenceService(unit_of_work)
     created = service.create_assessment(
+        CTX,
         ReadinessAssessRequest(
             project_id="azure_ai_migration",
             engineer_ids=["kavi", "vikram"],
-        )
+        ),
     )
     cap = db_session.scalar(
         select(EngineerCapability).where(
@@ -38,10 +42,11 @@ def test_assessment_snapshot_survives_catalog_change(db_session, unit_of_work):
     assert loaded.result.readiness_score == created.result.readiness_score
 
     newer = service.create_assessment(
+        CTX,
         ReadinessAssessRequest(
             project_id="azure_ai_migration",
             engineer_ids=["kavi", "vikram"],
-        )
+        ),
     )
     assert newer.result.readiness_score != created.result.readiness_score
 
@@ -49,11 +54,12 @@ def test_assessment_snapshot_survives_catalog_change(db_session, unit_of_work):
 def test_simulation_snapshot_survives_catalog_change(db_session, unit_of_work):
     service = SimulationPersistenceService(unit_of_work)
     created = service.create_simulation(
+        CTX,
         SimulationRequest(
             project_id="azure_ai_migration",
             baseline_engineer_ids=["kavi", "vikram"],
             operation=RemoveSimulationOperation(engineer_id="kavi"),
-        )
+        ),
     )
     cap = db_session.scalar(
         select(EngineerCapability).where(
@@ -73,10 +79,11 @@ def test_simulation_snapshot_survives_catalog_change(db_session, unit_of_work):
 def test_get_assessment_does_not_recompute(unit_of_work):
     service = AssessmentPersistenceService(unit_of_work)
     created = service.create_assessment(
+        CTX,
         ReadinessAssessRequest(
             project_id="azure_ai_migration",
             engineer_ids=["kavi", "vikram"],
-        )
+        ),
     )
     with patch.object(
         service._orchestrator,
@@ -90,11 +97,12 @@ def test_get_assessment_does_not_recompute(unit_of_work):
 def test_get_simulation_does_not_recompute(unit_of_work):
     service = SimulationPersistenceService(unit_of_work)
     created = service.create_simulation(
+        CTX,
         SimulationRequest(
             project_id="azure_ai_migration",
             baseline_engineer_ids=["kavi", "vikram"],
             operation=RemoveSimulationOperation(engineer_id="kavi"),
-        )
+        ),
     )
     with patch.object(
         service._orchestrator,
@@ -108,10 +116,11 @@ def test_get_simulation_does_not_recompute(unit_of_work):
 def test_assessment_result_hash_mismatch_fails(db_session, unit_of_work):
     service = AssessmentPersistenceService(unit_of_work)
     created = service.create_assessment(
+        CTX,
         ReadinessAssessRequest(
             project_id="azure_ai_migration",
             engineer_ids=["kavi", "vikram"],
-        )
+        ),
     )
     row = db_session.get(Assessment, created.assessment_record_id)
     row.result_snapshot_hash = "0" * 64
@@ -124,11 +133,12 @@ def test_assessment_result_hash_mismatch_fails(db_session, unit_of_work):
 def test_simulation_baseline_hash_mismatch_fails(db_session, unit_of_work):
     service = SimulationPersistenceService(unit_of_work)
     created = service.create_simulation(
+        CTX,
         SimulationRequest(
             project_id="azure_ai_migration",
             baseline_engineer_ids=["kavi", "vikram"],
             operation=RemoveSimulationOperation(engineer_id="kavi"),
-        )
+        ),
     )
     row = db_session.get(Simulation, created.simulation_record_id)
     row.baseline_snapshot_hash = "0" * 64

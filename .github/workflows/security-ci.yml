@@ -53,6 +53,103 @@ jobs:
       - name: Audit runtime dependencies
         run: pip-audit -r requirements.txt --strict
 
+  postgres-rls:
+    name: PostgreSQL RLS security tests (non-superuser role)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: signalforge
+        ports:
+          - 5432:5432
+        # Wait until PostgreSQL is ready before the job runs migrations/tests.
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # Privileged (migration/owner) role used to run migrations + grant the app role.
+      POSTGRES_MIGRATION_URL: postgresql+psycopg://postgres:postgres@localhost:5432/signalforge
+      # NON-superuser application role that the RLS tests connect as.
+      POSTGRES_TEST_URL: postgresql+psycopg://signalforge_app:app_password@localhost:5432/signalforge
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: |
+            backend/requirements.txt
+            backend/requirements-dev.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-dev.txt
+          pip install "psycopg[binary]==3.2.3"
+
+      - name: Ruff format check
+        run: python -m ruff format --check app tests
+
+      - name: Ruff lint
+        run: python -m ruff check app tests
+
+      - name: Create non-superuser application role
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -d signalforge -v ON_ERROR_STOP=1 <<'SQL'
+          DO $$
+          BEGIN
+            IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'signalforge_app') THEN
+              CREATE ROLE signalforge_app LOGIN PASSWORD 'app_password' NOSUPERUSER NOBYPASSRLS;
+            END IF;
+          END
+          $$;
+          GRANT CONNECT ON DATABASE signalforge TO signalforge_app;
+          GRANT USAGE ON SCHEMA public TO signalforge_app;
+          SQL
+
+      - name: Run migrations as privileged role
+        run: python -m alembic upgrade head
+        env:
+          DATABASE_URL: ${{ env.POSTGRES_MIGRATION_URL }}
+
+      - name: Grant application role table privileges (no ownership, RLS enforced)
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -d signalforge -v ON_ERROR_STOP=1 <<'SQL'
+          GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO signalforge_app;
+          GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO signalforge_app;
+          ALTER DEFAULT PRIVILEGES IN SCHEMA public
+            GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO signalforge_app;
+          SQL
+
+      - name: Verify application role is not a superuser
+        env:
+          PGPASSWORD: app_password
+        run: |
+          is_super=$(psql -h localhost -U signalforge_app -d signalforge -tAc \
+            "SELECT rolsuper FROM pg_roles WHERE rolname = current_user")
+          echo "app role rolsuper=$is_super"
+          test "$is_super" = "f"
+
+      - name: Mandatory PostgreSQL RLS integration tests
+        # POSTGRES_TEST_URL is always set here, so these tests are NEVER skipped in CI.
+        run: python -m pytest tests/security_postgres tests/security -q
+
   npm-audit:
     name: npm dependency audit
     runs-on: ubuntu-latest

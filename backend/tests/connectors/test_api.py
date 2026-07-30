@@ -11,6 +11,7 @@ from fastapi.testclient import TestClient
 from app.core.config import get_settings
 from app.db.session import reset_engine
 from app.main import app
+from tests.support.auth import broad_test_headers
 
 
 @pytest.fixture
@@ -18,7 +19,7 @@ def client(migrated_db: str) -> Generator[TestClient, None, None]:
     os.environ["DATABASE_URL"] = migrated_db
     get_settings.cache_clear()
     reset_engine()
-    with TestClient(app) as test_client:
+    with TestClient(app, headers=broad_test_headers()) as test_client:
         yield test_client
     reset_engine()
     get_settings.cache_clear()

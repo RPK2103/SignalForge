@@ -14,6 +14,9 @@ from app.domain.persistence_models import (
     SimulationRecordResponse,
 )
 from app.schemas.api_v2 import SimulationRequest, SimulationResponse
+from app.security.authorization import AuthorizationService
+from app.security.context import SecurityContext
+from app.security.enums import Permission
 from app.services.persistence.snapshot_service import (
     build_assessment_result_snapshot,
     build_simulation_input_snapshot,
@@ -28,13 +31,18 @@ class SimulationPersistenceService:
     def __init__(self, uow: UnitOfWork) -> None:
         self._uow = uow
         self._orchestrator = SimulationOrchestrator(catalog=uow.catalog)
+        self._authz = AuthorizationService()
 
     def create_simulation(
         self,
+        context: SecurityContext,
         request: SimulationRequest,
         *,
         actor_reference: str | None = None,
     ) -> SimulationRecordResponse:
+        # Service-layer authorization (deny-by-default): running/persisting a
+        # simulation requires ``scenarios.run``. Fail closed without a context.
+        self._authz.require_context(context, Permission.SCENARIOS_RUN)
         result = self._orchestrator.simulate(request)
         policy_version = result.policy_version
         input_snapshot = build_simulation_input_snapshot(
