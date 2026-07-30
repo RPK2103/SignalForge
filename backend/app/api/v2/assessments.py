@@ -10,10 +10,13 @@ from app.api.persistence_dependencies import (
     get_leadership_brief_persistence_service,
     get_review_persistence_service,
 )
+from app.api.v3.dependencies import require_permission
 from app.domain.enums import HumanReviewState
 from app.domain.leadership_brief_models import LeadershipBriefResponse
 from app.domain.persistence_models import AssessmentRecordResponse, PaginatedAssessmentList
 from app.schemas.api_v2 import ReadinessAssessRequest
+from app.security.context import SecurityContext
+from app.security.enums import Permission
 from app.services.persistence.assessment_persistence_service import AssessmentPersistenceService
 from app.services.persistence.exceptions import PersistenceError
 from app.services.persistence.leadership_brief_persistence_service import (
@@ -34,15 +37,20 @@ router = APIRouter(prefix="/assessments", tags=["Assessment History"])
 )
 def create_assessment(
     request: ReadinessAssessRequest,
+    context: SecurityContext = Depends(require_permission(Permission.ENTERPRISE_MANAGE)),
     service: AssessmentPersistenceService = Depends(get_assessment_persistence_service),
 ) -> AssessmentRecordResponse:
     try:
-        return service.create_assessment(request)
+        return service.create_assessment(context, request)
     except PersistenceError:
         raise
 
 
-@router.get("", response_model=PaginatedAssessmentList)
+@router.get(
+    "",
+    response_model=PaginatedAssessmentList,
+    dependencies=[Depends(require_permission(Permission.ENTERPRISE_READ))],
+)
 def list_assessments(
     project_id: str | None = Query(default=None),
     assessment_id: str | None = Query(default=None),
@@ -63,7 +71,11 @@ def list_assessments(
         raise
 
 
-@router.get("/{assessment_record_id}", response_model=AssessmentRecordResponse)
+@router.get(
+    "/{assessment_record_id}",
+    response_model=AssessmentRecordResponse,
+    dependencies=[Depends(require_permission(Permission.ENTERPRISE_READ))],
+)
 def get_assessment(
     assessment_record_id: UUID,
     service: AssessmentPersistenceService = Depends(get_assessment_persistence_service),
@@ -81,10 +93,11 @@ def get_assessment(
 )
 def generate_leadership_brief(
     assessment_record_id: UUID,
+    context: SecurityContext = Depends(require_permission(Permission.CHIEF_OF_STAFF_GENERATE)),
     service: LeadershipBriefPersistenceService = Depends(get_leadership_brief_persistence_service),
 ) -> LeadershipBriefResponse:
     try:
-        return service.generate_leadership_brief(assessment_record_id)
+        return service.generate_leadership_brief(context, assessment_record_id)
     except PersistenceError:
         raise
 
@@ -93,6 +106,7 @@ def generate_leadership_brief(
     "/{assessment_record_id}/leadership-briefs",
     response_model=list[LeadershipBriefResponse],
     operation_id="listLeadershipBriefsV2",
+    dependencies=[Depends(require_permission(Permission.CHIEF_OF_STAFF_READ))],
 )
 def list_leadership_briefs(
     assessment_record_id: UUID,
@@ -112,9 +126,10 @@ def list_leadership_briefs(
 def create_review(
     assessment_record_id: UUID,
     request: HumanReviewRequest,
+    context: SecurityContext = Depends(require_permission(Permission.CHIEF_OF_STAFF_REVIEW)),
     service: HumanReviewPersistenceService = Depends(get_review_persistence_service),
 ) -> AssessmentRecordResponse:
     try:
-        return service.add_review(assessment_record_id, request)
+        return service.add_review(context, assessment_record_id, request)
     except PersistenceError:
         raise

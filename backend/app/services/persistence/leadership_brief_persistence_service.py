@@ -15,6 +15,9 @@ from app.domain.leadership_brief_models import (
 )
 from app.domain.persistence_models import SNAPSHOT_SCHEMA_VERSION, AuditEventRecord
 from app.schemas.api_v2 import ReadinessAssessResponse
+from app.security.authorization import AuthorizationService
+from app.security.context import SecurityContext
+from app.security.enums import Permission
 from app.services.leadership_brief.evidence_package import (
     build_evidence_package,
     evidence_package_to_canonical_dict,
@@ -36,13 +39,18 @@ class LeadershipBriefPersistenceService:
     ) -> None:
         self._uow = uow
         self._orchestrator = orchestrator or LeadershipBriefOrchestrator()
+        self._authz = AuthorizationService()
 
     def generate_leadership_brief(
         self,
+        context: SecurityContext,
         assessment_record_id: UUID,
         *,
         actor_reference: str | None = None,
     ) -> LeadershipBriefResponse:
+        # Service-layer authorization (deny-by-default): generating an executive
+        # leadership brief requires ``chief_of_staff.generate``.
+        self._authz.require_context(context, Permission.CHIEF_OF_STAFF_GENERATE)
         record = self._uow.assessments.get_by_record_id(assessment_record_id)
         verify_snapshot_hash(record.input_snapshot, record.input_snapshot_hash)
         verify_snapshot_hash(record.result_snapshot, record.result_snapshot_hash)

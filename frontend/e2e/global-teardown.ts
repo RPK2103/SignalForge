@@ -1,7 +1,12 @@
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 
-import { BACKEND_PID_FILE, E2E_DB_PATH } from "./constants";
+import {
+  BACKEND_PID_FILE,
+  E2E_AUTH_TOKEN_FILE,
+  E2E_DB_PATH,
+  E2E_READER_TOKEN_FILE,
+} from "./constants";
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -55,6 +60,9 @@ async function removeDatabaseFiles(): Promise<void> {
 
 async function globalTeardown(): Promise<void> {
   killBackend();
+  // Remove the minted E2E token handoff files.
+  fs.rmSync(E2E_AUTH_TOKEN_FILE, { force: true });
+  fs.rmSync(E2E_READER_TOKEN_FILE, { force: true });
   // Give the OS a moment to release the backend's file handles before deleting.
   await sleep(500);
   await removeDatabaseFiles();

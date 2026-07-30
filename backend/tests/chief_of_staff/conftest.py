@@ -21,6 +21,7 @@ from app.domain.tenant_context import TenantContext
 from app.main import app
 from app.services.graph.analysis_service import GraphAnalysisService
 from app.services.graph.projection_service import GraphProjectionService
+from tests.support.auth import broad_test_headers
 
 AS_OF = datetime(2026, 3, 1, 12, 0, tzinfo=timezone.utc)
 
@@ -105,7 +106,7 @@ def client(migrated_db: str) -> Generator[TestClient, None, None]:
     get_settings.cache_clear()
     reset_engine()
     init_engine(migrated_db)
-    with TestClient(app) as test_client:
+    with TestClient(app, headers=broad_test_headers()) as test_client:
         yield test_client
     reset_engine()
     get_settings.cache_clear()

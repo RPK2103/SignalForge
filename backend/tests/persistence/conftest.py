@@ -14,6 +14,7 @@ from app.db.session import get_engine, init_engine, reset_engine
 from app.db.unit_of_work import UnitOfWork
 from app.main import app
 from app.repositories.mock_catalog_repository import MockCatalogRepository
+from tests.support.auth import broad_tenant_headers
 
 
 @pytest.fixture
@@ -81,7 +82,7 @@ def persistence_client(seeded_db: str) -> Generator[TestClient, None, None]:
     os.environ["DATABASE_URL"] = seeded_db
     get_settings.cache_clear()
     reset_engine()
-    with TestClient(app) as client:
+    with TestClient(app, headers=broad_tenant_headers()) as client:
         yield client
     reset_engine()
     get_settings.cache_clear()

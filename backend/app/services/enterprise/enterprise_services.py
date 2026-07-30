@@ -49,6 +49,10 @@ from app.domain.enterprise_enums import (
 )
 from app.domain.enterprise_identifiers import build_entity_id, slugify
 from app.domain.tenant_context import TenantContext
+from app.security.audit import SecurityAuditService
+from app.security.authorization import AuthorizationService
+from app.security.context import SecurityContext
+from app.security.enums import Permission, SecurityAuditAction
 from app.services.enterprise.exceptions import (
     EnterpriseConflictError,
     EnterpriseNotFoundError,
@@ -649,11 +653,34 @@ class IngestionService(_BaseService):
 
     NOTE: This performs NO external connector calls. It only records provider-
     neutral provenance and normalized evidence supplied to it.
+
+    Write operations require an authenticated :class:`SecurityContext` and are
+    authorized at THIS service boundary (deny-by-default), independently of any
+    API-route dependency: data-source configuration requires ``connectors.manage``
+    and ingestion execution requires ``connectors.sync``. A direct call without a
+    valid context (or with an unauthorized/foreign-tenant context) fails closed.
     """
+
+    def __init__(self, uow: UnitOfWork) -> None:
+        super().__init__(uow)
+        self._authz = AuthorizationService()
+        self._audit = SecurityAuditService(uow)
+
+    def _authorize_write(
+        self, context: SecurityContext | None, permission: Permission
+    ) -> TenantContext:
+        """Deny-by-default service-layer authorization for a write operation.
+
+        Fails closed when ``context`` is absent, is for the wrong tenant, or lacks
+        the permission. Returns the tenant-scoped :class:`TenantContext` used for
+        persistence only after authorization succeeds.
+        """
+        self._authz.require_context(context, permission)
+        return TenantContext(context.tenant_id)
 
     def register_data_source(
         self,
-        ctx: TenantContext,
+        context: SecurityContext,
         *,
         source_type: DataSourceType,
         display_name: str,
@@ -663,6 +690,7 @@ class IngestionService(_BaseService):
         permission_classification: PermissionClassification = PermissionClassification.INTERNAL,
         status: DataSourceStatus = DataSourceStatus.REGISTERED,
     ) -> dm.DataSource:
+        ctx = self._authorize_write(context, Permission.CONNECTORS_MANAGE)
         from app.connectors.config import hash_connector_config, validate_connector_config
         from app.connectors.credentials import validate_credential_reference
 
@@ -703,6 +731,14 @@ class IngestionService(_BaseService):
             permission_classification=permission_classification,
         )
         self._uow.data_sources.add_data_source(ctx, source)
+        self._audit.record_sensitive_action(
+            context,
+            action=SecurityAuditAction.CONNECTOR_CONFIGURED,
+            permission=Permission.CONNECTORS_MANAGE,
+            resource_type="data_source",
+            resource_id=source.data_source_id,
+            metadata={"source_type": source.source_type.value},
+        )
         self._commit()
         _logger.info(
             "enterprise.data_source.registered tenant_id=%s data_source_id=%s source_type=%s",
@@ -714,12 +750,13 @@ class IngestionService(_BaseService):
 
     def start_run(
         self,
-        ctx: TenantContext,
+        context: SecurityContext,
         *,
         data_source_id: str,
         run_type: IngestionRunType = IngestionRunType.INCREMENTAL,
         run_key: str | None = None,
     ) -> dm.IngestionRun:
+        ctx = self._authorize_write(context, Permission.CONNECTORS_SYNC)
         started_at = _utcnow()
         run = dm.IngestionRun(
             ingestion_run_id=build_entity_id(
@@ -732,6 +769,14 @@ class IngestionService(_BaseService):
             started_at=started_at,
         )
         self._uow.ingestion_runs.add_run(ctx, run)
+        self._audit.record_sensitive_action(
+            context,
+            action=SecurityAuditAction.CONNECTOR_SYNC_INITIATED,
+            permission=Permission.CONNECTORS_SYNC,
+            resource_type="ingestion_run",
+            resource_id=run.ingestion_run_id,
+            metadata={"data_source_id": data_source_id, "run_type": run_type.value},
+        )
         self._commit()
         _logger.info(
             "enterprise.ingestion_run.started tenant_id=%s ingestion_run_id=%s",
@@ -742,7 +787,7 @@ class IngestionService(_BaseService):
 
     def complete_run(
         self,
-        ctx: TenantContext,
+        context: SecurityContext,
         *,
         ingestion_run_id: str,
         status: IngestionRunStatus,
@@ -752,6 +797,7 @@ class IngestionService(_BaseService):
         error_category: IngestionErrorCategory = IngestionErrorCategory.NONE,
         error_summary: str | None = None,
     ) -> dm.IngestionRun:
+        ctx = self._authorize_write(context, Permission.CONNECTORS_SYNC)
         run = self._uow.ingestion_runs.get_run(ctx, ingestion_run_id)
         if run is None:
             raise EnterpriseNotFoundError("Ingestion run not found for this tenant")
@@ -775,6 +821,14 @@ class IngestionService(_BaseService):
             }
         )
         result = self._uow.ingestion_runs.update_run(ctx, updated)
+        self._audit.record_sensitive_action(
+            context,
+            action=SecurityAuditAction.CONNECTOR_SYNC_INITIATED,
+            permission=Permission.CONNECTORS_SYNC,
+            resource_type="ingestion_run",
+            resource_id=ingestion_run_id,
+            metadata={"status": status.value},
+        )
         self._commit()
         _logger.info(
             "enterprise.ingestion_run.completed tenant_id=%s ingestion_run_id=%s status=%s "
@@ -790,7 +844,7 @@ class IngestionService(_BaseService):
 
     def append_evidence(
         self,
-        ctx: TenantContext,
+        context: SecurityContext,
         *,
         data_source_id: str,
         source_record_id: str,
@@ -807,6 +861,7 @@ class IngestionService(_BaseService):
     ) -> tuple[dm.EvidenceSignal, bool]:
         """Append normalized evidence. Returns ``(signal, created)``; a duplicate
         (same canonical payload hash) is deduplicated rather than overwritten."""
+        ctx = self._authorize_write(context, Permission.CONNECTORS_SYNC)
         now = _utcnow()
         observed = observed_at or now
         payload_hash = snapshot_hash(payload)

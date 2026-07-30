@@ -12,6 +12,16 @@ from app.core.config import get_settings
 _engine: Engine | None = None
 _SessionLocal: sessionmaker[Session] | None = None
 
+# Bounded, production-safe PostgreSQL pool/statement defaults (Prompt 7). These
+# are validated envelopes, not incompatible SQLite options.
+_PG_POOL_SIZE = 5
+_PG_MAX_OVERFLOW = 10
+_PG_POOL_TIMEOUT_SECONDS = 30
+_PG_POOL_RECYCLE_SECONDS = 1800
+_PG_CONNECT_TIMEOUT_SECONDS = 10
+_PG_STATEMENT_TIMEOUT_MS = 30_000
+_PG_APPLICATION_NAME = "signalforge-api"
+
 
 def normalize_database_url(database_url: str) -> str:
     url = database_url.strip()
@@ -33,6 +43,18 @@ def _configure_sqlite_engine(engine: Engine) -> None:
         cursor.close()
 
 
+def _configure_postgres_engine(engine: Engine) -> None:
+    if engine.dialect.name != "postgresql":
+        return
+
+    @event.listens_for(engine, "connect")
+    def _set_statement_timeout(dbapi_connection, _connection_record) -> None:
+        # Bound every statement so a pathological query cannot exhaust a pooled
+        # connection. Applied per physical connection at checkout time.
+        with dbapi_connection.cursor() as cursor:
+            cursor.execute(f"SET statement_timeout = {_PG_STATEMENT_TIMEOUT_MS}")
+
+
 def get_engine(database_url: str | None = None) -> Engine:
     global _engine, _SessionLocal
     settings = get_settings()
@@ -40,10 +62,23 @@ def get_engine(database_url: str | None = None) -> Engine:
         database_url or settings.database_url or "sqlite:///./signalforge.db"
     )
     connect_args: dict = {}
+    engine_kwargs: dict = {"future": True}
     if url.startswith("sqlite"):
         connect_args["check_same_thread"] = False
-    engine = create_engine(url, future=True, connect_args=connect_args)
+    else:
+        # PostgreSQL (and other server databases): apply bounded pool settings.
+        connect_args["connect_timeout"] = _PG_CONNECT_TIMEOUT_SECONDS
+        connect_args["application_name"] = _PG_APPLICATION_NAME
+        engine_kwargs.update(
+            pool_size=_PG_POOL_SIZE,
+            max_overflow=_PG_MAX_OVERFLOW,
+            pool_timeout=_PG_POOL_TIMEOUT_SECONDS,
+            pool_recycle=_PG_POOL_RECYCLE_SECONDS,
+            pool_pre_ping=True,
+        )
+    engine = create_engine(url, connect_args=connect_args, **engine_kwargs)
     _configure_sqlite_engine(engine)
+    _configure_postgres_engine(engine)
     return engine
 
 

@@ -331,13 +331,17 @@ def upgrade() -> None:
             "training_eligible",
             sa.Boolean(),
             nullable=False,
-            server_default=sa.text("0"),
+            # Dialect-safe Boolean default: renders ``0`` on SQLite and ``false``
+            # on PostgreSQL. A numeric ``sa.text("0")`` default is rejected by
+            # PostgreSQL for a Boolean column.
+            server_default=sa.false(),
         ),
         sa.Column("overlay_hash", sa.String(length=64), nullable=False),
         sa.Column("tenant_id", sa.String(length=64), nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.CheckConstraint(
-            "training_eligible = 0",
+            # Dialect-safe boolean predicate (see delivery-prediction migration).
+            "NOT training_eligible",
             name="ck_ent_scen_overlay_not_training",
         ),
         sa.ForeignKeyConstraint(

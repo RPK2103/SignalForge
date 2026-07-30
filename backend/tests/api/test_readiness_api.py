@@ -5,8 +5,9 @@ from fastapi.testclient import TestClient
 
 from app.domain.policy import get_policy
 from app.main import app
+from tests.support.auth import broad_tenant_headers
 
-client = TestClient(app)
+client = TestClient(app, headers=broad_tenant_headers())
 
 ASSESS_URL = "/api/v2/readiness/assess"
 CAPABILITIES_URL = "/api/v2/capabilities"

@@ -17,6 +17,8 @@ from app.db.session import get_engine, init_engine, reset_engine
 from app.db.unit_of_work import UnitOfWork
 from app.domain.tenant_context import TenantContext
 from app.main import app
+from app.security.context import SecurityContext, internal_system_context
+from tests.support.auth import broad_test_headers
 
 
 def _run_alembic(url: str, revision: str) -> None:
@@ -81,6 +83,18 @@ def novabank_tenant() -> TenantContext:
 
 
 @pytest.fixture
+def sec_a() -> SecurityContext:
+    """Authorized tenant-admin security context for tenant-a (all permissions)."""
+    return internal_system_context("tenant-a", correlation_id="test-a")
+
+
+@pytest.fixture
+def sec_b() -> SecurityContext:
+    """Authorized tenant-admin security context for tenant-b (all permissions)."""
+    return internal_system_context("tenant-b", correlation_id="test-b")
+
+
+@pytest.fixture
 def seeded_db(migrated_db: str) -> str:
     engine = get_engine(migrated_db)
     with Session(engine) as session:
@@ -95,7 +109,7 @@ def client(seeded_db: str) -> Generator[TestClient, None, None]:
     os.environ["DATABASE_URL"] = seeded_db
     get_settings.cache_clear()
     reset_engine()
-    with TestClient(app) as test_client:
+    with TestClient(app, headers=broad_test_headers()) as test_client:
         yield test_client
     reset_engine()
     get_settings.cache_clear()

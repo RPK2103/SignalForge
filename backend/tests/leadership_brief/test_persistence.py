@@ -2,27 +2,31 @@
 
 from app.domain.enums import AuditEventType
 from app.schemas.api_v2 import ReadinessAssessRequest
+from app.security.context import internal_system_context
 from app.services.leadership_brief.orchestrator import LeadershipBriefOrchestrator
 from app.services.persistence.assessment_persistence_service import AssessmentPersistenceService
 from app.services.persistence.leadership_brief_persistence_service import (
     LeadershipBriefPersistenceService,
 )
 
+CTX = internal_system_context("novabank", correlation_id="test")
+
 
 class TestLeadershipBriefPersistence:
     def test_persist_and_list(self, unit_of_work):
         assessment_service = AssessmentPersistenceService(unit_of_work)
         created = assessment_service.create_assessment(
+            CTX,
             ReadinessAssessRequest(
                 project_id="azure_ai_migration",
                 engineer_ids=["kavi", "vikram"],
-            )
+            ),
         )
         brief_service = LeadershipBriefPersistenceService(
             unit_of_work,
             orchestrator=LeadershipBriefOrchestrator(),
         )
-        generated = brief_service.generate_leadership_brief(created.assessment_record_id)
+        generated = brief_service.generate_leadership_brief(CTX, created.assessment_record_id)
         assert generated.brief.provider_mode.value == "deterministic_fallback"
         listed = brief_service.list_leadership_briefs(created.assessment_record_id)
         assert len(listed) == 1
@@ -31,17 +35,18 @@ class TestLeadershipBriefPersistence:
     def test_append_only_repeated_generation(self, unit_of_work):
         assessment_service = AssessmentPersistenceService(unit_of_work)
         created = assessment_service.create_assessment(
+            CTX,
             ReadinessAssessRequest(
                 project_id="azure_ai_migration",
                 engineer_ids=["kavi", "vikram"],
-            )
+            ),
         )
         brief_service = LeadershipBriefPersistenceService(
             unit_of_work,
             orchestrator=LeadershipBriefOrchestrator(),
         )
-        first = brief_service.generate_leadership_brief(created.assessment_record_id)
-        second = brief_service.generate_leadership_brief(created.assessment_record_id)
+        first = brief_service.generate_leadership_brief(CTX, created.assessment_record_id)
+        second = brief_service.generate_leadership_brief(CTX, created.assessment_record_id)
         assert first.leadership_brief_record_id != second.leadership_brief_record_id
         assert first.output_snapshot_hash == second.output_snapshot_hash
         assert len(brief_service.list_leadership_briefs(created.assessment_record_id)) == 2
@@ -49,16 +54,17 @@ class TestLeadershipBriefPersistence:
     def test_audit_event_created(self, unit_of_work, db_session):
         assessment_service = AssessmentPersistenceService(unit_of_work)
         created = assessment_service.create_assessment(
+            CTX,
             ReadinessAssessRequest(
                 project_id="azure_ai_migration",
                 engineer_ids=["kavi", "vikram"],
-            )
+            ),
         )
         brief_service = LeadershipBriefPersistenceService(
             unit_of_work,
             orchestrator=LeadershipBriefOrchestrator(),
         )
-        brief_service.generate_leadership_brief(created.assessment_record_id)
+        brief_service.generate_leadership_brief(CTX, created.assessment_record_id)
         from app.db.repositories.sql_repositories import SqlAuditEventRepository
 
         audit = SqlAuditEventRepository(db_session)
@@ -73,17 +79,18 @@ class TestLeadershipBriefPersistence:
     def test_assessment_unchanged(self, unit_of_work):
         assessment_service = AssessmentPersistenceService(unit_of_work)
         created = assessment_service.create_assessment(
+            CTX,
             ReadinessAssessRequest(
                 project_id="azure_ai_migration",
                 engineer_ids=["kavi", "vikram"],
-            )
+            ),
         )
         before = assessment_service.get_assessment(created.assessment_record_id)
         brief_service = LeadershipBriefPersistenceService(
             unit_of_work,
             orchestrator=LeadershipBriefOrchestrator(),
         )
-        brief_service.generate_leadership_brief(created.assessment_record_id)
+        brief_service.generate_leadership_brief(CTX, created.assessment_record_id)
         after = assessment_service.get_assessment(created.assessment_record_id)
         assert before.result_snapshot_hash == after.result_snapshot_hash
         assert before.result.readiness_score == after.result.readiness_score

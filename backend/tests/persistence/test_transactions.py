@@ -13,12 +13,15 @@ from app.domain.enums import AuditEventType, HumanReviewState
 from app.domain.persistence_models import AuditEventRecord
 from app.domain.simulation_models import RemoveSimulationOperation
 from app.schemas.api_v2 import ReadinessAssessRequest, SimulationRequest
+from app.security.context import internal_system_context
 from app.services.persistence.assessment_persistence_service import AssessmentPersistenceService
 from app.services.persistence.review_persistence_service import (
     HumanReviewPersistenceService,
     HumanReviewRequest,
 )
 from app.services.persistence.simulation_persistence_service import SimulationPersistenceService
+
+CTX = internal_system_context("novabank", correlation_id="test")
 
 
 def test_assessment_rollback_when_audit_append_fails(unit_of_work, db_session):
@@ -33,10 +36,11 @@ def test_assessment_rollback_when_audit_append_fails(unit_of_work, db_session):
     with patch.object(unit_of_work.audit_events, "append", side_effect=failing_append):
         with pytest.raises(RuntimeError):
             service.create_assessment(
+                CTX,
                 ReadinessAssessRequest(
                     project_id="azure_ai_migration",
                     engineer_ids=["kavi", "vikram"],
-                )
+                ),
             )
 
     count = db_session.scalar(select(func.count()).select_from(Assessment)) or 0
@@ -54,16 +58,18 @@ def test_subsequent_transaction_succeeds_after_rollback(unit_of_work):
             side_effect=RuntimeError("simulated audit failure"),
         ):
             service.create_assessment(
+                CTX,
                 ReadinessAssessRequest(
                     project_id="azure_ai_migration",
                     engineer_ids=["kavi"],
-                )
+                ),
             )
     created = service.create_assessment(
+        CTX,
         ReadinessAssessRequest(
             project_id="azure_ai_migration",
             engineer_ids=["kavi", "vikram"],
-        )
+        ),
     )
     assert created.assessment_record_id is not None
 
@@ -77,10 +83,11 @@ def test_assessment_rollback_when_risk_projection_fails(unit_of_work, db_session
     ):
         with pytest.raises(RuntimeError):
             service.create_assessment(
+                CTX,
                 ReadinessAssessRequest(
                     project_id="azure_ai_migration",
                     engineer_ids=["kavi", "vikram"],
-                )
+                ),
             )
 
     assert (db_session.scalar(select(func.count()).select_from(Assessment)) or 0) == 0
@@ -97,10 +104,11 @@ def test_assessment_rollback_when_trace_projection_fails(unit_of_work, db_sessio
     ):
         with pytest.raises(RuntimeError):
             service.create_assessment(
+                CTX,
                 ReadinessAssessRequest(
                     project_id="azure_ai_migration",
                     engineer_ids=["kavi", "vikram"],
-                )
+                ),
             )
 
     assert (db_session.scalar(select(func.count()).select_from(Assessment)) or 0) == 0
@@ -117,11 +125,12 @@ def test_simulation_rollback_when_audit_append_fails(unit_of_work, db_session):
     ):
         with pytest.raises(RuntimeError):
             service.create_simulation(
+                CTX,
                 SimulationRequest(
                     project_id="azure_ai_migration",
                     baseline_engineer_ids=["kavi", "vikram"],
                     operation=RemoveSimulationOperation(engineer_id="kavi"),
-                )
+                ),
             )
 
     assert (db_session.scalar(select(func.count()).select_from(Simulation)) or 0) == 0
@@ -132,10 +141,11 @@ def test_review_rollback_when_audit_append_fails(unit_of_work, db_session):
     assessments = AssessmentPersistenceService(unit_of_work)
     reviews = HumanReviewPersistenceService(unit_of_work)
     created = assessments.create_assessment(
+        CTX,
         ReadinessAssessRequest(
             project_id="azure_ai_migration",
             engineer_ids=["kavi", "vikram"],
-        )
+        ),
     )
 
     def failing_append(event: AuditEventRecord) -> None:
@@ -146,6 +156,7 @@ def test_review_rollback_when_audit_append_fails(unit_of_work, db_session):
     with patch.object(unit_of_work.audit_events, "append", side_effect=failing_append):
         with pytest.raises(RuntimeError):
             reviews.add_review(
+                CTX,
                 created.assessment_record_id,
                 HumanReviewRequest(
                     state=HumanReviewState.ACCEPTED,

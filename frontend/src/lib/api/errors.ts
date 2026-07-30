@@ -3,6 +3,8 @@ export type ApiErrorCategory =
   | "timeout"
   | "api_error"
   | "validation_error"
+  | "unauthorized"
+  | "forbidden"
   | "not_found"
   | "conflict"
   | "unsupported_media_type"
@@ -66,7 +68,13 @@ export function categorizeErrorType(errorType: string, statusCode: number): ApiE
       return "database_unavailable";
     case "snapshot_integrity_error":
       return "snapshot_integrity_error";
+    case "authentication_failed":
+      return "unauthorized";
+    case "authorization_denied":
+      return "forbidden";
     default:
+      if (statusCode === 401) return "unauthorized";
+      if (statusCode === 403) return "forbidden";
       if (statusCode === 404) return "not_found";
       if (statusCode === 409) return "conflict";
       if (statusCode === 415) return "unsupported_media_type";
@@ -99,6 +107,10 @@ export function formatApiErrorMessage(error: SignalForgeApiError): string {
       return "Persistence is temporarily unavailable. Run migrations and retry.";
     case "snapshot_integrity_error":
       return "Stored snapshot integrity check failed. Contact an administrator.";
+    case "unauthorized":
+      return "Your session has expired or you are signed out. Please sign in again.";
+    case "forbidden":
+      return "You do not have permission to perform this action.";
     case "not_found":
       return "The requested record was not found.";
     case "conflict":
