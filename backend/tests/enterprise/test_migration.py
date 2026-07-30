@@ -19,7 +19,8 @@ PHASE_2_HEAD = "a1b2c3d4e5f6"
 P3_DELIVERY_GRAPH = "p3_delivery_graph"
 P3_DELIVERY_PREDICTION = "p3_delivery_prediction"
 P3_CONTINUOUS_SCENARIO_INTELLIGENCE = "p3_continuous_scenario_intelligence"
-CURRENT_ALEMBIC_HEAD = P3_CONTINUOUS_SCENARIO_INTELLIGENCE
+P3_AI_CHIEF_OF_STAFF = "p3_ai_chief_of_staff"
+CURRENT_ALEMBIC_HEAD = P3_AI_CHIEF_OF_STAFF
 P3_PROMPT1 = "p3_enterprise_foundation"
 _NOW = datetime(2026, 1, 1, tzinfo=timezone.utc)
 

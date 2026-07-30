@@ -187,16 +187,38 @@ remain **deferred**. Continuous scenarios are implemented in Prompt 5 (see §9e)
 
 See
 [`architecture/phase-3-continuous-scenario-intelligence.md`](architecture/phase-3-continuous-scenario-intelligence.md).
-AI Chief of Staff (Prompt 6), autonomous recommendations, causal inference,
-auth/RBAC/Entra/RLS, and production multi-tenancy remain **deferred**.
+
+## 9f. Implemented — Phase 3 Prompt 6 (AI Chief of Staff)
+
+- Bounded, auditable executive briefs over five intents (`delivery_status_brief`,
+  `change_since_last_review`, `scenario_comparison_brief`,
+  `delivery_prediction_brief`, `evidence_gap_brief`) for project/initiative
+  targets.
+- Temporal, tenant-qualified evidence packages with canonical hashing, claims,
+  citations, append-only reviews, and deterministic fallback.
+- Reads immutable Prompt 1–5 outputs; does not recalculate readiness, graph
+  findings, predictions, or scenario impacts. When a cutoff-valid Phase 2
+  assessment exists (via `legacy_project_id`), readiness and assessment
+  confidence are included as evidence; otherwise the package states they are
+  unavailable.
+- Grounding is structured (support matrix, citations, estimate semantics,
+  decision-option allowlist) plus phrase scanners — not full NL entailment.
+- Read-only `/api/v3/chief-of-staff/*`; generation/review remain CLI/service-only
+  (`python -m app.chief_of_staff`) because the tenant header is not authentication.
+- NovaBank retains `uncalibrated_score` semantics; no model promotion for demos.
+
+See [`architecture/phase-3-ai-chief-of-staff.md`](architecture/phase-3-ai-chief-of-staff.md).
+Auth/RBAC/Entra/RLS (Prompt 7), observability export (Prompt 8), and larger
+NovaBank scale remain **deferred**.
 
 ## 10. Planned Capabilities (Phase 3)
 
 - Jira / Azure DevOps **HTTP** connectors, GitHub webhooks/OAuth/Apps,
-  AI Chief of Staff, production multi-tenancy, auth/RBAC, Entra ID, secret
+  production multi-tenancy, auth/RBAC, Entra ID, secret
   vault, production observability. Demo-scoped calibrated delivery prediction
   is implemented (Prompt 4); continuous scenario intelligence is implemented
-  (Prompt 5). Production-eligible customer models remain ahead. See
+  (Prompt 5); AI Chief of Staff is implemented (Prompt 6). Production-eligible
+  customer models remain ahead. See
   [`architecture/phase-3-enterprise-product-roadmap.md`](architecture/phase-3-enterprise-product-roadmap.md).
 
 ## 11. Deterministic Intelligence
