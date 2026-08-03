@@ -14,6 +14,7 @@ from app.domain.chief_of_staff_enums import (
     GroundingResult,
 )
 from app.domain.chief_of_staff_models import ChiefOfStaffBrief, ChiefOfStaffEvidencePackage
+from app.observability.domain import record_cos_generation
 from app.services.chief_of_staff.azure_provider import AzureChiefOfStaffProvider
 from app.services.chief_of_staff.fallback import DeterministicFallbackProvider, build_fallback_brief
 from app.services.chief_of_staff.grounding import (
@@ -60,6 +61,32 @@ class CosGenerationOutcome:
     model_deployment_id: str | None = None
 
 
+def _emit_generation_telemetry(outcome: CosGenerationOutcome) -> None:
+    """Emit bounded, content-free Chief-of-Staff generation telemetry.
+
+    Only provider mode, generation state and bounded failure categories are
+    exported — never prompt text, evidence, citation IDs or provider output.
+    Fail-open: telemetry never alters the deterministic generation result.
+    """
+    failure = outcome.failure_category
+    is_fallback = outcome.final_provider == ChiefOfStaffProviderMode.DETERMINISTIC_FALLBACK
+    latency = (
+        float(outcome.provider_latency_ms) if outcome.provider_latency_ms is not None else None
+    )
+    record_cos_generation(
+        provider_type=outcome.final_provider.value,
+        outcome=outcome.generation_state.value,
+        fallback_category=failure.value if (is_fallback and failure is not None) else None,
+        provider_latency_ms=latency,
+        fallback=is_fallback,
+        parse_failure=failure == ChiefOfStaffFailureCategory.MALFORMED_OUTPUT,
+        schema_failure=failure == ChiefOfStaffFailureCategory.SCHEMA_VALIDATION_FAILED,
+        grounding_failure=outcome.grounding_result == GroundingResult.FAILED,
+        unsupported_claim=failure == ChiefOfStaffFailureCategory.UNSUPPORTED_CLAIM_DETECTED,
+        citation_failure=failure == ChiefOfStaffFailureCategory.CITATION_VALIDATION_FAILED,
+    )
+
+
 class ChiefOfStaffOrchestrator:
     def __init__(
         self,
@@ -73,6 +100,29 @@ class ChiefOfStaffOrchestrator:
         self._fallback_provider = fallback_provider or DeterministicFallbackProvider()
 
     def generate(
+        self,
+        package: ChiefOfStaffEvidencePackage,
+        *,
+        evidence_package_hash: str | None = None,
+        package_id: str | None = None,
+        requested_provider: ChiefOfStaffProviderMode,
+    ) -> CosGenerationOutcome:
+        """Generate a brief and emit exactly one generation telemetry sample.
+
+        The heavy lifting is delegated to :meth:`_run_generation`; telemetry is
+        emitted from the resolved outcome so one logical generation produces one
+        generation-count metric (substage failures never double-count it).
+        """
+        outcome = self._run_generation(
+            package,
+            evidence_package_hash=evidence_package_hash,
+            package_id=package_id,
+            requested_provider=requested_provider,
+        )
+        _emit_generation_telemetry(outcome)
+        return outcome
+
+    def _run_generation(
         self,
         package: ChiefOfStaffEvidencePackage,
         *,

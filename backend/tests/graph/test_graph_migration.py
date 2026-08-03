@@ -30,7 +30,7 @@ def test_one_alembic_head():
 
     script = ScriptDirectory.from_config(cfg)
     heads = script.get_heads()
-    assert heads == ["p3_enterprise_security_scale"]
+    assert heads == ["p3_observability_ai_quality"]
 
 
 def test_clean_upgrade_downgrade_reupgrade(tmp_path: Path):

@@ -18,6 +18,7 @@ P3_DELIVERY_PREDICTION = "p3_delivery_prediction"
 P3_CONTINUOUS_SCENARIO_INTELLIGENCE = "p3_continuous_scenario_intelligence"
 P3_AI_CHIEF_OF_STAFF = "p3_ai_chief_of_staff"
 P3_ENTERPRISE_SECURITY_SCALE = "p3_enterprise_security_scale"
+P3_OBSERVABILITY_AI_QUALITY = "p3_observability_ai_quality"
 
 
 def _alembic_config():
@@ -58,7 +59,7 @@ def test_exactly_one_head_is_ai_chief_of_staff():
 
     script = ScriptDirectory.from_config(_alembic_config())
     heads = script.get_heads()
-    assert heads == [P3_ENTERPRISE_SECURITY_SCALE]
+    assert heads == [P3_OBSERVABILITY_AI_QUALITY]
 
 
 def test_upgrade_from_populated_prompt1_preserves_data(temp_url: str):

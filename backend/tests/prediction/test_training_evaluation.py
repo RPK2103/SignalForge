@@ -7,7 +7,12 @@ from app.db.session import get_engine
 from app.db.unit_of_work import UnitOfWork
 from app.domain.prediction_constants import DEFAULT_HORIZON_DAYS
 from app.domain.prediction_enums import ModelState
+from app.security.context import internal_system_context
 from app.services.prediction.orchestration import PredictionOrchestrationService
+
+
+def _validator_security(tenant_id: str = "novabank"):
+    return internal_system_context(tenant_id, correlation_id="pred-eval-test")
 
 
 def test_train_evaluate_gates_no_auto_promote(projected_novabank, novabank_tenant):
@@ -35,7 +40,11 @@ def test_train_evaluate_gates_no_auto_promote(projected_novabank, novabank_tenan
         assert len(payload["coefficients"]) > 0
         assert all(isinstance(c, float) for c in payload["coefficients"][:5])
 
-        evaluation = orch.evaluate(novabank_tenant, model.prediction_model_id)
+        evaluation = orch.evaluate(
+            novabank_tenant,
+            model.prediction_model_id,
+            security=_validator_security(),
+        )
         uow.commit()
         assert evaluation.prediction_model_id == model.prediction_model_id
         assert evaluation.passed_validation_gates in (True, False)
@@ -112,6 +121,7 @@ def test_evaluate_does_not_auto_promote_even_if_gates_pass(projected_novabank, n
         evaluation = orch.evaluate(
             novabank_tenant,
             model.prediction_model_id,
+            security=_validator_security(),
             mark_validated_if_passing=False,
         )
         uow.commit()

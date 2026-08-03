@@ -1,3 +1,4 @@
+import logging
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request
@@ -5,13 +6,21 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+from app.core.correlation import CORRELATION_HEADER
 from app.services.persistence.exceptions import PersistenceError
+
+_logger = logging.getLogger("signalforge.errors")
 
 
 class APIErrorResponse(BaseModel):
     detail: str | list[Any]
     status_code: int
     error_type: str
+
+
+def _correlation_headers(request: Request) -> dict[str, str]:
+    cid = getattr(request.state, "correlation_id", None)
+    return {CORRELATION_HEADER: str(cid)} if cid else {}
 
 
 def _http_error_type(status_code: int) -> str:
@@ -40,7 +49,7 @@ def _sanitize_validation_errors(errors: list[Any]) -> list[Any]:
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(PersistenceError)
     async def persistence_exception_handler(
-        _request: Request,
+        request: Request,
         exc: PersistenceError,
     ) -> JSONResponse:
         payload = APIErrorResponse(
@@ -51,11 +60,12 @@ def register_exception_handlers(app: FastAPI) -> None:
         return JSONResponse(
             status_code=exc.status_code,
             content=payload.model_dump(),
+            headers=_correlation_headers(request),
         )
 
     @app.exception_handler(HTTPException)
     async def http_exception_handler(
-        _request: Request,
+        request: Request,
         exc: HTTPException,
     ) -> JSONResponse:
         detail = exc.detail if isinstance(exc.detail, (str, list)) else str(exc.detail)
@@ -67,11 +77,12 @@ def register_exception_handlers(app: FastAPI) -> None:
         return JSONResponse(
             status_code=exc.status_code,
             content=payload.model_dump(),
+            headers=_correlation_headers(request),
         )
 
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(
-        _request: Request,
+        request: Request,
         exc: RequestValidationError,
     ) -> JSONResponse:
         payload = APIErrorResponse(
@@ -82,13 +93,16 @@ def register_exception_handlers(app: FastAPI) -> None:
         return JSONResponse(
             status_code=422,
             content=payload.model_dump(),
+            headers=_correlation_headers(request),
         )
 
     @app.exception_handler(Exception)
     async def unhandled_exception_handler(
-        _request: Request,
+        request: Request,
         exc: Exception,
     ) -> JSONResponse:
+        # Log for server-side diagnosis (never expose the message to the client).
+        _logger.exception("unhandled_exception path=%s", request.url.path)
         payload = APIErrorResponse(
             detail="Internal server error",
             status_code=500,
@@ -97,4 +111,5 @@ def register_exception_handlers(app: FastAPI) -> None:
         return JSONResponse(
             status_code=500,
             content=payload.model_dump(),
+            headers=_correlation_headers(request),
         )

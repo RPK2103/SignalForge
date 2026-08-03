@@ -12,6 +12,7 @@ from app.api.v3 import (
     connectors,
     delivery_graph,
     enterprise,
+    observability,
     predictions,
     scenarios,
     security,
@@ -44,3 +45,6 @@ router.include_router(
     dependencies=[Depends(require_permission(Permission.CHIEF_OF_STAFF_READ))],
 )
 router.include_router(security.router)
+# Observability + AI quality: each route enforces its own permission
+# (observability.read/manage, ai_quality.read/evaluate) via require_permission.
+router.include_router(observability.router)

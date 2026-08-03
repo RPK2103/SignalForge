@@ -20,6 +20,7 @@ from app.domain.chief_of_staff_enums import (
 )
 from app.domain.chief_of_staff_models import ChiefOfStaffRequest
 from app.domain.tenant_context import TenantContext
+from app.security.context import internal_system_context
 from app.services.chief_of_staff.service import ChiefOfStaffService
 from app.services.enterprise.exceptions import EnterpriseError
 
@@ -147,6 +148,10 @@ def cmd_compare(args: argparse.Namespace) -> int:
 
 def cmd_review(args: argparse.Namespace) -> int:
     ctx = TenantContext.require(args.tenant_id)
+    # Explicit trusted internal context — still passes AuthorizationService.
+    security = internal_system_context(
+        args.tenant_id, correlation_id=f"cli_cos_review_{args.brief_id}"
+    )
     with _session() as session:
         uow = UnitOfWork(session)
         try:
@@ -154,6 +159,7 @@ def cmd_review(args: argparse.Namespace) -> int:
                 ctx,
                 brief_id=args.brief_id,
                 review_state=ChiefOfStaffReviewState(args.state),
+                security=security,
                 reviewer_context=args.reviewer_context or "cli",
                 notes=args.notes or "",
             )

@@ -49,6 +49,12 @@ from app.domain.enterprise_enums import (
 )
 from app.domain.enterprise_identifiers import build_entity_id, slugify
 from app.domain.tenant_context import TenantContext
+from app.observability.domain import (
+    record_connector_sync,
+    record_freshness_age,
+    record_ingestion_lag,
+)
+from app.observability.freshness import compute_freshness, compute_ingestion_lag
 from app.security.audit import SecurityAuditService
 from app.security.authorization import AuthorizationService
 from app.security.context import SecurityContext
@@ -68,6 +74,24 @@ _TERMINAL_RUN_STATES = {
     IngestionRunStatus.FAILED,
     IngestionRunStatus.PARTIAL,
 }
+
+# Map a terminal ingestion-run status to a bounded connector-sync outcome label.
+_RUN_STATUS_OUTCOME: dict[IngestionRunStatus, str] = {
+    IngestionRunStatus.SUCCEEDED: "success",
+    IngestionRunStatus.PARTIAL: "partial",
+    IngestionRunStatus.FAILED: "failure",
+}
+
+
+def _duration_ms(start: datetime | None, end: datetime | None) -> float | None:
+    if start is None or end is None:
+        return None
+    if start.tzinfo is None:
+        start = start.replace(tzinfo=timezone.utc)
+    if end.tzinfo is None:
+        end = end.replace(tzinfo=timezone.utc)
+    delta = (end - start).total_seconds() * 1000.0
+    return delta if delta >= 0 else None
 
 
 def _utcnow() -> datetime:
@@ -809,10 +833,11 @@ class IngestionService(_BaseService):
             raise EnterpriseValidationError(
                 "complete_run requires a terminal status (succeeded/failed/partial)"
             )
+        completed = _utcnow()
         updated = run.model_copy(
             update={
                 "status": status,
-                "completed_at": _utcnow(),
+                "completed_at": completed,
                 "records_read": records_read,
                 "records_written": records_written,
                 "records_skipped": records_skipped,
@@ -830,6 +855,17 @@ class IngestionService(_BaseService):
             metadata={"status": status.value},
         )
         self._commit()
+        # Runtime connector telemetry — emitted once per completed sync, only after
+        # the terminal transition is durably committed. Fail-open; counts are
+        # derived from the operation result and never fabricated.
+        record_connector_sync(
+            connector_type=self._source_type_label(ctx, run.data_source_id),
+            outcome=_RUN_STATUS_OUTCOME[status],
+            duration_ms=_duration_ms(run.started_at, completed),
+            observed=records_read,
+            accepted=records_written,
+            deduplicated=records_skipped,
+        )
         _logger.info(
             "enterprise.ingestion_run.completed tenant_id=%s ingestion_run_id=%s status=%s "
             "read=%d written=%d skipped=%d",
@@ -897,6 +933,9 @@ class IngestionService(_BaseService):
         )
         record, created = self._uow.evidence_signals.append(ctx, signal)
         self._commit()
+        self._emit_ingestion_freshness(
+            ctx, data_source_id=data_source_id, event_time=event_time, ingested_at=now
+        )
         _logger.info(
             "enterprise.evidence.%s tenant_id=%s evidence_signal_id=%s subject=%s:%s",
             "appended" if created else "deduplicated",
@@ -906,6 +945,47 @@ class IngestionService(_BaseService):
             subject_id,
         )
         return record, created
+
+    def _emit_ingestion_freshness(
+        self,
+        ctx: TenantContext,
+        *,
+        data_source_id: str,
+        event_time: datetime,
+        ingested_at: datetime,
+    ) -> None:
+        """Emit ingestion lag and freshness age for a committed evidence signal.
+
+        Honest edge handling: a source clock ahead of ingestion (clock skew) or a
+        missing event time yields no fabricated lag/age. Fail-open telemetry.
+        """
+        source_type = self._source_type_label(ctx, data_source_id)
+        lag = compute_ingestion_lag(source_event_time=event_time, ingestion_time=ingested_at)
+        if lag.available and not lag.clock_skew and lag.lag_seconds is not None:
+            record_ingestion_lag(source_type=source_type, lag_seconds=lag.lag_seconds)
+        freshness = compute_freshness(
+            source_type=source_type,
+            latest_source_event_time=event_time,
+            evaluation_time=ingested_at,
+            has_successful_checkpoint=True,
+        )
+        if freshness.age_seconds is not None:
+            record_freshness_age(
+                source_type=source_type,
+                freshness_state=freshness.status.value,
+                age_seconds=freshness.age_seconds,
+            )
+
+    def _source_type_label(self, ctx: TenantContext, data_source_id: str) -> str:
+        """Resolve a bounded connector/source type label; never raises."""
+        try:
+            source = self._uow.data_sources.get_data_source(ctx, data_source_id)
+        except Exception:  # noqa: BLE001 - telemetry label resolution never breaks ingestion
+            return "unknown"
+        source_type = getattr(source, "source_type", None)
+        if source_type is None:
+            return "unknown"
+        return getattr(source_type, "value", str(source_type))
 
     def list_data_sources(
         self, ctx: TenantContext, *, limit: int = 20, offset: int = 0

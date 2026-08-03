@@ -25,6 +25,7 @@ from app.domain.scenario_models import (
     ScenarioRun,
 )
 from app.domain.tenant_context import TenantContext
+from app.observability.domain import record_scenario_run
 from app.services.enterprise.exceptions import (
     EnterpriseConflictError,
 )
@@ -48,6 +49,15 @@ def _aware(dt: datetime) -> datetime:
     if dt.tzinfo is None:
         return dt.replace(tzinfo=timezone.utc)
     return dt.astimezone(timezone.utc)
+
+
+def _kind_label(kind: Any) -> str:
+    return getattr(kind, "value", str(kind))
+
+
+def _duration_ms(start: datetime, end: datetime) -> float:
+    delta = (_aware(end) - _aware(start)).total_seconds() * 1000.0
+    return delta if delta >= 0 else 0.0
 
 
 class ScenarioExecutionService:
@@ -195,6 +205,7 @@ class ScenarioExecutionService:
             )
 
         try:
+            telemetry_emitted = False
             graph_overlay = self._graph.apply(
                 ctx,
                 target_type=definition.target_type.value
@@ -289,6 +300,22 @@ class ScenarioExecutionService:
                 state.value,
                 result.result_hash[:16],
             )
+            # Defer success telemetry until the enclosing UoW commits so watch
+            # evaluation (execute + trigger + watch update) stays one transaction
+            # and a rollback never reports committed success.
+            kind_label = _kind_label(definition.scenario_kind)
+            outcome = state.value
+            duration = _duration_ms(started, _utcnow())
+            fallback = pred_pair.baseline.estimate_kind.value == "uncalibrated_score"
+            self._uow.note_pending_telemetry(
+                lambda k=kind_label, o=outcome, d=duration, f=fallback: record_scenario_run(
+                    scenario_kind=k,
+                    outcome=o,
+                    duration_ms=d,
+                    fallback=f,
+                )
+            )
+            telemetry_emitted = True
             return ScenarioExecutionBundle(
                 run=run,
                 result=result,
@@ -298,17 +325,23 @@ class ScenarioExecutionService:
             )
         except Exception as exc:
             sanitized = str(exc)[:512]
-            try:
-                self._uow.scenario_runs.update_state(
-                    ctx,
-                    run.scenario_run_id,
-                    ScenarioRunState.FAILED,
-                    completed_at=_utcnow(),
-                    sanitized_error_summary=sanitized,
+            if not telemetry_emitted:
+                record_scenario_run(
+                    scenario_kind=_kind_label(definition.scenario_kind),
+                    outcome="failed",
+                    duration_ms=_duration_ms(started, _utcnow()),
                 )
-            except Exception:
-                # Session may have been rolled back by an integrity guard.
-                self._uow.rollback()
+                try:
+                    self._uow.scenario_runs.update_state(
+                        ctx,
+                        run.scenario_run_id,
+                        ScenarioRunState.FAILED,
+                        completed_at=_utcnow(),
+                        sanitized_error_summary=sanitized,
+                    )
+                except Exception:
+                    # Session may have been rolled back by an integrity guard.
+                    self._uow.rollback()
             logger.info(
                 "scenario.execution.failed tenant_id=%s run_id=%s error=%s",
                 ctx.tenant_id,

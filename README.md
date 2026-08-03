@@ -275,8 +275,96 @@ This is a security **foundation**, not a completed security program:
 local-development mode is **not** production authentication; CI PostgreSQL
 validation is **not** a production security review; **no** penetration test,
 SOC 2 / ISO 27001 certification, SCIM, distributed rate limiter, or SIEM
-integration exists; **Microsoft has not endorsed the project**; Prompt 8
-observability remains deferred.
+integration exists; **Microsoft has not endorsed the project**. Prompt 8
+observability and AI quality is implemented (see 9h).
+
+## 9h. Implemented — Phase 3 Prompt 8 (Observability and AI Quality)
+
+- **Provider-independent observability boundary** — domain code records through
+  an `ObservabilityProvider` protocol; a `NoOp` default, a deterministic
+  `InMemory` provider (tests/local, no network) and an OpenTelemetry-backed
+  provider (constructed only at the edge, SDK imported lazily). Telemetry is
+  fail-open and never alters deterministic scoring or security; required
+  security-audit persistence stays fail-closed per Prompt 7. **No global mutable
+  metrics dictionary.**
+- **HTTP status semantics** — outermost request-telemetry middleware classifies
+  2xx/3xx success, 4xx client/domain, 401 authentication-denial, 403
+  authorization-denial, 429 rate-limit, and 5xx/unhandled server failure.
+  **Expected 401/403 are security-denial telemetry — never 5xx and never an
+  availability failure**; only genuine 5xx increment the server-error metric
+  (proven by tests). W3C `traceparent` + sanitized correlation IDs propagate into
+  structured logs and the response header.
+- **Centralized cardinality/privacy policy** — one allowlist of low-cardinality
+  labels; tenant IDs, correlation/trace IDs, prompts, tokens, emails, repo/
+  project names and exception text are never metric dimensions. Tenant rollups
+  store `tenant_id` as an RLS-protected column only. Optional JSON logging redacts
+  bearer tokens, JWTs and secret assignments.
+- **Domain, connector-freshness and prediction-quality telemetry** — ingestion
+  lag / freshness age (timezone-aware, honest `unavailable`/`clock_skew`/
+  `never_synced` states) and calibration/drift snapshots (Brier, ECE, PSI) that
+  reuse Prompt 4 artifacts, never retrain, and report `unavailable`/
+  `insufficient_data` rather than fabricating values. The domain-metric
+  recorders are **wired into reachable application-service boundaries** and emit
+  at runtime: connector outcome/latency and records and ingestion lag/freshness
+  (`IngestionService.complete_run` / `append_evidence`), graph rebuild/incremental
+  outcome and duration (`GraphProjectionService`), prediction outcome/fallback/
+  missing-data (`PredictionOrchestrator.predict`), scenario run outcome/fallback
+  (`ScenarioExecutionService.execute`), Chief-of-Staff generation/provider/
+  fallback/grounding categories (`ChiefOfStaffOrchestrator.generate`),
+  human-review outcomes (`ChiefOfStaffService.append_review` and
+  `HumanReviewPersistenceService.add_review`; both require a non-optional
+  `SecurityContext` / `chief_of_staff.review`; CLI uses explicit
+  `internal_system_context`), prediction validation-run outcomes
+  (`PredictionOrchestrator.evaluate`; requires `predictions.validate` and the
+  same trusted-CLI pattern), and
+  security-audit write health (`SecurityAuditService.record_sensitive_action`).
+  Committed-success samples are emitted only after a durable UnitOfWork commit
+  (connector/ingestion commit inside the service; graph/prediction/scenario/review/
+  validation/audit success samples are queued on the UoW and flushed on commit;
+  a failed commit clears the queue).
+  Rollback discards pending success. Human-review and prediction-validation
+  metrics are collected and readable via `MetricsReader` but are **not** yet
+  dedicated dashboard tiles or SLO inputs. All emission is fail-open (a
+  telemetry error never alters business results,
+  transactions, or the Prompt 7 fail-closed audit contract) and uses only the
+  bounded attribute allowlist (no tenant/principal IDs, prompts, evidence or
+  secrets; dangerous values under allowlisted keys are redacted). Metric readers,
+  the observability API summary and domain SLOs
+  (e.g. connector success ratio, audit-write success) therefore consume real
+  runtime samples; zero samples remain `insufficient_data`. Production OTLP
+  export, Azure Monitor deployment, external alert delivery and live-provider
+  evaluation remain **deferred**.
+- **Offline AI-quality framework + release gate** — deterministic, synthetic,
+  immutable evaluation cases covering evidence completeness, citation
+  correctness, unsupported-claim rate, decision consistency, fallback
+  determinism, prompt regression, adversarial evidence and provider variation.
+  Fake deterministic providers only (**no live LLM in mandatory CI**). The gate
+  fails on any critical safety violation; `python -m app.observability
+  evaluate-ai-quality` exits non-zero.
+- **Versioned SLOs + internal alerts** — deterministic SLO evaluation
+  (`healthy`/`at_risk`/`breached`/`insufficient_data`); the availability SLO
+  excludes 401/403. Alerts are internal state only (`open`/`acknowledged`/
+  `resolved`) with stable-fingerprint dedupe and append-only transitions — **no
+  email/Teams/PagerDuty/SMS/SIEM**.
+- **Protected APIs, RBAC and dashboard** — `/api/v3/observability/*` is
+  authenticated, tenant-resolved and permission-gated (`observability.read/
+  manage`, `ai_quality.read/evaluate`) at both route and service layers. An
+  authenticated, role-aware `/observability` dashboard shows request/AI/SLO/alert
+  health with loading/empty/error/retry states and no mock fallback.
+- **Persistence + RLS** — one additive migration `p3_observability_ai_quality`
+  (parent `p3_enterprise_security_scale`) adds nine tenant-scoped tables (no raw
+  spans/logs/prompts/evidence/tokens), all under forced PostgreSQL RLS with a
+  dedicated non-superuser RLS CI job.
+
+See
+[`architecture/phase-3-observability-ai-quality.md`](architecture/phase-3-observability-ai-quality.md).
+Honest limitations: expected 401/403 test responses are **not** server failures;
+**no** production monitoring backend, Azure Monitor / Application Insights / live
+OTLP has been validated or deployed; **no** production SLO attainment is claimed
+(synthetic/local data only); live provider comparison is optional/manual; there
+is no automatic model promotion, external alert delivery or SIEM integration, and
+no raw prompt/response retention. **Microsoft has not endorsed the project.** No
+Prompt 9 work exists.
 
 ## 10. Planned Capabilities (Phase 3)
 
