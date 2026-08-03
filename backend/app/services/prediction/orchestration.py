@@ -24,6 +24,7 @@ from app.domain.prediction_constants import (
     TRAINING_CODE_VERSION,
 )
 from app.domain.prediction_enums import (
+    EstimateKind,
     EvaluationSplit,
     ModelState,
     PredictionTargetType,
@@ -36,6 +37,10 @@ from app.domain.prediction_models import (
     PredictionModelEvaluation,
 )
 from app.domain.tenant_context import TenantContext
+from app.observability.domain import record_prediction, record_prediction_validation
+from app.security.authorization import AuthorizationService
+from app.security.context import SecurityContext
+from app.security.enums import Permission
 from app.services.prediction.backtesting import PredictionBacktestService
 from app.services.prediction.dataset_builder import PredictionDatasetBuilder
 from app.services.prediction.evaluation import PredictionEvaluationService
@@ -51,6 +56,49 @@ def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def _duration_ms(start: datetime, end: datetime) -> float:
+    delta = (end - start).total_seconds() * 1000.0
+    return delta if delta >= 0 else 0.0
+
+
+def _record_prediction_telemetry(
+    *, model_version: str, estimate_kind: EstimateKind | None, duration_ms: float
+) -> None:
+    """Emit one prediction telemetry sample per inference at the orchestrator boundary.
+
+    An uncalibrated scorecard result is a deterministic fallback (never labelled a
+    probability); insufficient evidence is a missing-data outcome, not a provider
+    failure. Fail-open.
+    """
+    if estimate_kind is None:
+        outcome = "error"
+    else:
+        outcome = estimate_kind.value
+    record_prediction(
+        model_version=model_version,
+        outcome=outcome,
+        duration_ms=duration_ms,
+        fallback=estimate_kind == EstimateKind.UNCALIBRATED_SCORE,
+        missing_data=estimate_kind == EstimateKind.INSUFFICIENT_DATA,
+    )
+
+
+def _validation_run_outcome(
+    *, model: PredictionModel, evaluation: PredictionModelEvaluation
+) -> str:
+    """Map a persisted evaluation onto the bounded validation-run vocabulary."""
+    if model.model_state == ModelState.REJECTED:
+        return "rejected"
+    warnings = list(evaluation.evaluation_warnings or [])
+    if evaluation.row_count == 0 or "empty_evaluation_split" in warnings:
+        return "insufficient_data"
+    if "gate_fail_sufficiency" in warnings:
+        return "insufficient_data"
+    if evaluation.passed_validation_gates:
+        return "passed"
+    return "failed"
+
+
 class PredictionOrchestrator:
     def __init__(self, uow: UnitOfWork) -> None:
         self._uow = uow
@@ -60,6 +108,7 @@ class PredictionOrchestrator:
         self._registry = PredictionModelRegistry(uow)
         self._inference = PredictionInferenceService(uow)
         self._backtesting = PredictionBacktestService(uow)
+        self._authz = AuthorizationService()
 
     # Public alias used by API/CLI.
     @property
@@ -91,9 +140,31 @@ class PredictionOrchestrator:
         model_id: str,
         split: EvaluationSplit = EvaluationSplit.TEST,
         *,
+        security: SecurityContext,
         mark_validated_if_passing: bool = False,
     ) -> PredictionModelEvaluation:
-        evaluation = self._evaluation.evaluate(ctx, model_id, split=split)
+        """Run a model evaluation / validation-gate check.
+
+        ``security`` is required (no optional bypass). ``predictions.validate``
+        is always re-checked; authorization denial emits no validation metric.
+        CLI/batch callers must pass an explicit trusted
+        ``internal_system_context``. A successful evaluation queues
+        ``record_prediction_validation`` until the enclosing UoW commits.
+        """
+        self._authz.require(security, Permission.PREDICTIONS_VALIDATE, ctx.tenant_id)
+
+        model = self._uow.prediction_models.get(ctx, model_id)
+        model_version = (model.model_version if model is not None else None) or "none"
+        try:
+            evaluation = self._evaluation.evaluate(ctx, model_id, split=split)
+        except Exception:
+            record_prediction_validation(
+                model_version=model_version,
+                outcome="error",
+                evaluation_type=split.value,
+            )
+            raise
+
         if (
             mark_validated_if_passing
             and evaluation.passed_validation_gates
@@ -112,6 +183,24 @@ class PredictionOrchestrator:
                     model_id,
                     str(exc),
                 )
+
+        # Re-load model in case mark_validated changed state; outcome uses the
+        # pre-promotion evaluation result plus current model state.
+        model_after = self._uow.prediction_models.get(ctx, model_id) or model
+        if model_after is None:
+            outcome = "error"
+            version = model_version
+        else:
+            outcome = _validation_run_outcome(model=model_after, evaluation=evaluation)
+            version = model_after.model_version or "none"
+        eval_type = split.value
+        self._uow.note_pending_telemetry(
+            lambda mv=version, o=outcome, et=eval_type: record_prediction_validation(
+                model_version=mv,
+                outcome=o,
+                evaluation_type=et,
+            )
+        )
         return evaluation
 
     def promote(
@@ -135,13 +224,35 @@ class PredictionOrchestrator:
         horizon_days: int = DEFAULT_HORIZON_DAYS,
     ) -> DeliveryPredictionBundle:
         when = as_of_at or _utcnow()
-        return self._inference.predict(
-            ctx,
-            target_type,
-            target_id,
-            when,
-            horizon_days=horizon_days,
+        started = _utcnow()
+        try:
+            bundle = self._inference.predict(
+                ctx,
+                target_type,
+                target_id,
+                when,
+                horizon_days=horizon_days,
+            )
+        except Exception:
+            _record_prediction_telemetry(
+                model_version="none",
+                estimate_kind=None,
+                duration_ms=_duration_ms(started, _utcnow()),
+            )
+            raise
+        # Defer success telemetry until the enclosing UoW commits so a later
+        # rollback never reports a false committed-success prediction.
+        model_version = bundle.prediction.model_version or "none"
+        estimate_kind = bundle.prediction.estimate_kind
+        duration = _duration_ms(started, _utcnow())
+        self._uow.note_pending_telemetry(
+            lambda mv=model_version, ek=estimate_kind, d=duration: _record_prediction_telemetry(
+                model_version=mv,
+                estimate_kind=ek,
+                duration_ms=d,
+            )
         )
+        return bundle
 
     def backtest(
         self,

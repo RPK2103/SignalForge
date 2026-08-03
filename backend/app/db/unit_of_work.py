@@ -35,6 +35,17 @@ from app.db.repositories.graph_repositories import (
     GraphNodeRepository,
     GraphProjectionRunRepository,
 )
+from app.db.repositories.observability_repositories import (
+    AiEvaluationCaseRepository,
+    AiEvaluationDatasetRepository,
+    AiEvaluationResultRepository,
+    AiEvaluationRunRepository,
+    AlertEventRepository,
+    MetricRollupRepository,
+    PredictionQualitySnapshotRepository,
+    SloDefinitionRepository,
+    SloEvaluationRepository,
+)
 from app.db.repositories.prediction_repositories import (
     DeliveryOutcomeRepository,
     DeliveryPredictionRepository,
@@ -132,12 +143,59 @@ class UnitOfWork:
         self.security_principals = SecurityPrincipalRepository(session)
         self.role_assignments = RoleAssignmentRepository(session)
         self.security_audit_events = SecurityAuditEventRepository(session)
+        # Phase 3 Prompt 8 observability & AI-quality repositories.
+        self.metric_rollups = MetricRollupRepository(session)
+        self.slo_definitions = SloDefinitionRepository(session)
+        self.slo_evaluations = SloEvaluationRepository(session)
+        self.alert_events = AlertEventRepository(session)
+        self.ai_evaluation_datasets = AiEvaluationDatasetRepository(session)
+        self.ai_evaluation_cases = AiEvaluationCaseRepository(session)
+        self.ai_evaluation_runs = AiEvaluationRunRepository(session)
+        self.ai_evaluation_results = AiEvaluationResultRepository(session)
+        self.prediction_quality_snapshots = PredictionQualitySnapshotRepository(session)
+        # Pending telemetry flushed only after a durable commit so a rolled-back
+        # transaction never reports committed-success domain samples.
+        self._pending_audit_successes: int = 0
+        self._pending_telemetry: list[Callable[[], None]] = []
+
+    def note_pending_audit_success(self) -> None:
+        """Queue one audit-write success sample for emission on the next commit."""
+        self._pending_audit_successes += 1
+
+    def note_pending_telemetry(self, emit: Callable[[], None]) -> None:
+        """Queue a fail-open domain telemetry emission for the next durable commit."""
+        self._pending_telemetry.append(emit)
 
     def commit(self) -> None:
-        self.session.commit()
+        try:
+            self.session.commit()
+        except Exception:
+            # A failed durable commit must never leave success samples queued for a
+            # later flush; clear before re-raising (mirrors rollback semantics).
+            self._pending_audit_successes = 0
+            self._pending_telemetry = []
+            raise
+        pending_audit = self._pending_audit_successes
+        pending_tel = list(self._pending_telemetry)
+        self._pending_audit_successes = 0
+        self._pending_telemetry = []
+        if pending_audit:
+            # Deferred import keeps UoW free of a hard observability import cycle
+            # at module load; emission is fail-open.
+            from app.observability.domain import record_audit_succeeded
+
+            for _ in range(pending_audit):
+                record_audit_succeeded()
+        for emit in pending_tel:
+            try:
+                emit()
+            except Exception:  # noqa: BLE001 - telemetry never breaks commit
+                pass
 
     def rollback(self) -> None:
         self.session.rollback()
+        self._pending_audit_successes = 0
+        self._pending_telemetry = []
 
     def execute(self, callback: Callable[["UnitOfWork"], T]) -> T:
         try:

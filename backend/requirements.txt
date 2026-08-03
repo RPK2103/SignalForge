@@ -28,3 +28,14 @@ psycopg[binary]==3.2.9
 # Phase 3 Prompt 7 enterprise security: Entra-compatible JWT validation.
 PyJWT==2.13.0
 cryptography==48.0.1
+# Phase 3 Prompt 8 observability: OpenTelemetry-compatible tracing/metrics. The
+# OTLP exporter is only used when OTEL_EXPORTER_MODE=otlp; unit tests use the
+# deterministic in-memory provider and never import the SDK.
+opentelemetry-api==1.44.0
+opentelemetry-sdk==1.44.0
+opentelemetry-semantic-conventions==0.65b0
+opentelemetry-exporter-otlp-proto-http==1.44.0
+opentelemetry-exporter-otlp-proto-common==1.44.0
+opentelemetry-proto==1.44.0
+googleapis-common-protos==1.75.0
+protobuf==7.35.1

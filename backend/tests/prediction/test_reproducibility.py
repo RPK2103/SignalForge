@@ -14,9 +14,14 @@ from app.db.enterprise_seed import TENANT_ID, seed_enterprise
 from app.db.session import get_engine, init_engine, reset_engine
 from app.db.unit_of_work import UnitOfWork
 from app.domain.tenant_context import TenantContext
+from app.security.context import internal_system_context
 from app.services.graph.analysis_service import GraphAnalysisService
 from app.services.graph.projection_service import GraphProjectionService
 from app.services.prediction.orchestration import PredictionOrchestrationService
+
+
+def _validator_security(tenant_id: str = TENANT_ID):
+    return internal_system_context(tenant_id, correlation_id="pred-repro-eval")
 
 
 def _prepare_db(path: Path) -> str:
@@ -51,7 +56,9 @@ def _train_pipeline(url: str) -> dict:
         orch = PredictionOrchestrationService(uow)
         manifest = orch.build_dataset(tenant)
         model = orch.train(tenant, manifest.prediction_dataset_manifest_id, seed=42)
-        evaluation = orch.evaluate(tenant, model.prediction_model_id)
+        evaluation = orch.evaluate(
+            tenant, model.prediction_model_id, security=_validator_security()
+        )
         uow.commit()
         result = {
             "dataset_hash": manifest.dataset_hash,

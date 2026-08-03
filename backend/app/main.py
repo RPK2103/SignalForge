@@ -12,6 +12,8 @@ from app.core.config import get_settings
 from app.core.exceptions import register_exception_handlers
 from app.core.logging_config import configure_logging, log_startup
 from app.core.paths import DASHBOARD_DIR
+from app.observability.middleware import RequestTelemetryMiddleware
+from app.observability.runtime import init_observability, reset_observability_provider
 from app.routes.copilot import router as copilot_router
 from app.routes.engineer import router as engineer_router
 from app.routes.insight import router as insight_router
@@ -34,8 +36,12 @@ security_settings = validate_startup_security()
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    # Selecting the observability provider must never break core startup: a missing
+    # exporter/SDK degrades to the in-memory/no-op provider (see build_provider).
+    init_observability(settings)
     log_startup(settings, dashboard_dir=str(DASHBOARD_DIR))
     yield
+    reset_observability_provider()
     from app.db.session import reset_engine
 
     reset_engine()
@@ -74,10 +80,21 @@ app.add_middleware(
     allow_origins=settings.cors_origins,
     allow_credentials=False,
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "X-SignalForge-Tenant-ID", "X-Correlation-ID"],
+    allow_headers=[
+        "Authorization",
+        "Content-Type",
+        "X-SignalForge-Tenant-ID",
+        "X-Correlation-ID",
+        "traceparent",
+    ],
 )
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=security_settings.trusted_hosts)
 app.add_middleware(SecurityHeadersMiddleware, hsts_enabled=security_settings.hsts_enabled)
+# Request telemetry is added LAST so it is the OUTERMOST middleware: it observes
+# every response (including the 401 returned by authentication and 403/422 from
+# exception handlers), owns correlation-ID sanitization, and records HTTP metrics
+# with correct status semantics (401/403 are security denials, never 5xx).
+app.add_middleware(RequestTelemetryMiddleware)
 
 app.mount(
     "/dashboard",

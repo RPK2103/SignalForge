@@ -13,11 +13,19 @@ from app.domain.persistence_models import (
     AuditEventRecord,
     HumanReviewRecord,
 )
+from app.observability.domain import record_cos_review
 from app.security.authorization import AuthorizationService
 from app.security.context import SecurityContext
 from app.security.enums import Permission
 from app.services.persistence.assessment_persistence_service import AssessmentPersistenceService
 from app.services.persistence.exceptions import RecordNotFoundError
+
+# Map Phase-2 assessment review states onto the bounded cos.reviews vocabulary.
+_HUMAN_REVIEW_OUTCOME: dict[HumanReviewState, str] = {
+    HumanReviewState.ACCEPTED: "accepted",
+    HumanReviewState.OVERRIDDEN: "corrected",
+    HumanReviewState.NEEDS_MORE_DATA: "needs_follow_up",
+}
 
 
 class HumanReviewRequest(BaseModel):
@@ -69,6 +77,7 @@ class HumanReviewPersistenceService:
             created_at=created_at,
             schema_version=SNAPSHOT_SCHEMA_VERSION,
         )
+        outcome = _HUMAN_REVIEW_OUTCOME.get(request.state, "error")
 
         def _persist(uow: UnitOfWork) -> None:
             uow.reviews.add(review)
@@ -88,6 +97,12 @@ class HumanReviewPersistenceService:
                     occurred_at=created_at,
                 )
             )
+            # Bounded outcome only — never review text, reviewer identity, or IDs.
+            uow.note_pending_telemetry(lambda o=outcome: record_cos_review(outcome=o))
 
-        self._uow.execute(_persist)
+        try:
+            self._uow.execute(_persist)
+        except Exception:
+            record_cos_review(outcome="error")
+            raise
         return self._assessments.get_assessment(assessment_record_id)

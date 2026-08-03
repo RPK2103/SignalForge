@@ -9,9 +9,9 @@ Additive Phase 3 Prompt 7 migration:
 - Security principals (users / service principals).
 - Append-only role assignments (temporal revocation, never overwritten).
 - Append-only security audit events.
-- PostgreSQL Row-Level Security (enabled + forced) on every tenant-qualified
-  table from Prompts 1-7, plus the audit log. SQLite skips RLS DDL (RLS is
-  PostgreSQL-specific; SQLite is not proof of RLS).
+- PostgreSQL Row-Level Security (enabled + forced) on a frozen Prompt 7
+  revision-local snapshot of tenant-qualified tables, plus the audit log.
+  SQLite skips RLS DDL (RLS is PostgreSQL-specific; SQLite is not proof of RLS).
 """
 
 from typing import Sequence, Union
@@ -20,21 +20,82 @@ import sqlalchemy as sa
 
 import app.db.types
 from alembic import op
-
-# Registering the ORM metadata lets us derive the reviewed RLS table list.
-from app.db import models as _models  # noqa: F401
-from app.db.base import Base
 from app.security.rls import (
     audit_rls_policy_statements,
     rls_disable_statements,
     rls_policy_statements,
-    tenant_rls_tables,
 )
 
 revision: str = "p3_enterprise_security_scale"
 down_revision: Union[str, Sequence[str], None] = "p3_ai_chief_of_staff"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
+
+# Frozen Prompt 7 revision-local snapshot of tenant-qualified tables that
+# existed by this migration. MUST NOT call tenant_rls_tables(Base.metadata) or
+# any other evolving runtime registry — later prompts add tables that are not
+# present when this revision runs on a fresh database.
+PROMPT7_RLS_TABLES: tuple[str, ...] = (
+    "ent_availabilities",
+    "ent_business_units",
+    "ent_capabilities",
+    "ent_capability_requirements",
+    "ent_capability_skills",
+    "ent_connector_checkpoints",
+    "ent_cos_briefs",
+    "ent_cos_citations",
+    "ent_cos_claims",
+    "ent_cos_evidence_snapshots",
+    "ent_cos_reviews",
+    "ent_cos_runs",
+    "ent_data_sources",
+    "ent_delivery_graph_edges",
+    "ent_delivery_graph_nodes",
+    "ent_delivery_outcomes",
+    "ent_delivery_predictions",
+    "ent_departments",
+    "ent_dependencies",
+    "ent_deployments",
+    "ent_engineer_capability_evidence",
+    "ent_engineer_profiles",
+    "ent_engineer_skill_evidence",
+    "ent_evidence_signals",
+    "ent_graph_analysis_runs",
+    "ent_graph_finding_evidence",
+    "ent_graph_findings",
+    "ent_graph_projection_runs",
+    "ent_identity_providers",
+    "ent_incidents",
+    "ent_ingestion_dead_letters",
+    "ent_ingestion_receipts",
+    "ent_ingestion_runs",
+    "ent_initiatives",
+    "ent_organizations",
+    "ent_ownerships",
+    "ent_prediction_dataset_manifests",
+    "ent_prediction_factors",
+    "ent_prediction_feature_snapshots",
+    "ent_prediction_model_evaluations",
+    "ent_prediction_models",
+    "ent_prediction_runs",
+    "ent_projects",
+    "ent_pull_requests",
+    "ent_repositories",
+    "ent_role_assignments",
+    "ent_scenario_definitions",
+    "ent_scenario_feature_overlays",
+    "ent_scenario_impacts",
+    "ent_scenario_results",
+    "ent_scenario_runs",
+    "ent_scenario_trigger_events",
+    "ent_scenario_versions",
+    "ent_scenario_watches",
+    "ent_security_principals",
+    "ent_skills",
+    "ent_sprints",
+    "ent_teams",
+    "ent_work_items",
+)
 
 
 def _is_postgres() -> bool:
@@ -184,7 +245,7 @@ def upgrade() -> None:
 
     # PostgreSQL row-level security (defense in depth). SQLite is a no-op.
     if _is_postgres():
-        for table in tenant_rls_tables(Base.metadata):
+        for table in PROMPT7_RLS_TABLES:
             for statement in rls_policy_statements(table):
                 op.execute(statement)
         for statement in audit_rls_policy_statements():
@@ -193,7 +254,7 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     if _is_postgres():
-        for table in tenant_rls_tables(Base.metadata):
+        for table in PROMPT7_RLS_TABLES:
             for statement in rls_disable_statements(table):
                 op.execute(statement)
         for statement in rls_disable_statements("ent_security_audit_events"):

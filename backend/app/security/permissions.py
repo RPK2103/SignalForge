@@ -16,7 +16,7 @@ from types import MappingProxyType
 
 from app.security.enums import Permission, SecurityRole
 
-PERMISSION_MATRIX_VERSION = "2026-07-30.1"
+PERMISSION_MATRIX_VERSION = "2026-07-31.1"
 
 
 def _perms(*permissions: Permission) -> frozenset[Permission]:
@@ -46,6 +46,11 @@ _ROLE_PERMISSIONS: dict[SecurityRole, frozenset[Permission]] = {
         Permission.SECURITY_AUDIT_READ,
         Permission.SECURITY_ROLES_MANAGE,
         Permission.SECURITY_IDENTITY_PROVIDERS_MANAGE,
+        # Prompt 8: full observability + AI-quality control.
+        Permission.OBSERVABILITY_READ,
+        Permission.OBSERVABILITY_MANAGE,
+        Permission.AI_QUALITY_READ,
+        Permission.AI_QUALITY_EVALUATE,
     ),
     SecurityRole.EXECUTIVE_READER: _perms(
         Permission.ENTERPRISE_READ,
@@ -70,6 +75,9 @@ _ROLE_PERMISSIONS: dict[SecurityRole, frozenset[Permission]] = {
         Permission.PREDICTIONS_VALIDATE,
         Permission.SCENARIOS_READ,
         Permission.CHIEF_OF_STAFF_READ,
+        # Prompt 8: analysts read AI quality and can trigger offline evaluations.
+        Permission.AI_QUALITY_READ,
+        Permission.AI_QUALITY_EVALUATE,
     ),
     SecurityRole.INTEGRATION_OPERATOR: _perms(
         Permission.ENTERPRISE_READ,
@@ -78,10 +86,15 @@ _ROLE_PERMISSIONS: dict[SecurityRole, frozenset[Permission]] = {
         Permission.CONNECTORS_MANAGE,
         Permission.GRAPH_READ,
         Permission.GRAPH_REBUILD,
+        # Prompt 8: operators monitor pipeline/connector health.
+        Permission.OBSERVABILITY_READ,
     ),
     SecurityRole.SECURITY_AUDITOR: _perms(
         Permission.SECURITY_AUDIT_READ,
         Permission.ENTERPRISE_READ,
+        # Prompt 8: auditors read observability + AI quality (no mutation).
+        Permission.OBSERVABILITY_READ,
+        Permission.AI_QUALITY_READ,
     ),
 }
 

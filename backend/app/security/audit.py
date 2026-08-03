@@ -14,6 +14,7 @@ from __future__ import annotations
 import logging
 
 from app.db.unit_of_work import UnitOfWork
+from app.observability.domain import record_audit_write
 from app.security.context import SecurityContext
 from app.security.enums import (
     AuthenticationFailureCategory,
@@ -118,7 +119,7 @@ class SecurityAuditService:
         """
         safe_metadata = sanitize_metadata(metadata)
         try:
-            return self._uow.security_audit_events.append(
+            record = self._uow.security_audit_events.append(
                 action=action.value,
                 resource_type=resource_type,
                 decision=AuthorizationDecision.ALLOW.value,
@@ -131,10 +132,19 @@ class SecurityAuditService:
                 event_metadata=safe_metadata,
             )
         except Exception as exc:  # noqa: BLE001 - re-raised or logged intentionally
-            if permission in _FAIL_CLOSED_PERMISSIONS:
+            fail_closed = permission in _FAIL_CLOSED_PERMISSIONS
+            # Health telemetry only — never replaces the audit event and never
+            # weakens the fail-closed contract below.
+            record_audit_write(required=True, succeeded=False, fail_closed=fail_closed)
+            if fail_closed:
                 raise AuditWriteError(f"Fail-closed audit write failed for {action.value}") from exc
             _logger.warning("best-effort security audit write failed for %s", action.value)
             return None
+        # Count the required write now; defer SUCCEEDED until the enclosing UoW
+        # commits so a rolled-back transaction never reports committed success.
+        record_audit_write(required=True, succeeded=None)
+        self._uow.note_pending_audit_success()
+        return record
 
     def read_history(
         self,

@@ -71,7 +71,14 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
         )
 
     async def dispatch(self, request: Request, call_next):
-        correlation_id = request.headers.get(_CORRELATION_HEADER) or uuid.uuid4().hex
+        # Reuse the sanitized correlation ID established by the outer telemetry
+        # middleware when present; otherwise fall back to the header/generated id
+        # so this middleware still works if telemetry is disabled.
+        correlation_id = (
+            getattr(request.state, "correlation_id", None)
+            or request.headers.get(_CORRELATION_HEADER)
+            or uuid.uuid4().hex
+        )
         request.state.correlation_id = correlation_id
 
         # CORS preflight carries no credentials and must not be authenticated.

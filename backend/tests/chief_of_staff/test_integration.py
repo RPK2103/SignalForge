@@ -13,12 +13,17 @@ from app.domain.chief_of_staff_enums import (
     ChiefOfStaffTargetType,
 )
 from app.domain.chief_of_staff_models import ChiefOfStaffRequest
+from app.security.context import internal_system_context
 from app.services.chief_of_staff.canonicalization import compute_brief_output_hash
 from app.services.chief_of_staff.fallback import build_fallback_brief
 from app.services.chief_of_staff.service import ChiefOfStaffService
 from app.services.enterprise.exceptions import EnterpriseNotFoundError
 
 AS_OF = datetime(2026, 3, 1, 12, 0, tzinfo=timezone.utc)
+
+
+def _review_security(tenant_id: str = "novabank"):
+    return internal_system_context(tenant_id, correlation_id="cos-integration-review")
 
 
 def _first_project_id(uow, ctx) -> str:
@@ -115,12 +120,14 @@ def test_review_append_only_does_not_mutate_brief(seeded_novabank, uow, novabank
         novabank_tenant,
         brief_id=outcome.brief.brief_id,
         review_state=ChiefOfStaffReviewState.ACCEPTED,
+        security=_review_security(),
         notes="ok",
     )
     service.append_review(
         novabank_tenant,
         brief_id=outcome.brief.brief_id,
         review_state=ChiefOfStaffReviewState.NEEDS_MORE_EVIDENCE,
+        security=_review_security(),
         notes="need more",
     )
     refreshed = uow.cos_briefs.require(novabank_tenant, outcome.brief.brief_id)

@@ -1,0 +1,10 @@
+# Narrow false-positive ignores for Phase 3 Prompt 8 observability identifiers.
+# These are public product SLO/metric labels (not credentials, tokens, or env secrets).
+# HEAD already renamed the identifiers; full-history gitleaks still matches commit 2e8863e.
+# Fingerprints are exact commit:path:rule:line triples from CI (gitleaks 8.21.2).
+# Do NOT add broad path/rule ignores here.
+2e8863e4338fa8874116a47590b6943b3bdc9bc9:backend/app/observability/slo.py:generic-api-key:54
+2e8863e4338fa8874116a47590b6943b3bdc9bc9:backend/app/services/observability/observability_service.py:generic-api-key:42
+# Historical synthetic JWT fixture literal formerly embedded in the prove step.
+# HEAD rebuilds fixtures at runtime from short fragments; do not broaden this.
+1a2eaada3b0b340681b36f18625e182ceccbfb4a:.github/workflows/security-ci.yml:generic-api-key:47

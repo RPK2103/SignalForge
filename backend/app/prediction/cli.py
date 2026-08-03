@@ -16,6 +16,7 @@ from app.domain.prediction_constants import DEFAULT_HORIZON_DAYS
 from app.domain.prediction_enums import PredictionTargetType
 from app.domain.prediction_models import PredictionModel
 from app.domain.tenant_context import TenantContext
+from app.security.context import internal_system_context
 from app.services.enterprise.exceptions import EnterpriseError
 from app.services.prediction.orchestration import PredictionOrchestrationService
 
@@ -108,11 +109,20 @@ def cmd_train(args: argparse.Namespace) -> int:
 
 def cmd_evaluate(args: argparse.Namespace) -> int:
     ctx = TenantContext.require(args.tenant_id)
+    # Explicit trusted internal context — still passes AuthorizationService.
+    security = internal_system_context(
+        args.tenant_id, correlation_id=f"cli_pred_eval_{args.model_id}"
+    )
     with _session() as session:
         uow = UnitOfWork(session)
         try:
             orch = PredictionOrchestrationService(uow)
-            evaluation = orch.evaluate(ctx, args.model_id, mark_validated_if_passing=True)
+            evaluation = orch.evaluate(
+                ctx,
+                args.model_id,
+                security=security,
+                mark_validated_if_passing=True,
+            )
             uow.commit()
             payload = _dump_model(evaluation)
             payload["synthetic"] = _SYNTHETIC_BANNER

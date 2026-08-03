@@ -26,6 +26,10 @@ from app.domain.chief_of_staff_models import (
     QualitySummary,
 )
 from app.domain.tenant_context import TenantContext
+from app.observability.domain import record_cos_review
+from app.security.authorization import AuthorizationService
+from app.security.context import SecurityContext
+from app.security.enums import Permission
 from app.services.chief_of_staff.canonicalization import compute_brief_output_hash
 from app.services.chief_of_staff.evidence_assembly import EvidenceAssemblyService
 from app.services.chief_of_staff.orchestration import ChiefOfStaffOrchestrator
@@ -34,6 +38,23 @@ from app.services.enterprise.exceptions import (
 )
 
 logger = logging.getLogger(__name__)
+
+# Map domain review states onto the bounded cos.reviews outcome vocabulary.
+_COS_REVIEW_OUTCOME: dict[str, str] = {
+    ChiefOfStaffReviewState.ACCEPTED.value: "accepted",
+    ChiefOfStaffReviewState.NEEDS_REVISION.value: "corrected",
+    ChiefOfStaffReviewState.REJECTED.value: "rejected",
+    ChiefOfStaffReviewState.NEEDS_MORE_EVIDENCE.value: "needs_follow_up",
+}
+
+
+def _cos_review_outcome(review_state: ChiefOfStaffReviewState | str) -> str:
+    value = (
+        review_state.value
+        if isinstance(review_state, ChiefOfStaffReviewState)
+        else str(review_state)
+    )
+    return _COS_REVIEW_OUTCOME.get(value, "error")
 
 
 class ChiefOfStaffService:
@@ -46,6 +67,7 @@ class ChiefOfStaffService:
         self._uow = uow
         self._assembly = EvidenceAssemblyService(uow)
         self._orchestrator = orchestrator or ChiefOfStaffOrchestrator()
+        self._authz = AuthorizationService()
 
     def generate(self, ctx: TenantContext, request: ChiefOfStaffRequest) -> GenerationOutcome:
         if request.tenant_id != ctx.tenant_id:
@@ -217,19 +239,41 @@ class ChiefOfStaffService:
         *,
         brief_id: str,
         review_state: ChiefOfStaffReviewState | str,
+        security: SecurityContext,
         reviewer_context: str = "cli",
         notes: str = "",
     ) -> ChiefOfStaffReview:
+        """Append a human review of a Chief-of-Staff brief.
+
+        ``security`` is required (no optional bypass). ``chief_of_staff.review``
+        is always re-checked and a tenant mismatch fails closed. CLI/batch
+        callers must pass an explicit trusted ``internal_system_context``.
+        Authorization denial emits no review metric. Successful reviews queue
+        ``record_cos_review`` until UoW commit.
+        """
+        self._authz.require(security, Permission.CHIEF_OF_STAFF_REVIEW, ctx.tenant_id)
+
+        outcome = _cos_review_outcome(review_state)
+
         def _run(uow: UnitOfWork) -> ChiefOfStaffReview:
-            return uow.cos_reviews.append(
+            review = uow.cos_reviews.append(
                 ctx,
                 brief_id=brief_id,
                 review_state=review_state,
                 reviewer_context=reviewer_context,
                 notes=notes,
             )
+            # Content-free: only the bounded outcome label is exported.
+            uow.note_pending_telemetry(lambda o=outcome: record_cos_review(outcome=o))
+            return review
 
-        return self._uow.execute(_run)
+        try:
+            return self._uow.execute(_run)
+        except Exception:
+            # Persist failure — one failure sample, never paired with success
+            # (execute already rolled back and cleared any pending success).
+            record_cos_review(outcome="error")
+            raise
 
     def quality_summary(self, ctx: TenantContext) -> QualitySummary:
         return self._uow.cos_runs.quality_summary(ctx)

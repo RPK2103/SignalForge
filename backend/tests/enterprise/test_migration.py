@@ -21,7 +21,8 @@ P3_DELIVERY_PREDICTION = "p3_delivery_prediction"
 P3_CONTINUOUS_SCENARIO_INTELLIGENCE = "p3_continuous_scenario_intelligence"
 P3_AI_CHIEF_OF_STAFF = "p3_ai_chief_of_staff"
 P3_ENTERPRISE_SECURITY_SCALE = "p3_enterprise_security_scale"
-CURRENT_ALEMBIC_HEAD = P3_ENTERPRISE_SECURITY_SCALE
+P3_OBSERVABILITY_AI_QUALITY = "p3_observability_ai_quality"
+CURRENT_ALEMBIC_HEAD = P3_OBSERVABILITY_AI_QUALITY
 P3_PROMPT1 = "p3_enterprise_foundation"
 _NOW = datetime(2026, 1, 1, tzinfo=timezone.utc)
 

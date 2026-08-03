@@ -52,6 +52,17 @@ from app.db.models.graph import (
     GraphProjectionRun,
 )
 from app.db.models.leadership_brief import LeadershipBrief
+from app.db.models.observability import (
+    AiEvaluationCase,
+    AiEvaluationDataset,
+    AiEvaluationResult,
+    AiEvaluationRun,
+    AlertEvent,
+    ObservabilityMetricRollup,
+    PredictionQualitySnapshot,
+    SloDefinition,
+    SloEvaluation,
+)
 from app.db.models.prediction import (
     DeliveryOutcome,
     DeliveryPrediction,
@@ -83,6 +94,11 @@ from app.db.models.security import (
 from app.db.models.simulation import Simulation
 
 __all__ = [
+    "AiEvaluationCase",
+    "AiEvaluationDataset",
+    "AiEvaluationResult",
+    "AiEvaluationRun",
+    "AlertEvent",
     "Assessment",
     "AssessmentDecisionTrace",
     "AssessmentRiskFinding",
@@ -125,6 +141,7 @@ __all__ = [
     "IngestionRun",
     "Initiative",
     "LeadershipBrief",
+    "ObservabilityMetricRollup",
     "Organization",
     "Ownership",
     "PredictionDatasetManifest",
@@ -132,6 +149,7 @@ __all__ = [
     "PredictionFeatureSnapshot",
     "PredictionModel",
     "PredictionModelEvaluation",
+    "PredictionQualitySnapshot",
     "PredictionRun",
     "Project",
     "ProjectRequirement",
@@ -148,6 +166,8 @@ __all__ = [
     "SecurityAuditEvent",
     "SecurityPrincipal",
     "Simulation",
+    "SloDefinition",
+    "SloEvaluation",
     "Sprint",
     "Team",
     "TenantIdentityProvider",

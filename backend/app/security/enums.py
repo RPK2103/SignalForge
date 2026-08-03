@@ -107,6 +107,11 @@ class Permission(str, Enum):
     SECURITY_AUDIT_READ = "security.audit.read"
     SECURITY_ROLES_MANAGE = "security.roles.manage"
     SECURITY_IDENTITY_PROVIDERS_MANAGE = "security.identity_providers.manage"
+    # Observability & AI quality (Prompt 8)
+    OBSERVABILITY_READ = "observability.read"
+    OBSERVABILITY_MANAGE = "observability.manage"
+    AI_QUALITY_READ = "ai_quality.read"
+    AI_QUALITY_EVALUATE = "ai_quality.evaluate"
 
 
 class SecurityAuditAction(str, Enum):
@@ -127,6 +132,10 @@ class SecurityAuditAction(str, Enum):
     SCENARIO_WATCH_MUTATED = "scenarios.watch_mutated"
     CHIEF_OF_STAFF_GENERATED = "chief_of_staff.generated"
     CHIEF_OF_STAFF_REVIEWED = "chief_of_staff.reviewed"
+    SLO_DEFINITION_CHANGED = "observability.slo_definition_changed"
+    ALERT_ACKNOWLEDGED = "observability.alert_acknowledged"
+    ALERT_RESOLVED = "observability.alert_resolved"
+    AI_QUALITY_EVALUATED = "ai_quality.evaluated"
 
 
 class AuditWriteResult(str, Enum):

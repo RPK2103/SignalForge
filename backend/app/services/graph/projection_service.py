@@ -26,6 +26,7 @@ from app.domain.graph_enums import (
 )
 from app.domain.graph_models import DeliveryGraphEdge, DeliveryGraphNode, GraphProjectionRun
 from app.domain.tenant_context import TenantContext
+from app.observability.domain import record_graph_rebuild
 from app.services.enterprise.exceptions import EnterpriseConflictError, EnterpriseValidationError
 from app.services.graph.confidence import edge_confidence
 from app.services.persistence.snapshot_service import snapshot_hash
@@ -34,6 +35,14 @@ logger = logging.getLogger("signalforge.graph.projection")
 
 MAX_SUBJECT_IDS = 50
 INCREMENTAL_OVERLAP = timedelta(minutes=5)
+
+# Map a graph run state to the bounded telemetry outcome vocabulary. Only a clean
+# rebuild is "success"; a truncated/partial run is degraded, not a full failure.
+_RUN_STATE_OUTCOME: dict[GraphProjectionRunState, str] = {
+    GraphProjectionRunState.SUCCEEDED: "success",
+    GraphProjectionRunState.PARTIAL: "partial",
+    GraphProjectionRunState.FAILED: "failure",
+}
 
 # Map ownership types to graph edge types.
 _OWNERSHIP_EDGE: dict[str, GraphEdgeType] = {
@@ -72,6 +81,17 @@ _ENTITY_TO_NODE: dict[str, GraphNodeType] = {
 
 def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def _duration_ms(start: datetime | None, end: datetime | None) -> float | None:
+    if start is None or end is None:
+        return None
+    if start.tzinfo is None:
+        start = start.replace(tzinfo=timezone.utc)
+    if end.tzinfo is None:
+        end = end.replace(tzinfo=timezone.utc)
+    delta = (end - start).total_seconds() * 1000.0
+    return delta if delta >= 0 else None
 
 
 def _label(value: str | None, fallback: str) -> str:
@@ -166,6 +186,7 @@ class GraphProjectionService:
 
         errors: list[str] = []
         hwm_samples: list[datetime] = []
+        telemetry_emitted = False
         try:
             # Nodes are always fully projected so edge endpoints resolve.
             # Incremental ``since`` filters edge source rows only.
@@ -214,16 +235,33 @@ class GraphProjectionService:
                 run.edges_created,
                 run.edges_closed,
             )
+            # Defer success/partial telemetry until the enclosing UoW commits so a
+            # later rollback never reports committed success. Failures emit now.
+            outcome = _RUN_STATE_OUTCOME.get(run.state, "failure")
+            duration = _duration_ms(started, run.completed_at)
+            incremental = mode != GraphProjectionMode.FULL_REBUILD
+            self._uow.note_pending_telemetry(
+                lambda o=outcome, d=duration, i=incremental: record_graph_rebuild(
+                    outcome=o, duration_ms=d, incremental=i
+                )
+            )
+            telemetry_emitted = True
             return run
         except Exception as exc:
-            self._uow.session.rollback()
-            self._record_failed_run(ctx, run, mode, started, subject_ids or [], exc)
-            logger.info(
-                "graph.projection.failed tenant_id=%s mode=%s error_type=%s",
-                ctx.tenant_id,
-                mode.value,
-                type(exc).__name__,
-            )
+            if not telemetry_emitted:
+                self._uow.session.rollback()
+                self._record_failed_run(ctx, run, mode, started, subject_ids or [], exc)
+                record_graph_rebuild(
+                    outcome="failure",
+                    duration_ms=_duration_ms(started, _utcnow()),
+                    incremental=mode != GraphProjectionMode.FULL_REBUILD,
+                )
+                logger.info(
+                    "graph.projection.failed tenant_id=%s mode=%s error_type=%s",
+                    ctx.tenant_id,
+                    mode.value,
+                    type(exc).__name__,
+                )
             raise
 
     def _record_failed_run(

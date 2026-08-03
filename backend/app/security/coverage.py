@@ -27,7 +27,7 @@ from fastapi.routing import APIRoute
 
 from app.security.enums import Permission
 
-COVERAGE_REGISTRY_VERSION = "2026-07-30.1"
+COVERAGE_REGISTRY_VERSION = "2026-07-31.1"
 
 
 class EnforcementKind(str, Enum):
@@ -64,6 +64,8 @@ SENSITIVE_PERMISSIONS: frozenset[Permission] = frozenset(
         Permission.SECURITY_AUDIT_READ,
         Permission.SECURITY_ROLES_MANAGE,
         Permission.SECURITY_IDENTITY_PROVIDERS_MANAGE,
+        Permission.OBSERVABILITY_MANAGE,
+        Permission.AI_QUALITY_EVALUATE,
     }
 )
 
@@ -171,6 +173,23 @@ SENSITIVE_PERMISSION_ENFORCEMENT: dict[Permission, Enforcement] = {
             "v3 scenarios router is read-only",
         ),
         note="No HTTP mutation route; deferred service-layer gate.",
+    ),
+    # Prompt 8 observability + AI quality: both route- and service-enforced.
+    Permission.OBSERVABILITY_MANAGE: Enforcement(
+        EnforcementKind.ROUTE,
+        (
+            "POST /api/v3/observability/alerts/{alert_id}/acknowledge",
+            "ObservabilityService.acknowledge_alert/resolve_alert/upsert_slo_definition",
+        ),
+        note="Route + service boundary both re-check; audited state changes.",
+    ),
+    Permission.AI_QUALITY_EVALUATE: Enforcement(
+        EnforcementKind.ROUTE,
+        (
+            "POST /api/v3/observability/ai-quality/evaluate",
+            "AiQualityService.run_release_evaluation",
+        ),
+        note="Route + service boundary both re-check; audited evaluation runs.",
     ),
 }
 

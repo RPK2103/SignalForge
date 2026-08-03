@@ -10,8 +10,13 @@ from app.db.session import get_engine
 from app.db.unit_of_work import UnitOfWork
 from app.domain.prediction_enums import ModelState
 from app.domain.prediction_models import PredictionModel
+from app.security.context import internal_system_context
 from app.services.persistence.snapshot_service import snapshot_hash
 from app.services.prediction.orchestration import PredictionOrchestrationService
+
+
+def _validator_security(tenant_id: str = "novabank"):
+    return internal_system_context(tenant_id, correlation_id="pred-registry-eval")
 
 
 def _train_candidate(uow: UnitOfWork, tenant):
@@ -90,6 +95,7 @@ def test_promote_when_validated_else_leave_candidate(projected_novabank, novaban
         evaluation = orch.evaluate(
             novabank_tenant,
             model.prediction_model_id,
+            security=_validator_security(),
             mark_validated_if_passing=True,
         )
         uow.commit()
