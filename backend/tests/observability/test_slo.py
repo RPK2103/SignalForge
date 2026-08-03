@@ -6,7 +6,8 @@ from app.domain.observability_models import SloStatus
 from app.observability.metrics import MetricName
 from app.observability.metrics_reader import MetricsReader
 from app.observability.provider import InMemoryObservabilityProvider
-from app.observability.slo import GTE, LTE, evaluate_slo
+from app.observability.slo import GTE, LTE, default_slo_definitions, evaluate_slo
+from app.services.observability.observability_service import _read_slo_indicator
 
 
 def test_healthy_when_meets_objective():
@@ -99,3 +100,26 @@ def test_genuine_500_reduces_availability():
     reader = MetricsReader(provider)
     indicator = reader.api_5xx_free_ratio()
     assert indicator.value == 0.9
+
+
+def test_default_slo_identifiers_are_public_product_metadata():
+    """Default SLO identifiers are deterministic product labels, not credentials."""
+    specs = default_slo_definitions()
+    identifiers = [spec.slo_identifier for spec in specs]
+    assert "api_latency_p95" in identifiers
+    assert "api_availability" in identifiers
+    assert all(isinstance(value, str) and value for value in identifiers)
+    # Public contract field name on persisted/API records remains ``slo_key``.
+    assert all(hasattr(spec, "slo_identifier") for spec in specs)
+    assert not any(hasattr(spec, "slo_key") for spec in specs)
+
+
+def test_latency_indicator_dispatch_unchanged():
+    provider = InMemoryObservabilityProvider()
+    for value in (10.0, 20.0, 100.0):
+        provider.record_value(MetricName.HTTP_REQUEST_DURATION, value)
+    reader = MetricsReader(provider)
+    sample = _read_slo_indicator(reader, "api_latency_p95_ms")
+    assert sample is not None
+    assert sample.sample_count == 3
+    assert _read_slo_indicator(reader, "unknown_indicator") is None

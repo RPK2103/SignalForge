@@ -22,7 +22,7 @@ from app.domain.observability_models import (
     SloStatus,
 )
 from app.observability.alerts import alert_fingerprint, severity_for_slo_status
-from app.observability.metrics_reader import MetricsReader
+from app.observability.metrics_reader import Indicator, MetricsReader
 from app.observability.runtime import get_observability_provider
 from app.observability.slo import (
     default_slo_definitions,
@@ -36,14 +36,24 @@ from app.security.enums import Permission, SecurityAuditAction
 from app.security.exceptions import SecurityError
 from app.security.redaction import hash_identifier
 
-# Indicator -> reader method mapping used by SLO evaluation.
-_INDICATOR_READERS = {
-    "api_5xx_free_ratio": "api_5xx_free_ratio",
-    "api_latency_p95_ms": "api_latency_p95",
-    "connector_success_ratio": "connector_success_ratio",
-    "required_audit_write_success_ratio": "required_audit_write_success_ratio",
-    "ai_schema_valid_ratio": "ai_schema_valid_ratio",
-}
+
+def _read_slo_indicator(reader: MetricsReader, indicator: str) -> Indicator | None:
+    """Resolve a public SLO indicator name to a metrics reader sample.
+
+    Dispatch uses equality checks (not a secret-like ``api_*=...`` mapping) so
+    product indicator identifiers are not mistaken for credentials.
+    """
+    if indicator == "api_5xx_free_ratio":
+        return reader.api_5xx_free_ratio()
+    if indicator == "api_latency_p95_ms":
+        return reader.api_latency_p95()
+    if indicator == "connector_success_ratio":
+        return reader.connector_success_ratio()
+    if indicator == "required_audit_write_success_ratio":
+        return reader.required_audit_write_success_ratio()
+    if indicator == "ai_schema_valid_ratio":
+        return reader.ai_schema_valid_ratio()
+    return None
 
 
 def _utcnow() -> datetime:
@@ -159,13 +169,13 @@ class ObservabilityService:
         self._authz.require_context(context, Permission.OBSERVABILITY_MANAGE)
         created: list[SloDefinitionRecord] = []
         for spec in default_slo_definitions():
-            existing = self._uow.slo_definitions.get_latest(context.tenant_id, spec.slo_key)
+            existing = self._uow.slo_definitions.get_latest(context.tenant_id, spec.slo_identifier)
             if existing is not None:
                 created.append(existing)
                 continue
             record = self._uow.slo_definitions.create(
                 context.tenant_id,
-                slo_key=spec.slo_key,
+                slo_key=spec.slo_identifier,
                 indicator=spec.indicator,
                 objective=spec.objective,
                 comparison=spec.comparison,
@@ -180,7 +190,7 @@ class ObservabilityService:
                 permission=Permission.OBSERVABILITY_MANAGE,
                 resource_type="slo_definition",
                 resource_id=record.id,
-                metadata={"slo_key": spec.slo_key, "version": record.version},
+                metadata={"slo_key": spec.slo_identifier, "version": record.version},
             )
             created.append(record)
         self._uow.commit()
@@ -197,12 +207,11 @@ class ObservabilityService:
         results: list[SloEvaluationRecord] = []
         for definition in definitions:
             window_start = now - timedelta(seconds=definition.window_seconds)
-            reader_name = _INDICATOR_READERS.get(definition.indicator)
-            if reader_name is None:
+            sample = _read_slo_indicator(reader, definition.indicator)
+            if sample is None:
                 observed, sample_count = None, 0
             else:
-                indicator = getattr(reader, reader_name)()
-                observed, sample_count = indicator.value, indicator.sample_count
+                observed, sample_count = sample.value, sample.sample_count
             computation = evaluate_slo(
                 observed_value=observed,
                 sample_count=sample_count,

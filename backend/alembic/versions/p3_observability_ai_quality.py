@@ -29,9 +29,10 @@ down_revision: Union[str, Sequence[str], None] = "p3_enterprise_security_scale"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
-# Only the NEW Prompt 8 tenant-qualified tables. Existing tables already have
-# their RLS policies from prior migrations; we never re-apply to them here.
-NEW_RLS_TABLES: tuple[str, ...] = (
+# Frozen Prompt 8 revision-local snapshot: exactly the nine new tenant-scoped
+# tables created by this migration. RLS is applied only AFTER table creation.
+# Do not derive this list from the evolving runtime ORM/RLS registry.
+PROMPT8_RLS_TABLES: tuple[str, ...] = (
     "ent_observability_metric_rollups",
     "ent_slo_definitions",
     "ent_slo_evaluations",
@@ -366,15 +367,16 @@ def upgrade() -> None:
     )
 
     # PostgreSQL row-level security (defense in depth) on the NEW tables only.
+    # Tables above are fully created before any RLS DDL runs.
     if _is_postgres():
-        for table in NEW_RLS_TABLES:
+        for table in PROMPT8_RLS_TABLES:
             for statement in rls_policy_statements(table):
                 op.execute(statement)
 
 
 def downgrade() -> None:
     if _is_postgres():
-        for table in reversed(NEW_RLS_TABLES):
+        for table in reversed(PROMPT8_RLS_TABLES):
             for statement in rls_disable_statements(table):
                 op.execute(statement)
 

@@ -27,7 +27,9 @@ AT_RISK_MARGIN = 0.1
 
 @dataclass(frozen=True, slots=True)
 class SloDefinitionSpec:
-    slo_key: str
+    """Product SLO definition seed. ``slo_identifier`` is public metadata, not a secret."""
+
+    slo_identifier: str
     indicator: str
     objective: float
     comparison: str
@@ -41,7 +43,7 @@ def default_slo_definitions() -> list[SloDefinitionSpec]:
     hour = 3600
     return [
         SloDefinitionSpec(
-            slo_key="api_availability",
+            slo_identifier="api_availability",
             indicator="api_5xx_free_ratio",
             objective=0.99,
             comparison=GTE,
@@ -51,7 +53,7 @@ def default_slo_definitions() -> list[SloDefinitionSpec]:
             description="Ratio of non-5xx HTTP responses. Excludes expected 401/403.",
         ),
         SloDefinitionSpec(
-            slo_key="api_latency_p95",
+            slo_identifier="api_latency_p95",
             indicator="api_latency_p95_ms",
             objective=1500.0,
             comparison=LTE,
@@ -61,7 +63,7 @@ def default_slo_definitions() -> list[SloDefinitionSpec]:
             description="95th percentile HTTP request latency.",
         ),
         SloDefinitionSpec(
-            slo_key="connector_sync_success",
+            slo_identifier="connector_sync_success",
             indicator="connector_success_ratio",
             objective=0.95,
             comparison=GTE,
@@ -71,7 +73,7 @@ def default_slo_definitions() -> list[SloDefinitionSpec]:
             description="Ratio of successful connector syncs.",
         ),
         SloDefinitionSpec(
-            slo_key="ingestion_freshness",
+            slo_identifier="ingestion_freshness",
             indicator="fresh_source_ratio",
             objective=0.9,
             comparison=GTE,
@@ -81,7 +83,7 @@ def default_slo_definitions() -> list[SloDefinitionSpec]:
             description="Ratio of sources within their freshness threshold.",
         ),
         SloDefinitionSpec(
-            slo_key="audit_write_success",
+            slo_identifier="audit_write_success",
             indicator="required_audit_write_success_ratio",
             objective=1.0,
             comparison=GTE,
@@ -91,7 +93,7 @@ def default_slo_definitions() -> list[SloDefinitionSpec]:
             description="Ratio of required security-audit writes that succeeded.",
         ),
         SloDefinitionSpec(
-            slo_key="ai_schema_valid",
+            slo_identifier="ai_schema_valid",
             indicator="ai_schema_valid_ratio",
             objective=1.0,
             comparison=GTE,
@@ -101,7 +103,7 @@ def default_slo_definitions() -> list[SloDefinitionSpec]:
             description="Ratio of AI outputs that were schema-valid (or safely fell back).",
         ),
         SloDefinitionSpec(
-            slo_key="ai_citation_correctness",
+            slo_identifier="ai_citation_correctness",
             indicator="ai_citation_correctness_ratio",
             objective=1.0,
             comparison=GTE,
