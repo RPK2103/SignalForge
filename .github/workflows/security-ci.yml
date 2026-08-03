@@ -29,7 +29,27 @@ jobs:
           version="8.21.2"
           curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${version}/gitleaks_${version}_linux_x64.tar.gz" -o gitleaks.tar.gz
           tar -xzf gitleaks.tar.gz gitleaks
+          # .gitleaksignore (repo root) is loaded automatically for exact-fingerprint
+          # false positives only; no broad rule/path allowlist is configured.
           ./gitleaks detect --source . --redact --no-banner --verbose
+
+      - name: Prove real secrets remain detectable
+        run: |
+          version="8.21.2"
+          if [ ! -x ./gitleaks ]; then
+            curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${version}/gitleaks_${version}_linux_x64.tar.gz" -o gitleaks.tar.gz
+            tar -xzf gitleaks.tar.gz gitleaks
+          fi
+          fixture_dir="$(mktemp -d)"
+          trap 'rm -rf "$fixture_dir"' EXIT
+          # Synthetic fixtures only — deleted after the step via trap.
+          printf '%s\n' 'api_key = "sk_live_gitleaks_detection_fixture_001234567890"' > "$fixture_dir/generic_key.txt"
+          printf '%s\n' 'token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJnaXRsZWFrcy1maXh0dXJlIn0.signature"' > "$fixture_dir/jwt.txt"
+          if ./gitleaks detect --source "$fixture_dir" --no-git --redact --no-banner; then
+            echo "expected synthetic secrets to be detected" >&2
+            exit 1
+          fi
+          echo "synthetic secret fixtures still detected"
 
   python-audit:
     name: Python dependency audit (pip-audit)
