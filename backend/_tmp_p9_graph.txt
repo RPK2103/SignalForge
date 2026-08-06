@@ -1,0 +1,69 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.7, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\Kaviyashre\projects\SignalForge\backend\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\Kaviyashre\projects\SignalForge\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0
+collecting ... collected 53 items
+
+tests/graph/test_algorithms.py::test_bounded_bfs_and_shortest_path PASSED [  1%]
+tests/graph/test_algorithms.py::test_unreachable_nodes PASSED            [  3%]
+tests/graph/test_algorithms.py::test_cycle_detection_canonical PASSED    [  5%]
+tests/graph/test_algorithms.py::test_blast_radius_bounds PASSED          [  7%]
+tests/graph/test_algorithms.py::test_reachability_deterministic_order PASSED [  9%]
+tests/graph/test_algorithms.py::test_dense_graph_respects_node_budget PASSED [ 11%]
+tests/graph/test_algorithms.py::test_ownership_concentration_single_owner PASSED [ 13%]
+tests/graph/test_algorithms.py::test_ownership_concentration_multiple PASSED [ 15%]
+tests/graph/test_algorithms.py::test_no_recursion_on_cyclic_bfs PASSED   [ 16%]
+tests/graph/test_api_cli.py::test_missing_tenant_header PASSED           [ 18%]
+tests/graph/test_api_cli.py::test_foreign_tenant_node_404 PASSED         [ 20%]
+tests/graph/test_api_cli.py::test_summary_neighbors_paths_blast PASSED   [ 22%]
+tests/graph/test_api_cli.py::test_cycles_ownership_findings PASSED       [ 24%]
+tests/graph/test_api_cli.py::test_invalid_depth_bounds PASSED            [ 26%]
+tests/graph/test_api_cli.py::test_openapi_includes_delivery_graph PASSED [ 28%]
+tests/graph/test_api_cli.py::test_cli_rebuild_and_summary PASSED         [ 30%]
+tests/graph/test_domain.py::test_node_types_bounded PASSED               [ 32%]
+tests/graph/test_domain.py::test_edge_types_bounded PASSED               [ 33%]
+tests/graph/test_domain.py::test_finding_types_bounded PASSED            [ 35%]
+tests/graph/test_domain.py::test_deterministic_node_ids PASSED           [ 37%]
+tests/graph/test_domain.py::test_temporal_validation_rejects_invalid_interval PASSED [ 39%]
+tests/graph/test_domain.py::test_self_edge_rejected PASSED               [ 41%]
+tests/graph/test_domain.py::test_confidence_bounds PASSED                [ 43%]
+tests/graph/test_domain.py::test_forbidden_attribute_keys PASSED         [ 45%]
+tests/graph/test_domain.py::test_derived_requires_derivation_rule PASSED [ 47%]
+tests/graph/test_domain.py::test_node_display_label_bound PASSED         [ 49%]
+tests/graph/test_graph_audit_regressions.py::test_edge_payload_change_retains_historical_snapshot PASSED [ 50%]
+tests/graph/test_graph_audit_regressions.py::test_incremental_includes_equal_timestamp_sources PASSED [ 52%]
+tests/graph/test_graph_audit_regressions.py::test_subject_refresh_scopes_edge_emission PASSED [ 54%]
+tests/graph/test_graph_audit_regressions.py::test_rebuild_failure_preserves_prior_graph PASSED [ 56%]
+tests/graph/test_graph_audit_regressions.py::test_durable_rebuild_lock_visible_across_sessions PASSED [ 58%]
+tests/graph/test_graph_audit_regressions.py::test_temporal_closure_rejects_inverted_hist_interval PASSED [ 60%]
+tests/graph/test_graph_migration.py::test_one_alembic_head PASSED        [ 62%]
+tests/graph/test_graph_migration.py::test_clean_upgrade_downgrade_reupgrade PASSED [ 64%]
+tests/graph/test_graph_migration.py::test_populated_prompt2_upgrade_preserves_data PASSED [ 66%]
+tests/graph/test_graph_migration.py::test_offline_postgresql_sql_compiles PASSED [ 67%]
+tests/graph/test_graph_telemetry.py::test_full_rebuild_emits_outcome_and_duration PASSED [ 69%]
+tests/graph/test_graph_telemetry.py::test_incremental_refresh_emits_incremental_metric PASSED [ 71%]
+tests/graph/test_graph_telemetry.py::test_failed_projection_emits_failure_not_success PASSED [ 73%]
+tests/graph/test_graph_telemetry.py::test_telemetry_failure_does_not_break_rebuild PASSED [ 75%]
+tests/graph/test_graph_telemetry.py::test_commit_failure_emits_failure_not_success PASSED [ 77%]
+tests/graph/test_performance_bounds.py::test_synthetic_graph_bounds PASSED [ 79%]
+tests/graph/test_performance_bounds.py::test_no_exponential_all_paths PASSED [ 81%]
+tests/graph/test_performance_bounds.py::test_cycle_detection_on_dense_component PASSED [ 83%]
+tests/graph/test_projection_and_analysis.py::test_full_rebuild_idempotent PASSED [ 84%]
+tests/graph/test_projection_and_analysis.py::test_subject_refresh PASSED [ 86%]
+tests/graph/test_projection_and_analysis.py::test_tenant_isolation_nodes_edges_findings PASSED [ 88%]
+tests/graph/test_projection_and_analysis.py::test_cross_tenant_edge_rejected PASSED [ 90%]
+tests/graph/test_projection_and_analysis.py::test_analysis_idempotent_and_findings PASSED [ 92%]
+tests/graph/test_projection_and_analysis.py::test_novabank_scenarios PASSED [ 94%]
+tests/graph/test_projection_and_analysis.py::test_historical_active_at PASSED [ 96%]
+tests/graph/test_projection_and_analysis.py::test_seed_second_run_zero_duplicates PASSED [ 98%]
+tests/graph/test_projection_and_analysis.py::test_concurrent_tenants_unaffected PASSED [100%]
+
+============================== warnings summary ===============================
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  C:\Users\Kaviyashre\projects\SignalForge\backend\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================== 53 passed, 1 warning in 87.19s (0:01:27) ===================

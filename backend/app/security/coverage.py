@@ -27,7 +27,7 @@ from fastapi.routing import APIRoute
 
 from app.security.enums import Permission
 
-COVERAGE_REGISTRY_VERSION = "2026-07-31.1"
+COVERAGE_REGISTRY_VERSION = "2026-07-31.2"
 
 
 class EnforcementKind(str, Enum):
@@ -66,6 +66,7 @@ SENSITIVE_PERMISSIONS: frozenset[Permission] = frozenset(
         Permission.SECURITY_IDENTITY_PROVIDERS_MANAGE,
         Permission.OBSERVABILITY_MANAGE,
         Permission.AI_QUALITY_EVALUATE,
+        Permission.DEMO_TENANT_MANAGE,
     }
 )
 
@@ -190,6 +191,11 @@ SENSITIVE_PERMISSION_ENFORCEMENT: dict[Permission, Enforcement] = {
             "AiQualityService.run_release_evaluation",
         ),
         note="Route + service boundary both re-check; audited evaluation runs.",
+    ),
+    Permission.DEMO_TENANT_MANAGE: Enforcement(
+        EnforcementKind.CLI,
+        ("NovaBankDemoService.seed/materialize/validate", "python -m app.demo novabank"),
+        note="Privileged synthetic demo-tenant management; no public HTTP mutation route.",
     ),
 }
 

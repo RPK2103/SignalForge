@@ -1,0 +1,117 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.7, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\Kaviyashre\projects\SignalForge\backend\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\Kaviyashre\projects\SignalForge\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0
+collecting ... collected 92 items
+
+tests/enterprise/test_api.py::test_missing_tenant_context_is_rejected PASSED [  1%]
+tests/enterprise/test_api.py::test_invalid_tenant_context_is_rejected PASSED [  2%]
+tests/enterprise/test_api.py::test_tenant_a_reads_organization PASSED    [  3%]
+tests/enterprise/test_api.py::test_tenant_b_cannot_read_tenant_a_organization PASSED [  4%]
+tests/enterprise/test_api.py::test_demo_summary_counts PASSED            [  5%]
+tests/enterprise/test_api.py::test_demo_summary_is_zero_for_other_tenant PASSED [  6%]
+tests/enterprise/test_api.py::test_collection_pagination_and_stable_ordering PASSED [  7%]
+tests/enterprise/test_api.py::test_page_size_bounds_are_enforced PASSED  [  8%]
+tests/enterprise/test_api.py::test_evidence_append_and_dedup_via_api PASSED [  9%]
+tests/enterprise/test_api.py::test_evidence_payload_bounds PASSED        [ 10%]
+tests/enterprise/test_api.py::test_validation_error_on_bad_enum PASSED   [ 11%]
+tests/enterprise/test_api.py::test_openapi_includes_v3_routes PASSED     [ 13%]
+tests/enterprise/test_api.py::test_v2_routes_still_present PASSED        [ 14%]
+tests/enterprise/test_concurrency.py::test_evidence_idempotent_across_independent_sessions PASSED [ 15%]
+tests/enterprise/test_concurrency.py::test_true_concurrent_duplicate_evidence_yields_single_row PASSED [ 16%]
+tests/enterprise/test_concurrency.py::test_concurrent_tenant_operations_remain_isolated PASSED [ 17%]
+tests/enterprise/test_connector_ingestion_telemetry.py::test_successful_sync_emits_single_connector_metric PASSED [ 18%]
+tests/enterprise/test_connector_ingestion_telemetry.py::test_failed_sync_emits_failure_outcome PASSED [ 19%]
+tests/enterprise/test_connector_ingestion_telemetry.py::test_partial_sync_reported_as_partial_not_success PASSED [ 20%]
+tests/enterprise/test_connector_ingestion_telemetry.py::test_evidence_emits_lag_and_freshness PASSED [ 21%]
+tests/enterprise/test_connector_ingestion_telemetry.py::test_stale_evidence_freshness_state PASSED [ 22%]
+tests/enterprise/test_connector_ingestion_telemetry.py::test_clock_skew_event_emits_no_fabricated_lag PASSED [ 23%]
+tests/enterprise/test_connector_ingestion_telemetry.py::test_deduplicated_append_still_returns_created_flag PASSED [ 25%]
+tests/enterprise/test_connector_ingestion_telemetry.py::test_telemetry_provider_failure_does_not_break_sync PASSED [ 26%]
+tests/enterprise/test_connector_ingestion_telemetry.py::test_idempotent_terminal_completion_does_not_double_count PASSED [ 27%]
+tests/enterprise/test_connector_ingestion_telemetry.py::test_authorization_denial_is_not_connector_failure PASSED [ 28%]
+tests/enterprise/test_connector_ingestion_telemetry.py::test_commit_failure_does_not_emit_connector_success PASSED [ 29%]
+tests/enterprise/test_domain.py::test_business_unit_valid_interval_rejected_when_end_before_start PASSED [ 30%]
+tests/enterprise/test_domain.py::test_business_unit_open_interval_allowed PASSED [ 31%]
+tests/enterprise/test_domain.py::test_sprint_requires_strictly_increasing_interval PASSED [ 32%]
+tests/enterprise/test_domain.py::test_availability_end_must_exceed_start PASSED [ 33%]
+tests/enterprise/test_domain.py::test_deployment_completion_must_not_precede_start PASSED [ 34%]
+tests/enterprise/test_domain.py::test_incident_resolution_must_not_precede_start PASSED [ 35%]
+tests/enterprise/test_domain.py::test_dependency_rejects_self_reference PASSED [ 36%]
+tests/enterprise/test_domain.py::test_naive_datetime_interval_validation_does_not_raise PASSED [ 38%]
+tests/enterprise/test_domain.py::test_confidence_bounds_enforced PASSED  [ 39%]
+tests/enterprise/test_domain.py::test_engineer_profile_forbids_sensitive_attributes PASSED [ 40%]
+tests/enterprise/test_domain.py::test_forbidden_fields_absent_from_engineer_profile_schema PASSED [ 41%]
+tests/enterprise/test_domain.py::test_identifier_is_deterministic_and_tenant_scoped PASSED [ 42%]
+tests/enterprise/test_domain.py::test_slugify_bounds_and_normalizes PASSED [ 43%]
+tests/enterprise/test_domain.py::test_tenant_context_normalizes_and_rejects_blank PASSED [ 44%]
+tests/enterprise/test_ingestion_authz.py::test_data_source_registration_denied_for_read_roles[executive_reader] PASSED [ 45%]
+tests/enterprise/test_ingestion_authz.py::test_data_source_registration_denied_for_read_roles[security_auditor] PASSED [ 46%]
+tests/enterprise/test_ingestion_authz.py::test_data_source_registration_denied_for_read_roles[intelligence_analyst] PASSED [ 47%]
+tests/enterprise/test_ingestion_authz.py::test_ingestion_run_start_denied_for_read_roles[executive_reader] PASSED [ 48%]
+tests/enterprise/test_ingestion_authz.py::test_ingestion_run_start_denied_for_read_roles[security_auditor] PASSED [ 50%]
+tests/enterprise/test_ingestion_authz.py::test_ingestion_run_start_denied_for_read_roles[intelligence_analyst] PASSED [ 51%]
+tests/enterprise/test_ingestion_authz.py::test_evidence_append_denied_for_read_roles[executive_reader] PASSED [ 52%]
+tests/enterprise/test_ingestion_authz.py::test_evidence_append_denied_for_read_roles[security_auditor] PASSED [ 53%]
+tests/enterprise/test_ingestion_authz.py::test_evidence_append_denied_for_read_roles[intelligence_analyst] PASSED [ 54%]
+tests/enterprise/test_ingestion_authz.py::test_integration_operator_can_register_and_sync PASSED [ 55%]
+tests/enterprise/test_ingestion_authz.py::test_tenant_admin_can_register PASSED [ 56%]
+tests/enterprise/test_ingestion_authz.py::test_write_requires_token PASSED [ 57%]
+tests/enterprise/test_ingestion_authz.py::test_service_denies_without_context PASSED [ 58%]
+tests/enterprise/test_ingestion_authz.py::test_service_denies_read_role_context PASSED [ 59%]
+tests/enterprise/test_ingestion_authz.py::test_service_start_run_denied_for_read_role PASSED [ 60%]
+tests/enterprise/test_ingestion_authz.py::test_service_allows_integration_operator PASSED [ 61%]
+tests/enterprise/test_ingestion_authz.py::test_service_cross_tenant_run_is_not_found PASSED [ 63%]
+tests/enterprise/test_migration.py::test_exactly_one_head PASSED         [ 64%]
+tests/enterprise/test_migration.py::test_upgrade_downgrade_reupgrade PASSED [ 65%]
+tests/enterprise/test_migration.py::test_phase2_rows_backfilled_to_legacy_tenant PASSED [ 66%]
+tests/enterprise/test_migration.py::test_evidence_indexes_and_unique_constraints_present PASSED [ 67%]
+tests/enterprise/test_migration.py::test_tenant_scoped_uniqueness PASSED [ 68%]
+tests/enterprise/test_repositories.py::test_tenant_qualified_create_and_read PASSED [ 69%]
+tests/enterprise/test_repositories.py::test_tenant_isolation_negative_lookup PASSED [ 70%]
+tests/enterprise/test_repositories.py::test_cross_tenant_association_rejected PASSED [ 71%]
+tests/enterprise/test_repositories.py::test_pagination_is_deterministic PASSED [ 72%]
+tests/enterprise/test_repositories.py::test_list_does_not_leak_other_tenant PASSED [ 73%]
+tests/enterprise/test_repositories.py::test_no_cross_tenant_update_of_ingestion_run PASSED [ 75%]
+tests/enterprise/test_repositories.py::test_evidence_append_and_retrieve PASSED [ 76%]
+tests/enterprise/test_repositories.py::test_evidence_dedup_is_idempotent PASSED [ 77%]
+tests/enterprise/test_repositories.py::test_transaction_rollback_leaves_no_partial_records PASSED [ 78%]
+tests/enterprise/test_seed.py::test_first_run_creates_expected_counts PASSED [ 79%]
+tests/enterprise/test_seed.py::test_second_run_creates_zero_duplicates PASSED [ 80%]
+tests/enterprise/test_seed.py::test_row_counts_stable_after_double_seed PASSED [ 81%]
+tests/enterprise/test_seed.py::test_deterministic_ids_are_stable PASSED  [ 82%]
+tests/enterprise/test_seed.py::test_canonical_evidence_hash_is_deterministic PASSED [ 83%]
+tests/enterprise/test_services.py::test_one_organization_per_tenant_is_enforced PASSED [ 84%]
+tests/enterprise/test_services.py::test_hierarchy_and_project_linkage PASSED [ 85%]
+tests/enterprise/test_services.py::test_cross_tenant_initiative_reference_rejected PASSED [ 86%]
+tests/enterprise/test_services.py::test_dependency_self_reference_rejected PASSED [ 88%]
+tests/enterprise/test_services.py::test_ownership_creation PASSED        [ 89%]
+tests/enterprise/test_services.py::test_availability_invalid_interval_rejected PASSED [ 90%]
+tests/enterprise/test_services.py::test_ingestion_run_state_transitions PASSED [ 91%]
+tests/enterprise/test_services.py::test_complete_run_requires_terminal_status PASSED [ 92%]
+tests/enterprise/test_services.py::test_failed_run_persists_sanitized_error PASSED [ 93%]
+tests/enterprise/test_services.py::test_evidence_provenance_and_dedup PASSED [ 94%]
+tests/enterprise/test_services.py::test_ingestion_run_not_found_for_tenant PASSED [ 95%]
+tests/enterprise/test_services.py::test_partial_write_rolls_back_on_invalid_reference PASSED [ 96%]
+tests/enterprise/test_services.py::test_capability_catalog PASSED        [ 97%]
+tests/enterprise/test_services.py::test_delivery_repository_registration PASSED [ 98%]
+tests/enterprise/test_services.py::test_legacy_projection_is_tenant_scoped PASSED [100%]
+
+============================== warnings summary ===============================
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  C:\Users\Kaviyashre\projects\SignalForge\backend\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+tests/enterprise/test_migration.py::test_phase2_rows_backfilled_to_legacy_tenant
+tests/enterprise/test_migration.py::test_phase2_rows_backfilled_to_legacy_tenant
+tests/enterprise/test_migration.py::test_phase2_rows_backfilled_to_legacy_tenant
+tests/enterprise/test_migration.py::test_phase2_rows_backfilled_to_legacy_tenant
+tests/enterprise/test_migration.py::test_phase2_rows_backfilled_to_legacy_tenant
+tests/enterprise/test_migration.py::test_phase2_rows_backfilled_to_legacy_tenant
+  C:\Users\Kaviyashre\projects\SignalForge\backend\.venv\Lib\site-packages\sqlalchemy\engine\default.py:943: DeprecationWarning: The default datetime adapter is deprecated as of Python 3.12; see the sqlite3 documentation for suggested replacement recipes
+    cursor.execute(statement, parameters)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================= 92 passed, 7 warnings in 148.55s (0:02:28) ==================

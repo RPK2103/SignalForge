@@ -306,43 +306,49 @@ class GraphEdgeRepository(_GraphTenantRepository):
 
             closed_at = _aware(edge.valid_from) or edge.valid_from
             prior_from = _aware(existing.valid_from) or existing.valid_from
-            hist_id = build_entity_id(
-                "gedgehist",
-                ctx.tenant_id,
-                existing.graph_edge_id,
-                prior_from.isoformat(),
-                existing.payload_hash[:16],
-            )
-            prior = self._tenant_get(
-                orm.DeliveryGraphEdge, orm.DeliveryGraphEdge.graph_edge_id, hist_id, ctx
-            )
-            if prior is None:
-                self._session.add(
-                    orm.DeliveryGraphEdge(
-                        graph_edge_id=hist_id,
-                        tenant_id=ctx.tenant_id,
-                        source_node_id=existing.source_node_id,
-                        target_node_id=existing.target_node_id,
-                        edge_type=existing.edge_type,
-                        edge_origin=existing.edge_origin,
-                        confidence=existing.confidence,
-                        criticality=existing.criticality,
-                        valid_from=existing.valid_from,
-                        valid_to=closed_at,
-                        first_observed_at=existing.first_observed_at,
-                        last_observed_at=existing.last_observed_at,
-                        supporting_evidence_signal_id=existing.supporting_evidence_signal_id,
-                        supporting_ownership_id=existing.supporting_ownership_id,
-                        supporting_dependency_id=existing.supporting_dependency_id,
-                        derivation_rule=existing.derivation_rule,
-                        derivation_version=existing.derivation_version,
-                        attributes=dict(existing.attributes or {}),
-                        payload_hash=existing.payload_hash,
-                        projection_version=existing.projection_version,
-                        archived_at=closed_at,
-                    )
+            # Preserve ck_ent_dge_valid_interval: never write valid_to <= valid_from.
+            # When the successor interval starts at/before the prior open start
+            # (e.g. unordered multi-source projection), skip the hist snapshot
+            # and refresh the open edge in place.
+            can_close = closed_at is not None and prior_from is not None and closed_at > prior_from
+            if can_close:
+                hist_id = build_entity_id(
+                    "gedgehist",
+                    ctx.tenant_id,
+                    existing.graph_edge_id,
+                    prior_from.isoformat(),
+                    existing.payload_hash[:16],
                 )
-                self._session.flush()
+                prior = self._tenant_get(
+                    orm.DeliveryGraphEdge, orm.DeliveryGraphEdge.graph_edge_id, hist_id, ctx
+                )
+                if prior is None:
+                    self._session.add(
+                        orm.DeliveryGraphEdge(
+                            graph_edge_id=hist_id,
+                            tenant_id=ctx.tenant_id,
+                            source_node_id=existing.source_node_id,
+                            target_node_id=existing.target_node_id,
+                            edge_type=existing.edge_type,
+                            edge_origin=existing.edge_origin,
+                            confidence=existing.confidence,
+                            criticality=existing.criticality,
+                            valid_from=existing.valid_from,
+                            valid_to=closed_at,
+                            first_observed_at=existing.first_observed_at,
+                            last_observed_at=existing.last_observed_at,
+                            supporting_evidence_signal_id=existing.supporting_evidence_signal_id,
+                            supporting_ownership_id=existing.supporting_ownership_id,
+                            supporting_dependency_id=existing.supporting_dependency_id,
+                            derivation_rule=existing.derivation_rule,
+                            derivation_version=existing.derivation_version,
+                            attributes=dict(existing.attributes or {}),
+                            payload_hash=existing.payload_hash,
+                            projection_version=existing.projection_version,
+                            archived_at=closed_at,
+                        )
+                    )
+                    self._session.flush()
 
             existing.valid_from = edge.valid_from
             existing.valid_to = edge.valid_to
@@ -358,7 +364,12 @@ class GraphEdgeRepository(_GraphTenantRepository):
             existing.derivation_version = edge.derivation_version
             existing.edge_origin = edge.edge_origin.value
             existing.edge_type = edge.edge_type.value
-            existing.last_observed_at = edge.last_observed_at
+            # Keep observation window coherent when successor valid_from moves earlier.
+            existing.first_observed_at = min(
+                _aware(existing.first_observed_at) or existing.first_observed_at,
+                _aware(edge.first_observed_at) or edge.first_observed_at,
+            )
+            existing.last_observed_at = _max_dt(existing.last_observed_at, edge.last_observed_at)
             existing.projection_version = edge.projection_version
             existing.updated_at = _utcnow()
             self._session.flush()
@@ -395,9 +406,16 @@ class GraphEdgeRepository(_GraphTenantRepository):
         )
         if row is None:
             raise EnterpriseNotFoundError("Graph edge not found for this tenant")
-        if row.valid_to is None or row.valid_to > closed_at:
-            row.valid_to = closed_at
-        row.archived_at = closed_at
+        point = _aware(closed_at) or closed_at
+        prior_from = _aware(row.valid_from) or row.valid_from
+        # Refuse zero-length / inverted intervals; keep open rather than violate
+        # ck_ent_dge_valid_interval when close timestamp is not after valid_from.
+        if point is not None and prior_from is not None and point > prior_from:
+            if row.valid_to is None or (_aware(row.valid_to) or row.valid_to) > point:
+                row.valid_to = point
+            row.archived_at = point
+        else:
+            row.archived_at = point
         row.updated_at = _utcnow()
         self._session.flush()
         return _to_dto(dm.DeliveryGraphEdge, row)

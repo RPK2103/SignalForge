@@ -1,0 +1,25 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.7, pytest-9.1.1, pluggy-1.6.0
+rootdir: C:\Users\Kaviyashre\projects\SignalForge\backend
+configfile: pytest.ini
+testpaths: tests
+plugins: anyio-4.13.0
+collected 1004 items
+
+tests\ai_quality\test_evaluation.py ............                         [  1%]
+tests\api\test_assessment_history_api.py ....                            [  1%]
+tests\api\test_content_type_dependencies.py .............                [  2%]
+tests\api\test_leadership_brief_api.py .......                           [  3%]
+tests\api\test_readiness_api.py ........................................ [  7%]
+..................                                                       [  9%]
+tests\api\test_simulation_api.py ..........................              [ 11%]
+tests\api\test_simulation_history_api.py ..                              [ 12%]
+tests\chief_of_staff\test_adversarial_audit.py .................         [ 13%]
+tests\chief_of_staff\test_cli.py ..                                      [ 14%]
+tests\chief_of_staff\test_cos_domain.py ..........                       [ 15%]
+tests\chief_of_staff\test_cos_migration.py .....                         [ 15%]
+tests\chief_of_staff\test_cos_review_telemetry.py ..............         [ 16%]
+tests\chief_of_staff\test_cos_telemetry.py ......                        [ 17%]
+tests\chief_of_staff\test_determinism_and_scenario.py ..                 [ 17%]
+tests\chief_of_staff\test_failure_injection.py ..                        [ 17%]
+tests\chief_of_staff\test_grounding.py .........                         [ 18%]

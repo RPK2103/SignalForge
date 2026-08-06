@@ -1,0 +1,71 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.7, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\Kaviyashre\projects\SignalForge\backend\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\Kaviyashre\projects\SignalForge\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0
+collecting ... collected 55 items
+
+tests/connectors/test_api.py::test_list_connectors_no_secrets PASSED     [  1%]
+tests/connectors/test_api.py::test_register_rejects_raw_token_config PASSED [  3%]
+tests/connectors/test_api.py::test_checkpoint_and_freshness_tenant_404 PASSED [  5%]
+tests/connectors/test_audit_regressions.py::test_env_credential_rejects_non_allowlisted_vars[env://PATH] PASSED [  7%]
+tests/connectors/test_audit_regressions.py::test_env_credential_rejects_non_allowlisted_vars[env://USERNAME] PASSED [  9%]
+tests/connectors/test_audit_regressions.py::test_env_credential_rejects_non_allowlisted_vars[env://HOME] PASSED [ 10%]
+tests/connectors/test_audit_regressions.py::test_env_credential_rejects_non_allowlisted_vars[env://AWS_SECRET_ACCESS_KEY] PASSED [ 12%]
+tests/connectors/test_audit_regressions.py::test_env_credential_rejects_non_allowlisted_vars[env://signalforge_github_token] PASSED [ 14%]
+tests/connectors/test_audit_regressions.py::test_env_credential_allowlists_signalforge_prefix PASSED [ 16%]
+tests/connectors/test_audit_regressions.py::test_github_owner_repo_reject_path_injection[octo/cat-Hello-World] PASSED [ 18%]
+tests/connectors/test_audit_regressions.py::test_github_owner_repo_reject_path_injection[octocat-Hello/World] PASSED [ 20%]
+tests/connectors/test_audit_regressions.py::test_github_owner_repo_reject_path_injection[octocat-Hello%2FWorld] PASSED [ 21%]
+tests/connectors/test_audit_regressions.py::test_github_owner_repo_reject_path_injection[octocat-Hello\\World] PASSED [ 23%]
+tests/connectors/test_audit_regressions.py::test_github_owner_repo_reject_path_injection[..-Hello-World] PASSED [ 25%]
+tests/connectors/test_audit_regressions.py::test_github_owner_repo_reject_path_injection[octocat-..] PASSED [ 27%]
+tests/connectors/test_audit_regressions.py::test_github_owner_repo_reject_path_injection[octocat-.] PASSED [ 29%]
+tests/connectors/test_audit_regressions.py::test_github_owner_repo_reject_path_injection[https://evil.com-x] PASSED [ 30%]
+tests/connectors/test_audit_regressions.py::test_github_owner_repo_reject_path_injection[octocat-repo?x=1] PASSED [ 32%]
+tests/connectors/test_audit_regressions.py::test_github_owner_repo_reject_path_injection[octocat-repo#frag] PASSED [ 34%]
+tests/connectors/test_audit_regressions.py::test_github_owner_repo_reject_path_injection[-Hello-World] PASSED [ 36%]
+tests/connectors/test_audit_regressions.py::test_github_owner_repo_reject_path_injection[octocat-] PASSED [ 38%]
+tests/connectors/test_audit_regressions.py::test_github_owner_repo_reject_path_injection[aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-Hello-World] PASSED [ 40%]
+tests/connectors/test_audit_regressions.py::test_link_header_cross_host_not_followed_as_request_url PASSED [ 41%]
+tests/connectors/test_audit_regressions.py::test_nested_secret_keys_rejected PASSED [ 43%]
+tests/connectors/test_audit_regressions.py::test_redact_payload_recursive_case_variants_and_arrays PASSED [ 45%]
+tests/connectors/test_audit_regressions.py::test_equal_timestamp_records_not_skipped_by_since_filter PASSED [ 47%]
+tests/connectors/test_audit_regressions.py::test_http_status_matrix_non_retryable_and_retryable PASSED [ 49%]
+tests/connectors/test_audit_regressions.py::test_concurrent_checkpoint_stale_update_rejected PASSED [ 50%]
+tests/connectors/test_audit_regressions.py::test_fetch_failure_leaves_checkpoint_unchanged_fresh_session PASSED [ 52%]
+tests/connectors/test_audit_regressions.py::test_normalize_deterministic_across_key_order PASSED [ 54%]
+tests/connectors/test_contracts.py::test_registry_lists_github_operational_and_staged PASSED [ 56%]
+tests/connectors/test_contracts.py::test_jira_and_ado_do_not_false_succeed PASSED [ 58%]
+tests/connectors/test_contracts.py::test_github_config_validation_and_secret_rejection PASSED [ 60%]
+tests/connectors/test_contracts.py::test_credential_resolvers_and_redaction PASSED [ 61%]
+tests/connectors/test_contracts.py::test_retry_policy_deterministic_no_real_sleep PASSED [ 63%]
+tests/connectors/test_contracts.py::test_rate_limit_retry_after_and_max_wait PASSED [ 65%]
+tests/connectors/test_github_client.py::test_parse_link_header PASSED    [ 67%]
+tests/connectors/test_github_client.py::test_github_headers_and_public_mode PASSED [ 69%]
+tests/connectors/test_github_client.py::test_github_auth_header_without_logging_token PASSED [ 70%]
+tests/connectors/test_github_client.py::test_github_status_classification PASSED [ 72%]
+tests/connectors/test_github_client.py::test_github_rate_limit_403_and_retry_after PASSED [ 74%]
+tests/connectors/test_github_client.py::test_github_malformed_json PASSED [ 76%]
+tests/connectors/test_github_client.py::test_arbitrary_base_url_rejected PASSED [ 78%]
+tests/connectors/test_github_client.py::test_normalization_snapshots_stable_and_no_email PASSED [ 80%]
+tests/connectors/test_ingestion_pipeline.py::test_initial_and_incremental_sync_idempotent PASSED [ 81%]
+tests/connectors/test_ingestion_pipeline.py::test_changed_payload_creates_new_evidence PASSED [ 83%]
+tests/connectors/test_ingestion_pipeline.py::test_dead_letter_on_unsupported_event PASSED [ 85%]
+tests/connectors/test_ingestion_pipeline.py::test_redact_payload_strips_secrets PASSED [ 87%]
+tests/connectors/test_ingestion_pipeline.py::test_tenant_isolation_checkpoints PASSED [ 89%]
+tests/connectors/test_ingestion_pipeline.py::test_checkpoint_version_conflict PASSED [ 90%]
+tests/connectors/test_ingestion_pipeline.py::test_manual_repo_not_overwritten_by_connector PASSED [ 92%]
+tests/connectors/test_ingestion_pipeline.py::test_pull_request_projection PASSED [ 94%]
+tests/connectors/test_live_github.py::test_live_github_public_smoke SKIPPED [ 96%]
+tests/connectors/test_migration.py::test_exactly_one_head_is_ai_chief_of_staff PASSED [ 98%]
+tests/connectors/test_migration.py::test_upgrade_from_populated_prompt1_preserves_data PASSED [100%]
+
+============================== warnings summary ===============================
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  C:\Users\Kaviyashre\projects\SignalForge\backend\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================== 54 passed, 1 skipped, 1 warning in 26.07s ==================

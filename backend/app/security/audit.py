@@ -33,6 +33,7 @@ _FAIL_CLOSED_PERMISSIONS = frozenset(
         Permission.SECURITY_ROLES_MANAGE,
         Permission.SECURITY_IDENTITY_PROVIDERS_MANAGE,
         Permission.PREDICTIONS_PROMOTE,
+        Permission.DEMO_TENANT_MANAGE,
     }
 )
 

@@ -1,0 +1,47 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.7, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\Kaviyashre\projects\SignalForge\backend\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\Kaviyashre\projects\SignalForge\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0
+collecting ... collected 31 items
+
+tests/scenarios/test_domain_validation.py::test_normalize_engineer_unavailable PASSED [  3%]
+tests/scenarios/test_domain_validation.py::test_reject_invalid_percentage PASSED [  6%]
+tests/scenarios/test_domain_validation.py::test_reject_invalid_delay PASSED [  9%]
+tests/scenarios/test_domain_validation.py::test_reject_secret_keys PASSED [ 12%]
+tests/scenarios/test_domain_validation.py::test_reject_recursive_combined PASSED [ 16%]
+tests/scenarios/test_domain_validation.py::test_reject_duplicate_combined_changes PASSED [ 19%]
+tests/scenarios/test_domain_validation.py::test_specification_hash_order_independent PASSED [ 22%]
+tests/scenarios/test_execution.py::test_seed_idempotent PASSED           [ 25%]
+tests/scenarios/test_execution.py::test_execute_all_kinds_and_idempotent_reuse PASSED [ 29%]
+tests/scenarios/test_execution.py::test_source_immutability_after_execution PASSED [ 32%]
+tests/scenarios/test_execution.py::test_watch_no_change_then_relevant_change PASSED [ 35%]
+tests/scenarios/test_execution.py::test_comparison_and_cross_tenant_denial PASSED [ 38%]
+tests/scenarios/test_execution.py::test_api_read_and_no_mutation_routes PASSED [ 41%]
+tests/scenarios/test_prediction_overlay.py::test_calibrated_fixture_path_produces_probability_delta PASSED [ 45%]
+tests/scenarios/test_prediction_overlay.py::test_failed_candidate_ignored_uses_scorecard PASSED [ 48%]
+tests/scenarios/test_prediction_overlay.py::test_feature_overlay_training_ineligible PASSED [ 51%]
+tests/scenarios/test_scenario_audit_regressions.py::test_as_of_wall_clock_does_not_change_source_fingerprint PASSED [ 54%]
+tests/scenarios/test_scenario_audit_regressions.py::test_irrelevant_ownership_skips_and_relevant_triggers PASSED [ 58%]
+tests/scenarios/test_scenario_audit_regressions.py::test_failed_watch_does_not_advance_fingerprint PASSED [ 61%]
+tests/scenarios/test_scenario_audit_regressions.py::test_concurrent_watch_evaluation_single_result PASSED [ 64%]
+tests/scenarios/test_scenario_audit_regressions.py::test_training_eligible_sql_bypass_rejected PASSED [ 67%]
+tests/scenarios/test_scenario_audit_regressions.py::test_dataset_builder_does_not_reference_scenario_overlays PASSED [ 70%]
+tests/scenarios/test_scenario_migration.py::test_scenario_migration_upgrade_downgrade PASSED [ 74%]
+tests/scenarios/test_scenario_migration.py::test_single_alembic_head PASSED [ 77%]
+tests/scenarios/test_scenario_performance_bounds.py::test_large_graph_overlay_respects_budgets PASSED [ 80%]
+tests/scenarios/test_scenario_performance_bounds.py::test_comparison_and_watch_batch_limits PASSED [ 83%]
+tests/scenarios/test_scenario_telemetry.py::test_scenario_run_emits_single_sample PASSED [ 87%]
+tests/scenarios/test_scenario_telemetry.py::test_idempotent_reuse_not_recounted PASSED [ 90%]
+tests/scenarios/test_scenario_telemetry.py::test_rollback_discards_pending_scenario_success PASSED [ 93%]
+tests/scenarios/test_scenario_telemetry.py::test_scenario_failure_reported_as_failed PASSED [ 96%]
+tests/scenarios/test_scenario_telemetry.py::test_telemetry_failure_does_not_break_scenario PASSED [100%]
+
+============================== warnings summary ===============================
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  C:\Users\Kaviyashre\projects\SignalForge\backend\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================== 31 passed, 1 warning in 71.88s (0:01:11) ===================

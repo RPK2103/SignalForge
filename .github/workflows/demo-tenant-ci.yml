@@ -1,0 +1,207 @@
+name: Demo Tenant CI
+
+on:
+  pull_request:
+    paths:
+      - "backend/**"
+      - "frontend/e2e/**"
+      - ".github/workflows/demo-tenant-ci.yml"
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - "frontend/e2e/**"
+      - ".github/workflows/demo-tenant-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: demo-tenant-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deterministic-demo-data:
+    name: Deterministic NovaBank demo data
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: |
+            backend/requirements.txt
+            backend/requirements-dev.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Migrate disposable database
+        env:
+          DATABASE_URL: sqlite:///./demo-ci.db
+        run: python -m alembic upgrade head
+
+      - name: Seed NovaBank (first run)
+        env:
+          DATABASE_URL: sqlite:///./demo-ci.db
+          AI_ENABLED: "false"
+        run: python -m app.demo novabank seed --json
+
+      - name: Seed NovaBank (idempotent second run)
+        env:
+          DATABASE_URL: sqlite:///./demo-ci.db
+          AI_ENABLED: "false"
+        run: |
+          python -m app.demo novabank seed --json > second.json
+          python -c "import json; d=json.load(open('second.json')); assert d['created_total']==0, d; print('idempotent_ok', d['manifest_hash'])"
+
+      - name: Materialize graph/scenarios/briefs
+        env:
+          DATABASE_URL: sqlite:///./demo-ci.db
+          AI_ENABLED: "false"
+        run: |
+          python -m app.demo novabank materialize --json > materialize.json
+          python -c "import json; d=json.load(open('materialize.json')); assert d.get('ok') and d.get('graph_rebuilt'), d; assert d['scenarios_executed']==8 and d['briefs_generated']==8, d; print('materialize_ok', d['graph_findings'])"
+
+      - name: Idempotent second materialize
+        env:
+          DATABASE_URL: sqlite:///./demo-ci.db
+          AI_ENABLED: "false"
+        run: |
+          python -m app.demo novabank materialize --json > materialize2.json
+          python -c "import json; d=json.load(open('materialize2.json')); assert d.get('ok') and d.get('graph_rebuilt'), d; print('materialize_idempotent_ok')"
+
+      - name: Validate manifest and stories
+        env:
+          DATABASE_URL: sqlite:///./demo-ci.db
+          AI_ENABLED: "false"
+        run: python -m app.demo novabank validate
+
+      - name: Prompt 9 unit tests
+        env:
+          AI_ENABLED: "false"
+        run: |
+          COLLECTED=$(python -m pytest tests/demo --collect-only -q | tail -n 1)
+          echo "collected_line=$COLLECTED"
+          echo "$COLLECTED" | grep -E "[1-9][0-9]* test" 
+          python -m pytest tests/demo -vv --tb=short
+
+      - name: Graph rebuild regression
+        env:
+          AI_ENABLED: "false"
+        run: python -m pytest tests/graph -vv --tb=short -k "temporal or idempotent or inverted or rebuild"
+
+  postgresql-tenant-isolation:
+    name: PostgreSQL tenant isolation
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: signalforge
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      POSTGRES_MIGRATION_URL: postgresql+psycopg://postgres:postgres@localhost:5432/signalforge
+      POSTGRES_TEST_URL: postgresql+psycopg://signalforge_app:app_password@localhost:5432/signalforge
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: |
+            backend/requirements.txt
+            backend/requirements-dev.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-dev.txt
+          pip install "psycopg[binary]==3.2.3"
+
+      - name: Create non-superuser application role
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -d signalforge -v ON_ERROR_STOP=1 <<'SQL'
+          DO $$
+          BEGIN
+            IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'signalforge_app') THEN
+              CREATE ROLE signalforge_app LOGIN PASSWORD 'app_password' NOSUPERUSER NOBYPASSRLS;
+            END IF;
+          END
+          $$;
+          GRANT CONNECT ON DATABASE signalforge TO signalforge_app;
+          GRANT USAGE ON SCHEMA public TO signalforge_app;
+          SQL
+
+      - name: Run migrations as privileged role
+        run: python -m alembic upgrade head
+        env:
+          DATABASE_URL: ${{ env.POSTGRES_MIGRATION_URL }}
+
+      - name: Grant application role table privileges
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -d signalforge -v ON_ERROR_STOP=1 <<'SQL'
+          GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO signalforge_app;
+          GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO signalforge_app;
+          ALTER DEFAULT PRIVILEGES IN SCHEMA public
+            GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO signalforge_app;
+          SQL
+
+      - name: Verify application role is not a superuser
+        env:
+          PGPASSWORD: app_password
+        run: |
+          is_super=$(psql -h localhost -U signalforge_app -d signalforge -tAc \
+            "SELECT rolsuper FROM pg_roles WHERE rolname = current_user")
+          echo "app role rolsuper=$is_super"
+          test "$is_super" = "f"
+          bypass=$(psql -h localhost -U signalforge_app -d signalforge -tAc \
+            "SELECT rolbypassrls FROM pg_roles WHERE rolname = current_user")
+          echo "app role rolbypassrls=$bypass"
+          test "$bypass" = "f"
+
+      - name: Prompt 7/8/9 PostgreSQL suites (must not all skip)
+        env:
+          AI_ENABLED: "false"
+        run: |
+          set -euo pipefail
+          OUT=$(mktemp)
+          python -m pytest tests/security_postgres tests/observability_postgres tests/demo_postgres -vv --tb=short | tee "$OUT"
+          if grep -E "collected 0 items" "$OUT"; then
+            echo "ERROR: zero tests collected"
+            exit 1
+          fi
+          if ! grep -E "[1-9][0-9]* passed" "$OUT"; then
+            echo "ERROR: no PostgreSQL tests passed (all skipped or failed)"
+            exit 1
+          fi

@@ -1,0 +1,39 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.7, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\Kaviyashre\projects\SignalForge\backend\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\Kaviyashre\projects\SignalForge\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0
+collecting ... collected 23 items
+
+tests/demo/test_adversarial.py::test_wrong_tenant_denied PASSED          [  4%]
+tests/demo/test_adversarial.py::test_injected_failure_rolls_back PASSED  [  8%]
+tests/demo/test_adversarial.py::test_audit_failure_blocks_success PASSED [ 13%]
+tests/demo/test_adversarial.py::test_incompatible_manifest_rejected PASSED [ 17%]
+tests/demo/test_adversarial.py::test_permission_matrix_includes_demo_manage PASSED [ 21%]
+tests/demo/test_adversarial.py::test_dataset_version_constant PASSED     [ 26%]
+tests/demo/test_specification_and_seed.py::test_canonical_spec_valid PASSED [ 30%]
+tests/demo/test_specification_and_seed.py::test_story_ids_unique_and_sorted PASSED [ 34%]
+tests/demo/test_specification_and_seed.py::test_target_inventory_ranges PASSED [ 39%]
+tests/demo/test_specification_and_seed.py::test_as_of_must_match_constant PASSED [ 43%]
+tests/demo/test_specification_and_seed.py::test_seed_requires_security PASSED [ 47%]
+tests/demo/test_specification_and_seed.py::test_seed_denies_reader_role PASSED [ 52%]
+tests/demo/test_specification_and_seed.py::test_first_seed_reaches_inventory PASSED [ 56%]
+tests/demo/test_specification_and_seed.py::test_second_seed_idempotent PASSED [ 60%]
+tests/demo/test_specification_and_seed.py::test_manifest_stable_across_databases PASSED [ 65%]
+tests/demo/test_specification_and_seed.py::test_no_sensitive_engineer_fields PASSED [ 69%]
+tests/demo/test_specification_and_seed.py::test_stories_have_scenarios PASSED [ 73%]
+tests/demo/test_stories.py::test_story_matrix_complete PASSED            [ 78%]
+tests/demo/test_stories.py::test_materialize_deterministic_fallback PASSED [ 82%]
+tests/demo/test_stories.py::test_graph_rebuild_idempotent PASSED         [ 86%]
+tests/demo/test_stories.py::test_story_7_brief_grounding PASSED          [ 91%]
+tests/demo/test_stories.py::test_brief_grounding_for_fraud_story PASSED  [ 95%]
+tests/demo/test_stories.py::test_materialization_fails_closed_on_graph_error PASSED [100%]
+
+============================== warnings summary ===============================
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  C:\Users\Kaviyashre\projects\SignalForge\backend\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================== 23 passed, 1 warning in 80.01s (0:01:20) ===================
