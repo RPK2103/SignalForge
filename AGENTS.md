@@ -11,7 +11,9 @@ Rules:
 - Build one feature at a time.
 - Keep the MVP simple.
 - Avoid overengineering.
-- No authentication.
+- SignalForge currently has no interactive login screen in the development UI.
+  The FastAPI backend is default-deny, and protected APIs require valid JWT
+  authentication.
 - No Kubernetes.
 - No microservices.
 - No unnecessary dependencies.
@@ -57,7 +59,62 @@ Database (SQLite is enough locally): from `backend/` run `.venv/bin/python -m al
 
 Run: backend `cd backend && .venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload`; frontend `cd frontend && npm run dev`.
 
-Auth is default-deny: every `/api/v2/*`, `/api/v3/*` and legacy root route requires a Bearer JWT (only `/`, `/health`, `/dashboard/*` are open). Mint a local dev token with `cd backend && .venv/bin/python -m app.security issue-dev-token --subject dev --tenant novabank --roles tenant_admin`. The frontend has NO login screen: the browser token lives in-memory only, read from `window.__SIGNALFORGE_TEST_AUTH__`. To drive the UI manually, load the page, set `window.__SIGNALFORGE_TEST_AUTH__ = {"token":"<jwt>","tenantId":"novabank"}` in the DevTools console, then click the catalog "Retry" button. The token is lost on page reload (re-inject each time).
+Auth is default-deny: every `/api/v2/*`, `/api/v3/*` and legacy root route requires a Bearer JWT (only `/`, `/health`, `/dashboard/*` are open). Mint a local dev token with `cd backend && .venv/bin/python -m app.security issue-dev-token --subject dev --tenant novabank --roles tenant_admin`. The frontend has NO login screen: the browser token lives in-memory only, read from `window.__SIGNALFORGE_TEST_AUTH__`.
 
-Test gotcha: running the full backend suite with `backend/.env` present makes `tests/security/test_config_hardening.py::test_production_ready_config_passes` FAIL, because pydantic-settings loads `SIGNALFORGE_LOCAL_AUTH_SECRET` from `.env` and the test rejects a local secret under a production config. Run backend tests with that secret unset, e.g. `SIGNALFORGE_LOCAL_AUTH_SECRET= .venv/bin/python -m pytest tests -q`. CI is green because it has no `.env`.
+### `window.__SIGNALFORGE_TEST_AUTH__` non-production boundary
 
+`window.__SIGNALFORGE_TEST_AUTH__` is permitted only for:
+
+- local development;
+- Cursor local or Cursor Cloud development workspaces;
+- automated browser tests;
+- disposable non-production environments.
+
+It is prohibited to:
+
+- use against staging;
+- use against production;
+- use against a customer environment;
+- commit tokens;
+- store tokens in source;
+- store tokens in screenshots;
+- print tokens in shared logs;
+- reuse a locally minted token against another environment.
+
+Only short-lived local-development tokens minted for the same local environment may be used.
+
+To drive the UI manually in a permitted local environment, load the page, set `window.__SIGNALFORGE_TEST_AUTH__ = {"token":"<jwt>","tenantId":"novabank"}` in the DevTools console, then click the catalog "Retry" button. The token is lost on page reload (re-inject each time). Do not include real tokens or secret values in documentation, commits, or shared logs.
+
+### Local `.env` test caveat
+
+pydantic-settings loads the ignored `backend/.env`, so `SIGNALFORGE_LOCAL_AUTH_SECRET` can appear in the test process. Production-hardening tests intentionally reject local authentication configuration under production settings. The variable may be blanked only for that local test process.
+
+PowerShell example:
+
+```powershell
+$previousSecret = $env:SIGNALFORGE_LOCAL_AUTH_SECRET
+
+try {
+    $env:SIGNALFORGE_LOCAL_AUTH_SECRET = ""
+    .\.venv\Scripts\python.exe -m pytest tests -q
+}
+finally {
+    if ($null -eq $previousSecret) {
+        Remove-Item Env:SIGNALFORGE_LOCAL_AUTH_SECRET `
+            -ErrorAction SilentlyContinue
+    }
+    else {
+        $env:SIGNALFORGE_LOCAL_AUTH_SECRET = $previousSecret
+    }
+}
+```
+
+Explicit constraints:
+
+- do not weaken or remove the production-hardening assertion;
+- do not commit `backend/.env`;
+- do not commit `frontend/.env.local`;
+- do not globally blank required secrets in deployed environments;
+- do not use development local-auth configuration in production.
+
+CI is green because it has no `.env`.

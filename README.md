@@ -363,8 +363,44 @@ Honest limitations: expected 401/403 test responses are **not** server failures;
 OTLP has been validated or deployed; **no** production SLO attainment is claimed
 (synthetic/local data only); live provider comparison is optional/manual; there
 is no automatic model promotion, external alert delivery or SIEM integration, and
-no raw prompt/response retention. **Microsoft has not endorsed the project.** No
-Prompt 9 work exists.
+no raw prompt/response retention. **Microsoft has not endorsed the project.**
+
+## 9i. Implemented — Phase 3 Prompt 9 (Realistic Enterprise Demo Tenant)
+
+- Deterministic **NovaBank** enterprise demo dataset
+  (`novabank-enterprise-demo-v2`) with fixed UTC anchor `2026-07-31T18:00:00Z`.
+- Exact inventory on a fresh database: 5 business units, 10 teams, 48 fictional
+  engineers, 14 initiatives, 24 projects, 32 repositories, 30 sprints,
+  480 work items, 220 pull requests, 75 deployments, 32 incidents, 58
+  dependencies, 120 ownership rows, 18 availability windows, and eight
+  evidence-backed story scenarios.
+- Additive, idempotent generator that **extends** the Prompt 1–8 NovaBank tenant
+  (same `tenant_id=novabank`); never deletes rows to hit counts; rejects
+  incompatible stored manifests.
+- Cross-prompt materialization via existing graph / scenario / Chief-of-Staff
+  services using deterministic fallback (no external LLM or connector
+  credentials in mandatory tests). Graph rebuild is mandatory: failure aborts
+  materialization and rolls back partial derived state. Canonical full-scale
+  SQLite rebuild succeeds; second rebuild is idempotent. Story 7 produces a
+  grounded deterministic-fallback brief.
+- Privileged CLI: `python -m app.demo novabank seed|materialize|validate|manifest|report`
+  with explicit internal security context, `demo.tenant.manage` permission and
+  fail-closed `demo.dataset.seeded` audit.
+- Manifest persisted as an `EvidenceSignal` — **no new Alembic migration**; head
+  remains `p3_observability_ai_quality`.
+- Dedicated workflow `.github/workflows/demo-tenant-ci.yml` (deterministic seed,
+  materialize, graph rebuild + PostgreSQL RLS regressions that cannot all skip).
+
+See
+[`architecture/phase-3-realistic-enterprise-demo-tenant.md`](architecture/phase-3-realistic-enterprise-demo-tenant.md)
+and
+[`architecture/novabank-demo-data-dictionary.md`](architecture/novabank-demo-data-dictionary.md).
+
+Honest limitations: synthetic / production-ineligible only; uncalibrated scores
+are **not** probabilities; scenarios are **not** causal claims; **no** Microsoft
+endorsement, ROI model, buyer pitch or calibrated real-world probability
+(Prompt 10 remains responsible for pitch readiness). Local PostgreSQL requires
+`POSTGRES_TEST_URL`; remote CI enforces PostgreSQL 16 coverage.
 
 ## 10. Planned Capabilities (Phase 3)
 
@@ -566,12 +602,8 @@ python -m alembic current
 python -m alembic check
 ```
 
-Single head: `p3_enterprise_security_scale` (down-revision
-`p3_ai_chief_of_staff`). Downgrade with
-`python -m alembic downgrade p3_ai_chief_of_staff` (validated on disposable
-SQLite; do not downgrade a long-lived DB without a backup). The security
-migration emits PostgreSQL RLS DDL (enable + FORCE + tenant-isolation policies)
-that is a no-op on SQLite.
+Single head: `p3_observability_ai_quality` (Prompt 8; Prompt 9 adds **no**
+migration).
 
 ## 30. Seed Command
 
@@ -583,13 +615,21 @@ python -m app.db.seed
 Idempotent: first run seeds `capabilities=11, engineers=3, projects=5,
 scenarios=8`; a second run inserts nothing.
 
-The Phase 3 NovaBank enterprise demo tenant is seeded separately and is also
-idempotent (first run creates 233 rows across the enterprise entities; a second
-run creates 0):
+Foundational NovaBank enterprise seed (Prompt 1 scale) remains available:
 
 ```bash
 cd backend
 python -m app.db.enterprise_seed
+```
+
+**IMPLEMENTED** Prompt 9 realistic NovaBank demo (extends the same tenant;
+idempotent; audited):
+
+```bash
+cd backend
+python -m app.demo novabank seed --json
+python -m app.demo novabank materialize --json
+python -m app.demo novabank validate
 ```
 
 ## 31. Tests and Exact Verified Results

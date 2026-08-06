@@ -112,6 +112,8 @@ class Permission(str, Enum):
     OBSERVABILITY_MANAGE = "observability.manage"
     AI_QUALITY_READ = "ai_quality.read"
     AI_QUALITY_EVALUATE = "ai_quality.evaluate"
+    # Prompt 9: internal synthetic demo-tenant management (CLI/service only).
+    DEMO_TENANT_MANAGE = "demo.tenant.manage"
 
 
 class SecurityAuditAction(str, Enum):
@@ -136,6 +138,7 @@ class SecurityAuditAction(str, Enum):
     ALERT_ACKNOWLEDGED = "observability.alert_acknowledged"
     ALERT_RESOLVED = "observability.alert_resolved"
     AI_QUALITY_EVALUATED = "ai_quality.evaluated"
+    DEMO_DATASET_SEEDED = "demo.dataset.seeded"
 
 
 class AuditWriteResult(str, Enum):
