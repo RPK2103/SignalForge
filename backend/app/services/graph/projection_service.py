@@ -27,6 +27,7 @@ from app.domain.graph_enums import (
 from app.domain.graph_models import DeliveryGraphEdge, DeliveryGraphNode, GraphProjectionRun
 from app.domain.tenant_context import TenantContext
 from app.observability.domain import record_graph_rebuild
+from app.security.rls import set_transaction_tenant
 from app.services.enterprise.exceptions import EnterpriseConflictError, EnterpriseValidationError
 from app.services.graph.confidence import edge_confidence
 from app.services.persistence.snapshot_service import snapshot_hash
@@ -176,6 +177,9 @@ class GraphProjectionService:
         # Graph mutations remain uncommitted until the caller commits success.
         if durable_lock:
             self._uow.session.commit()
+            # Commit ends the prior transaction-local RLS GUC; restore it so
+            # subsequent node/edge writes and update_run remain tenant-visible.
+            set_transaction_tenant(self._uow.session, ctx.tenant_id)
         logger.info(
             "graph.projection.started tenant_id=%s run_id=%s mode=%s projection_version=%s",
             ctx.tenant_id,
@@ -250,6 +254,7 @@ class GraphProjectionService:
         except Exception as exc:
             if not telemetry_emitted:
                 self._uow.session.rollback()
+                set_transaction_tenant(self._uow.session, ctx.tenant_id)
                 self._record_failed_run(ctx, run, mode, started, subject_ids or [], exc)
                 record_graph_rebuild(
                     outcome="failure",
@@ -287,6 +292,7 @@ class GraphProjectionService:
             errors=[type(exc).__name__],
         )
         try:
+            set_transaction_tenant(self._uow.session, ctx.tenant_id)
             existing = self._uow.graph_projection_runs.get_run(ctx, run.graph_projection_run_id)
             if existing is None:
                 self._uow.graph_projection_runs.add_run(ctx, failed)
