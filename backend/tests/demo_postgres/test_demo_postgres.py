@@ -37,6 +37,7 @@ def test_postgres_canonical_seed_materialize_graph_rebuild():
     from app.security.context import internal_system_context
     from app.security.enums import SecurityRole
     from app.security.permissions import permissions_for_roles
+    from app.security.rls import set_transaction_tenant
     from app.services.graph.projection_service import GraphProjectionService
 
     url = os.environ["POSTGRES_TEST_URL"]
@@ -61,6 +62,8 @@ def test_postgres_canonical_seed_materialize_graph_rebuild():
         assert mat["scenarios_executed"] == 8
         assert mat["briefs_generated"] == 8
 
+        # Commit ends the prior transaction-local GUC; re-apply for direct reads.
+        set_transaction_tenant(session, TENANT_ID)
         report = validate_dataset(session)
         assert report.ok, report.errors
         assert len(report.story_matrix) == 8
@@ -78,6 +81,7 @@ def test_postgres_canonical_seed_materialize_graph_rebuild():
 
         ctx = TenantContext.require(TENANT_ID)
         uow = UnitOfWork(session)
+        set_transaction_tenant(session, TENANT_ID)
         edges_1 = session.scalar(
             select(func.count())
             .select_from(graph_orm.DeliveryGraphEdge)
@@ -88,6 +92,7 @@ def test_postgres_canonical_seed_materialize_graph_rebuild():
         )
         GraphProjectionService(uow).full_rebuild(ctx)
         session.commit()
+        set_transaction_tenant(session, TENANT_ID)
         edges_2 = session.scalar(
             select(func.count())
             .select_from(graph_orm.DeliveryGraphEdge)

@@ -31,6 +31,7 @@ from app.security.authorization import AuthorizationService
 from app.security.context import SecurityContext
 from app.security.enums import Permission, SecurityAuditAction
 from app.security.exceptions import AuthorizationError
+from app.security.rls import set_transaction_tenant
 
 _logger = logging.getLogger("app.demo.novabank.service")
 
@@ -85,9 +86,18 @@ class NovaBankDemoService:
                 reason_code="tenant_mismatch",
             )
 
+    def _apply_tenant_rls(self) -> None:
+        """Set transaction-local Postgres RLS GUC for NovaBank writes/reads.
+
+        No-op on SQLite. Required under FORCE RLS when the connection uses the
+        non-bypass application role (CI PostgreSQL tenant-isolation job).
+        """
+        set_transaction_tenant(self._session, TENANT_ID)
+
     def seed(self, *, commit: bool = True) -> dict[str, Any]:
         """Idempotently seed the canonical Prompt 9 NovaBank dataset."""
         self._require()
+        self._apply_tenant_rls()
         CANONICAL_SPEC.validate()
         started = time.perf_counter()
         summary = empty_summary(_SUMMARY_KEYS)
@@ -179,6 +189,7 @@ class NovaBankDemoService:
 
     def materialize(self, *, commit: bool = True) -> dict[str, Any]:
         self._require()
+        self._apply_tenant_rls()
         started = time.perf_counter()
         try:
             result = materialize_intelligence(self._session)
@@ -204,10 +215,12 @@ class NovaBankDemoService:
 
     def validate(self) -> ValidationReport:
         self._require()
+        self._apply_tenant_rls()
         return validate_dataset(self._session)
 
     def manifest(self) -> dict[str, Any]:
         self._require()
+        self._apply_tenant_rls()
         loaded = load_manifest(self._session)
         if loaded is not None:
             return loaded
@@ -215,6 +228,7 @@ class NovaBankDemoService:
 
     def report(self) -> dict[str, Any]:
         self._require()
+        self._apply_tenant_rls()
         validation = self.validate()
         return {
             "dataset_version": DATASET_VERSION,
