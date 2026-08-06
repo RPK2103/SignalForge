@@ -156,6 +156,64 @@ def test_foreign_brief_equivalent_to_missing(seeded_novabank, uow, novabank_tena
         uow.cos_briefs.require(novabank_tenant, "nonexistent-brief-id")
 
 
+def test_generate_after_prior_commit_reestablishes_tenant(
+    seeded_novabank, uow, novabank_tenant, monkeypatch
+):
+    """CoS generate must SET LOCAL tenant GUC at each UoW transaction entry.
+
+    Materialization commits the graph durable lock (and each brief commits via
+    UoW). Without re-applying the GUC, the next generate cannot load the target
+    under PostgreSQL FORCE RLS.
+    """
+    target_id = _first_project_id(uow, novabank_tenant)
+    service = ChiefOfStaffService(uow)
+    applied: list[str] = []
+    from app.security.rls import set_transaction_tenant as real_set
+
+    def _tracking_set(session, tenant_id: str) -> None:
+        applied.append(tenant_id)
+        real_set(session, tenant_id)
+
+    monkeypatch.setattr("app.db.unit_of_work.set_transaction_tenant", _tracking_set)
+
+    # Simulate a prior durable boundary that cleared transaction-local GUCs.
+    uow.commit()
+
+    req = ChiefOfStaffRequest(
+        tenant_id=novabank_tenant.tenant_id,
+        intent=ChiefOfStaffIntent.DELIVERY_STATUS_BRIEF,
+        target_type=ChiefOfStaffTargetType.PROJECT,
+        target_id=target_id,
+        as_of_at=AS_OF,
+        requested_provider=ChiefOfStaffProviderMode.DETERMINISTIC_FALLBACK,
+    )
+    first = service.generate(novabank_tenant, req)
+    second = service.generate(novabank_tenant, req)
+    assert first.brief is not None
+    assert second.brief is not None
+    assert first.brief.brief_id != second.brief.brief_id
+    assert applied.count(novabank_tenant.tenant_id) >= 2
+
+
+def test_generate_after_rollback_retry_succeeds(seeded_novabank, uow, novabank_tenant):
+    target_id = _first_project_id(uow, novabank_tenant)
+    service = ChiefOfStaffService(uow)
+    uow.rollback()
+    outcome = service.generate(
+        novabank_tenant,
+        ChiefOfStaffRequest(
+            tenant_id=novabank_tenant.tenant_id,
+            intent=ChiefOfStaffIntent.DELIVERY_STATUS_BRIEF,
+            target_type=ChiefOfStaffTargetType.PROJECT,
+            target_id=target_id,
+            as_of_at=AS_OF,
+            requested_provider=ChiefOfStaffProviderMode.DETERMINISTIC_FALLBACK,
+        ),
+    )
+    assert outcome.brief is not None
+    assert outcome.run.final_provider == ChiefOfStaffProviderMode.DETERMINISTIC_FALLBACK
+
+
 def test_foreign_target_rejected(seeded_novabank, uow, tenant_a):
     service = ChiefOfStaffService(uow)
     with pytest.raises(EnterpriseNotFoundError):

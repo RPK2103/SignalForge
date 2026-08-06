@@ -185,7 +185,9 @@ class ChiefOfStaffService:
                 structured_brief=brief,
             )
 
-        return self._uow.execute(_run)
+        # Each generate owns a commit boundary; re-apply transaction-local RLS
+        # tenant context from the trusted TenantContext (never from target ids).
+        return self._uow.execute_for_tenant(ctx.tenant_id, _run)
 
     def validate_brief(self, ctx: TenantContext, brief_id: str) -> dict:
         brief = self._uow.cos_briefs.require(ctx, brief_id)
@@ -268,7 +270,7 @@ class ChiefOfStaffService:
             return review
 
         try:
-            return self._uow.execute(_run)
+            return self._uow.execute_for_tenant(ctx.tenant_id, _run)
         except Exception:
             # Persist failure — one failure sample, never paired with success
             # (execute already rolled back and cleared any pending success).

@@ -26,6 +26,7 @@ from app.domain.scenario_models import (
 )
 from app.domain.tenant_context import TenantContext
 from app.observability.domain import record_scenario_run
+from app.security.rls import set_transaction_tenant
 from app.services.enterprise.exceptions import (
     EnterpriseConflictError,
 )
@@ -342,6 +343,7 @@ class ScenarioExecutionService:
                 except Exception:
                     # Session may have been rolled back by an integrity guard.
                     self._uow.rollback()
+                    set_transaction_tenant(self._uow.session, ctx.tenant_id)
             logger.info(
                 "scenario.execution.failed tenant_id=%s run_id=%s error=%s",
                 ctx.tenant_id,
