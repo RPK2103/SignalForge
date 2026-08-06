@@ -28,6 +28,7 @@ from app.domain.graph_models import (
     GraphFindingEvidence,
 )
 from app.domain.tenant_context import TenantContext
+from app.security.rls import set_transaction_tenant
 from app.services.graph.confidence import finding_confidence
 from app.services.graph.projection_service import graph_node_id
 from app.services.graph.query_service import DeliveryGraphQueryService
@@ -157,6 +158,10 @@ class GraphAnalysisService:
             return run
         except Exception as exc:
             self._uow.session.rollback()
+            # Rollback clears transaction-local RLS GUC; restore so a caller
+            # that continues on the same session (or records failure state)
+            # does not query tenant tables without context.
+            set_transaction_tenant(self._uow.session, ctx.tenant_id)
             logger.info(
                 "graph.analysis.failed tenant_id=%s error_type=%s",
                 ctx.tenant_id,

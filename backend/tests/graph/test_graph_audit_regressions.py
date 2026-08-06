@@ -223,3 +223,78 @@ def test_durable_rebuild_lock_visible_across_sessions(seeded_db, novabank_tenant
         uow = UnitOfWork(session)
         with pytest.raises(EnterpriseConflictError):
             GraphProjectionService(uow).full_rebuild(novabank_tenant)
+
+
+def test_temporal_closure_rejects_inverted_hist_interval(migrated_db, tenant_a):
+    """Payload flip with earlier successor valid_from must not violate valid_interval."""
+    from datetime import datetime, timezone
+
+    from sqlalchemy.orm import Session
+
+    from app.db.session import get_engine
+    from app.db.unit_of_work import UnitOfWork
+    from app.domain.graph_enums import GraphEdgeOrigin, GraphEdgeType, GraphNodeType
+    from app.domain.graph_models import DeliveryGraphEdge, DeliveryGraphNode
+    from app.services.graph.projection_service import graph_node_id
+    from app.services.persistence.snapshot_service import snapshot_hash
+
+    earlier = datetime(2026, 7, 28, 12, 0, 0, 100, tzinfo=timezone.utc)
+    later = datetime(2026, 7, 28, 12, 0, 0, 500, tzinfo=timezone.utc)
+    engine = get_engine(migrated_db)
+    with Session(engine) as session:
+        uow = UnitOfWork(session)
+        a = DeliveryGraphNode(
+            tenant_id=tenant_a.tenant_id,
+            graph_node_id=graph_node_id(tenant_a.tenant_id, GraphNodeType.TEAM, "inv-a"),
+            node_type=GraphNodeType.TEAM,
+            entity_id="inv-a",
+            canonical_key="team:inv-a",
+            display_label="Inv A",
+            first_observed_at=later,
+            last_observed_at=later,
+        )
+        b = DeliveryGraphNode(
+            tenant_id=tenant_a.tenant_id,
+            graph_node_id=graph_node_id(tenant_a.tenant_id, GraphNodeType.INITIATIVE, "inv-b"),
+            node_type=GraphNodeType.INITIATIVE,
+            entity_id="inv-b",
+            canonical_key="init:inv-b",
+            display_label="Inv B",
+            first_observed_at=later,
+            last_observed_at=later,
+        )
+        uow.graph_nodes.upsert_node(tenant_a, a)
+        uow.graph_nodes.upsert_node(tenant_a, b)
+        first = DeliveryGraphEdge(
+            tenant_id=tenant_a.tenant_id,
+            graph_edge_id="gedge_inv_hist_1",
+            source_node_id=a.graph_node_id,
+            target_node_id=b.graph_node_id,
+            edge_type=GraphEdgeType.SUPPORTS,
+            edge_origin=GraphEdgeOrigin.DERIVED,
+            valid_from=later,
+            first_observed_at=later,
+            last_observed_at=later,
+            derivation_rule="team_owns_project_contributes_to_initiative",
+            attributes={"via_project_id": "proj_later"},
+            payload_hash=snapshot_hash({"via": "later"}),
+        )
+        uow.graph_edges.upsert_edge(tenant_a, first)
+        uow.commit()
+        # Successor starts earlier than existing open interval — must not insert
+        # hist row with valid_to < valid_from.
+        second = first.model_copy(
+            update={
+                "valid_from": earlier,
+                "first_observed_at": earlier,
+                "last_observed_at": earlier,
+                "attributes": {"via_project_id": "proj_earlier"},
+                "payload_hash": snapshot_hash({"via": "earlier"}),
+            }
+        )
+        uow.graph_edges.upsert_edge(tenant_a, second)
+        uow.commit()
+        open_edge = uow.graph_edges.get_edge(tenant_a, "gedge_inv_hist_1")
+        assert open_edge is not None
+        assert open_edge.attributes["via_project_id"] == "proj_earlier"
+        assert open_edge.valid_to is None

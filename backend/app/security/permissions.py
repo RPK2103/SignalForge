@@ -16,7 +16,7 @@ from types import MappingProxyType
 
 from app.security.enums import Permission, SecurityRole
 
-PERMISSION_MATRIX_VERSION = "2026-07-31.1"
+PERMISSION_MATRIX_VERSION = "2026-07-31.2"
 
 
 def _perms(*permissions: Permission) -> frozenset[Permission]:
@@ -51,6 +51,7 @@ _ROLE_PERMISSIONS: dict[SecurityRole, frozenset[Permission]] = {
         Permission.OBSERVABILITY_MANAGE,
         Permission.AI_QUALITY_READ,
         Permission.AI_QUALITY_EVALUATE,
+        Permission.DEMO_TENANT_MANAGE,
     ),
     SecurityRole.EXECUTIVE_READER: _perms(
         Permission.ENTERPRISE_READ,

@@ -80,7 +80,9 @@ from app.db.repositories.sql_repositories import (
     SqlLeadershipBriefRepository,
     SqlSimulationRepository,
 )
+from app.domain.tenant_context import normalize_tenant_id
 from app.repositories.catalog_repository import CatalogRepository
+from app.security.rls import set_transaction_tenant
 
 T = TypeVar("T")
 
@@ -198,7 +200,37 @@ class UnitOfWork:
         self._pending_telemetry = []
 
     def execute(self, callback: Callable[["UnitOfWork"], T]) -> T:
+        """Run ``callback`` then commit; roll back on failure.
+
+        Does not establish PostgreSQL RLS tenant context. Prefer
+        :meth:`execute_for_tenant` for any tenant-scoped enterprise work under
+        FORCE RLS — a prior ``commit``/``rollback`` clears ``SET LOCAL`` and a
+        bare ``execute`` would otherwise query without a tenant GUC.
+        """
         try:
+            result = callback(self)
+            self.commit()
+            return result
+        except Exception:
+            self.rollback()
+            raise
+
+    def execute_for_tenant(self, tenant_id: str, callback: Callable[["UnitOfWork"], T]) -> T:
+        """Run tenant-scoped work in one transaction with RLS context.
+
+        Lifecycle (PostgreSQL)::
+
+            begin (implicit) → SET LOCAL signalforge.current_tenant_id
+            → callback → commit | rollback
+
+        ``tenant_id`` must be a trusted, already-authenticated boundary
+        (``TenantContext`` / ``SecurityContext``), never a request body field or
+        target entity id. On SQLite, tenant GUC application is a no-op.
+        Commit/rollback clear transaction-local GUCs; the next call re-applies.
+        """
+        trusted = normalize_tenant_id(tenant_id)
+        try:
+            set_transaction_tenant(self.session, trusted)
             result = callback(self)
             self.commit()
             return result

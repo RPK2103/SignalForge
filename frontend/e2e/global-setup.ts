@@ -131,8 +131,9 @@ async function globalSetup(): Promise<void> {
 
   // 1. Migrate the disposable database to head.
   runBackendCommand(["-m", "alembic", "upgrade", "head"]);
-  // 2. Seed deterministic catalog + scenarios.
+  // 2. Seed deterministic Phase 2 catalog + Prompt 9 NovaBank enterprise demo.
   runBackendCommand(["-m", "app.db.seed"]);
+  runBackendCommand(["-m", "app.demo", "novabank", "seed", "--json"]);
   // 2b. Mint the E2E bearer token for the authenticated dashboard flow.
   mintE2eToken();
 

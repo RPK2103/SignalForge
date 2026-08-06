@@ -27,6 +27,7 @@ from app.domain.graph_enums import (
 from app.domain.graph_models import DeliveryGraphEdge, DeliveryGraphNode, GraphProjectionRun
 from app.domain.tenant_context import TenantContext
 from app.observability.domain import record_graph_rebuild
+from app.security.rls import set_transaction_tenant
 from app.services.enterprise.exceptions import EnterpriseConflictError, EnterpriseValidationError
 from app.services.graph.confidence import edge_confidence
 from app.services.persistence.snapshot_service import snapshot_hash
@@ -176,6 +177,9 @@ class GraphProjectionService:
         # Graph mutations remain uncommitted until the caller commits success.
         if durable_lock:
             self._uow.session.commit()
+            # Commit ends the prior transaction-local RLS GUC; restore it so
+            # subsequent node/edge writes and update_run remain tenant-visible.
+            set_transaction_tenant(self._uow.session, ctx.tenant_id)
         logger.info(
             "graph.projection.started tenant_id=%s run_id=%s mode=%s projection_version=%s",
             ctx.tenant_id,
@@ -250,6 +254,7 @@ class GraphProjectionService:
         except Exception as exc:
             if not telemetry_emitted:
                 self._uow.session.rollback()
+                set_transaction_tenant(self._uow.session, ctx.tenant_id)
                 self._record_failed_run(ctx, run, mode, started, subject_ids or [], exc)
                 record_graph_rebuild(
                     outcome="failure",
@@ -287,6 +292,7 @@ class GraphProjectionService:
             errors=[type(exc).__name__],
         )
         try:
+            set_transaction_tenant(self._uow.session, ctx.tenant_id)
             existing = self._uow.graph_projection_runs.get_run(ctx, run.graph_projection_run_id)
             if existing is None:
                 self._uow.graph_projection_runs.add_run(ctx, failed)
@@ -840,20 +846,31 @@ class GraphProjectionService:
                 if edge:
                     emit(edge)
 
-        # Derived: team supports initiative via owning projects
+        # Derived: team supports initiative via owning projects.
+        # Natural key MUST include the project id. Collapsing to (team, initiative)
+        # alone makes via_project_id flip the payload hash across projects that
+        # share a team+initiative; temporal closure then uses each project's
+        # created_at as closed_at and can insert valid_to <= valid_from.
         for proj in self._rows(ent_orm.EnterpriseProject, ctx, since, hwm_samples=hwm_samples):
             if not proj.owning_team_id:
                 continue
             team_node = resolve(GraphNodeType.TEAM, proj.owning_team_id)
             init_node = resolve(GraphNodeType.INITIATIVE, proj.initiative_id)
             if team_node and init_node:
+                # Prefer planned_start (business interval) over wall-clock created_at.
+                proj_from = (
+                    getattr(proj, "planned_start", None) or getattr(proj, "created_at", None) or now
+                )
                 edge = make_edge(
                     source=team_node,
                     target=init_node,
                     edge_type=GraphEdgeType.SUPPORTS,
                     origin=GraphEdgeOrigin.DERIVED,
-                    natural_key=f"derived-team-supports-init:{proj.owning_team_id}:{proj.initiative_id}",
-                    valid_from=getattr(proj, "created_at", None) or now,
+                    natural_key=(
+                        "derived-team-supports-init:"
+                        f"{proj.owning_team_id}:{proj.initiative_id}:{proj.enterprise_project_id}"
+                    ),
+                    valid_from=proj_from,
                     derivation_rule="team_owns_project_contributes_to_initiative",
                     attributes={"via_project_id": proj.enterprise_project_id},
                     criticality=proj.criticality or "medium",
@@ -880,7 +897,11 @@ class GraphProjectionService:
                         edge_type=GraphEdgeType.SUPPORTS,
                         origin=GraphEdgeOrigin.DERIVED,
                         natural_key=f"derived-repo-supports-proj:{repo_id}:{proj.enterprise_project_id}",
-                        valid_from=getattr(proj, "created_at", None) or now,
+                        valid_from=(
+                            getattr(proj, "planned_start", None)
+                            or getattr(proj, "created_at", None)
+                            or now
+                        ),
                         derivation_rule="shared_team_ownership_repo_project",
                         attributes={"team_id": proj.owning_team_id},
                     )
