@@ -212,3 +212,59 @@ test("authenticated-but-unauthorized role is forbidden (403)", async ({ request 
   });
   expect(response.status()).toBe(403);
 });
+
+test("executive briefing NovaBank narrative is authenticated and evidence-backed", async ({
+  page,
+}) => {
+  const consoleErrors: string[] = [];
+  page.on("console", (message: ConsoleMessage) => {
+    if (message.type() === "error") {
+      consoleErrors.push(message.text());
+    }
+  });
+  page.on("pageerror", (error) => {
+    consoleErrors.push(`pageerror: ${error.message}`);
+  });
+
+  // Protected product route: without auth the APIs fail closed; with tenant_admin
+  // the briefing surface loads live NovaBank data (no mock fallback).
+  await page.goto("/briefing");
+  await expect(page.getByRole("heading", { name: "Executive briefing" })).toBeVisible();
+  await expect(page.getByTestId("executive-briefing-panel")).toBeVisible({
+    timeout: 60_000,
+  });
+  await expect(page.getByTestId("synthetic-demo-banner")).toBeVisible();
+  await expect(page.getByText(/fictional composite organization/i)).toBeVisible();
+
+  // Discover initiatives from the API (no hardcoded generated IDs).
+  await expect(page.getByTestId("initiative-row").first()).toBeVisible();
+
+  // Scenario path.
+  const scenario = page.getByTestId("scenario-select").first();
+  await expect(scenario).toBeVisible();
+  await scenario.click();
+  await expect(page.getByTestId("scenario-detail")).toBeVisible();
+  await expect(
+    page.getByText(/uncalibrated score \(not a probability\)/i).first()
+  ).toBeVisible();
+
+  // Chief-of-Staff brief with evidence/citation labels.
+  const brief = page.getByTestId("brief-select").first();
+  await expect(brief).toBeVisible();
+  await brief.click();
+  await expect(page.getByTestId("brief-detail")).toBeVisible();
+  await expect(page.getByTestId("brief-claim").first()).toBeVisible();
+  await expect(page.getByText("Evidence").first()).toBeVisible();
+  await expect(page.getByTestId("brief-citation").first()).toBeVisible();
+
+  expect(consoleErrors, `Console errors:\n${consoleErrors.join("\n")}`).toEqual([]);
+});
+
+test("executive briefing route rejects unauthenticated API access", async ({
+  request,
+}) => {
+  const response = await request.get(`${BACKEND_URL}/api/v3/organization`, {
+    headers: { "X-SignalForge-Tenant-ID": "novabank" },
+  });
+  expect(response.status()).toBe(401);
+});

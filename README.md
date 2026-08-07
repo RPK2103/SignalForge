@@ -2,628 +2,93 @@
 
 **Predict. Simulate. Deliver.**
 
-SignalForge turns engineering capability and project requirements into an
-explainable delivery-readiness decision — with team simulation, immutable
-history, human review, and grounded leadership communication.
+AI-native enterprise engineering **execution intelligence** for leaders who need
+evidence-backed answers to:
 
-> **Category: Engineering Execution Intelligence.**
+> Can this team successfully deliver this initiative — and what risks threaten readiness?
 
-This README separates what is **IMPLEMENTED** today from what is **PLANNED** for
-Phase 3. Every command and path below was verified against the current working
-tree (Python 3.13.7 · Node.js 22.19.0 · npm 11.18.0).
+SignalForge evaluates delivery-system risk, capability coverage, dependencies and
+evidence. It is **not** intended to rank individual employees or automate
+employment decisions.
 
----
+**Microsoft has not endorsed this project.**
 
-## 5. Problem
-
-Engineering leaders make high-stakes delivery decisions from fragmented signals —
-resumes, skill inventories, spreadsheets and intuition. A project can look
-healthy on paper while hiding key-person risk, thin capability coverage, or low
-delivery confidence that only surfaces after someone leaves. The core question
-often goes unanswered with evidence:
-
-> **Can this team actually deliver this initiative?**
-
-## 6. Target Users
-
-Engineering delivery leaders and their staff: VP/Director of Engineering,
-delivery/program managers, and engineering chiefs of staff.
-
-## 7. Buyer & ICP
-
-Software organizations, consultancies and cloud/AI transformation teams where an
-engineering leader owns delivery outcomes across multiple initiatives and teams.
-
-## 8. Product Workflow
-
-1. Pick a project (initiative) and a candidate team.
-2. Run a readiness assessment → get **readiness** and **confidence** separately.
-3. Inspect gaps, ownership concentration and the decision trace.
-4. Simulate team changes (add / remove / replace / compare) and see the delta.
-5. Persist the assessment; add a human review.
-6. Generate a grounded Leadership Brief.
-7. Review history and audit trail.
+This README separates **IMPLEMENTED** capabilities from **POC CONFIGURATION**,
+**PROPOSED**, and **DEFERRED** work. Detailed diligence lives under `docs/` and
+`architecture/`.
 
 ---
 
-## 9. Implemented Capabilities
-
-- Deterministic readiness + confidence scoring (versioned policy).
-- Capability coverage, skill-gap and key-person-risk analysis.
-- Decision traces (explainability) for every score.
-- Team simulation: add / remove / replace / compare with deltas + mitigations.
-- Immutable persistence of assessments and simulations, with history + detail.
-- Human review (accepted / overridden / needs-more-data) that never rewrites
-  scores.
-- Grounded Leadership Briefs with strict grounding validation and a deterministic
-  fallback (with explicit provenance).
-- Typed Next.js frontend wired to the live v2 API.
-- Quality + automation: Ruff, pytest, Vitest, Playwright E2E, GitHub Actions CI.
-
-## 9a. Implemented — Phase 3 Prompt 1 (Enterprise Data Foundation)
-
-- Tenant-scoped enterprise domain (20 foundational entities: organization
-  hierarchy, engineer profiles, capability/skill catalog, initiatives/projects,
-  delivery entities, dependencies/ownership/availability, and a provenance/
-  evidence model) with strictly-typed domain DTOs and no ORM leakage.
-- Shared-schema multi-tenancy via an explicit `TenantContext`: tenant-qualified
-  reads/writes/updates, tenant-scoped composite uniqueness, cross-tenant
-  rejection, and non-disclosure of cross-tenant existence (data boundary only —
-  **not** authentication).
-- Append-only `EvidenceSignal` provenance with canonical SHA-256 hashing and
-  deterministic deduplication; `DataSource`/`IngestionRun` foundations with
-  **no** external connector calls and **no** plaintext secrets.
-- Additive Alembic revision `p3_enterprise_foundation` (one head) that adds a
-  nullable `tenant_id` to Phase 2 tables and backfills a `legacy-default` tenant;
-  Phase 2 data, snapshots and scores are never rewritten.
-- Deterministic, idempotent **NovaBank** demo tenant (233 rows; second run = 0).
-- Additive `/api/v3` enterprise routes behind an `X-SignalForge-Tenant-ID`
-  header (local dev only), leaving all v2 contracts unchanged.
-
-See
-[`architecture/phase-3-enterprise-data-foundation.md`](architecture/phase-3-enterprise-data-foundation.md).
-Authentication, RBAC, Entra ID, PostgreSQL row-level security, and production
-multi-tenancy remain **deferred**. Delivery prediction is implemented in
-Prompt 4 (see §9d).
-
-## 9b. Implemented — Phase 3 Prompt 2 (Connector Ingestion Foundation)
-
-- Provider-neutral connector SDK (protocol, registry, credentials, retry,
-  config validation, error taxonomy) with HTTP / normalize / orchestrate /
-  persist separation.
-- One complete **GitHub REST polling** connector (repository, pull requests,
-  reviews, issues, releases) with public unauthenticated mode, Link-header
-  pagination, bounded retries, rate-limit handling and SSRF-resistant host
-  checks. **Webhooks and OAuth are not implemented.**
-- Normalized snapshot events → `EvidenceSignal` + append-only
-  `IngestionReceipt` (repeated observations remain auditable after dedup) +
-  per-stream `ConnectorCheckpoint` + `IngestionDeadLetter` with manual replay.
-- Domain projections for repositories, work items and first-class pull
-  requests; releases/reviews remain evidence-first. Manual data is protected by
-  source precedence.
-- Additive Alembic revision `p3_connector_ingestion_foundation` (single head).
-- Local CLI (`python -m app.connectors`) and read-only `/api/v3` connector
-  observation routes. **No** public sync-trigger endpoint and **no** credential
-  exposure to the frontend.
-- Jira / Azure DevOps: staged descriptors + config contracts only
-  (`connector_not_implemented` — no false success).
-
-See
-[`architecture/phase-3-connector-ingestion-foundation.md`](architecture/phase-3-connector-ingestion-foundation.md).
-
-## 9c. Implemented — Phase 3 Prompt 3 (Delivery Graph)
-
-- Relational, tenant-scoped Delivery Graph projections (`ent_delivery_graph_*`,
-  projection/analysis runs, findings) — **no graph database**.
-- Deterministic full rebuild (durable rebuild lock), incremental edge refresh
-  with inclusive high-watermark overlap, and bounded subject refresh; temporal
-  edges retain closed historical snapshots; re-projection is idempotent.
-- Bounded query service: neighbors, shortest path, reachability, blast radius,
-  dependency cycles, ownership concentration, active-at-time.
-- Deterministic graph findings (concentration, single-person dependency,
-  cross-team / derived-unmodeled dependencies, cycles, availability blast
-  radius, knowledge concentration) with evidence references and reconciliation.
-- Read-only `/api/v3/delivery-graph/*` routes and local CLI
-  (`python -m app.graph`). Graph confidence is **rule-based**, not calibrated,
-  and is distinct from Phase 2 assessment confidence.
-- NovaBank graph scenarios (fraud concentration, payment↔platform path, Azure
-  capability bottleneck, incident blast radius, demo cycle).
-
-See
-[`architecture/phase-3-delivery-graph.md`](architecture/phase-3-delivery-graph.md).
-Authentication, RBAC, Entra ID, PostgreSQL RLS, LLM graph queries and
-production multi-tenancy remain **deferred**. Calibrated delivery prediction
-is implemented in Prompt 4 (see §9d); graph confidence remains rule-based and
-is not a delivery probability.
-
-## 9d. Implemented — Phase 3 Prompt 4 (Delivery Prediction Engine)
-
-- Target `DELIVERY_SUCCESS_WITHIN_HORIZON` for projects/initiatives with
-  horizons `{30, 60, 90, 180}` (default **90**) and label version
-  `delivery_success_label_v1` (unknown/censored stay unlabeled).
-- Feature schema `delivery_features_v1` (~53 features across readiness, graph,
-  ownership, workflow, data-quality, and project-context families) with
-  as-of snapshots, lineage, and leakage rejection.
-- Temporal datasets (`temporal_60_20_20_grouped`), pure-Python
-  `logistic_delivery_v1` + Platt calibration, deterministic
-  `delivery_scorecard_v1` fallback (**uncalibrated score**, not a probability),
-  and `insufficient_data` when critical features are missing.
-- Model registry with `demo_gates_v1` (Brier primary), backtesting harness,
-  deterministic explanations (no LLM), tenant-scoped training
-  (`tenant_count=1`), and NovaBank synthetic outcome seed
-  (`production_eligible=false` — synthetic metrics ≠ real-world accuracy).
-  On NovaBank synthetic data the candidate **fails** `demo_gates_v1` (ECE)
-  and remains **unpromoted**; inference uses the uncalibrated scorecard
-  fallback (not a probability) until a validated active model exists.
-- Read-only `/api/v3/predictions/*` and local CLI (`python -m app.prediction`).
-  Predictions are decision-support, not guarantees. Employee-performance
-  prediction is **not** implemented. No public train/promote HTTP endpoints.
-
-See
-[`architecture/phase-3-delivery-prediction.md`](architecture/phase-3-delivery-prediction.md).
-Authentication, RBAC, Entra ID, PostgreSQL RLS, and production multi-tenancy
-remain **deferred**. Continuous scenarios are implemented in Prompt 5 (see §9e).
-
-## 9e. Implemented — Phase 3 Prompt 5 (Continuous Scenario Intelligence)
-
-- Immutable scenario definitions/versions with bounded assumption validation
-  (eight kinds including combined; no LLM scenario agent).
-- Overlay-only execution: baseline vs simulated graph + feature overlays never
-  mutate enterprise, graph, evidence, models, or historical prediction rows.
-  Baseline capture may materialize deterministic Prompt 4 feature snapshots
-  (same extractor path; existing snapshot contents unchanged).
-  Scenario feature overlays are always `training_eligible=false`.
-- Prediction integration preserves Prompt 4 gates: rejected/candidate models
-  are ignored; NovaBank normally uses `uncalibrated_score` fallback (not a
-  probability). Estimate comparability prevents mixing scores with probabilities.
-- Watches + target-scoped source fingerprints + trigger events for change-driven
-  re-evaluation (minimum 60-minute interval; no queues/workers/real-time claims).
-  Wall-clock `as_of` drift alone does not re-trigger watches.
-- Read-only `/api/v3/scenarios/*` and local CLI (`python -m app.scenarios`).
-  Mutation/execution remain CLI/service-only.
-- Deterministic NovaBank demo scenarios (8) with idempotent seed.
-- Bounded large-graph overlay harness (500 nodes / 2,000 edges) asserts traversal
-  and impact budgets; live PostgreSQL remains deferred.
-
-See
-[`architecture/phase-3-continuous-scenario-intelligence.md`](architecture/phase-3-continuous-scenario-intelligence.md).
-
-## 9f. Implemented — Phase 3 Prompt 6 (AI Chief of Staff)
-
-- Bounded, auditable executive briefs over five intents (`delivery_status_brief`,
-  `change_since_last_review`, `scenario_comparison_brief`,
-  `delivery_prediction_brief`, `evidence_gap_brief`) for project/initiative
-  targets.
-- Temporal, tenant-qualified evidence packages with canonical hashing, claims,
-  citations, append-only reviews, and deterministic fallback.
-- Reads immutable Prompt 1–5 outputs; does not recalculate readiness, graph
-  findings, predictions, or scenario impacts. When a cutoff-valid Phase 2
-  assessment exists (via `legacy_project_id`), readiness and assessment
-  confidence are included as evidence; otherwise the package states they are
-  unavailable.
-- Grounding is structured (support matrix, citations, estimate semantics,
-  decision-option allowlist) plus phrase scanners — not full NL entailment.
-- Read-only `/api/v3/chief-of-staff/*`; generation/review remain CLI/service-only
-  (`python -m app.chief_of_staff`) because the tenant header is not authentication.
-- NovaBank retains `uncalibrated_score` semantics; no model promotion for demos.
-
-See [`architecture/phase-3-ai-chief-of-staff.md`](architecture/phase-3-ai-chief-of-staff.md).
-Auth/RBAC/Entra/RLS (Prompt 7), observability export (Prompt 8), and larger
-NovaBank scale remain **deferred**.
-
-## 9g. Implemented — Phase 3 Prompt 7 (Enterprise Security and Scale)
-
-- **Verified request identity.** Provider-independent authentication boundary
-  with three modes: `entra_oidc` (production, RS256 JWKS validation),
-  `local_development` (signed short-lived dev JWTs), and `test` (isolated
-  in-process tokens). Authentication is **default-deny**: only `/`, `/health`,
-  the `/dashboard/*` static SPA assets (which then authenticate their own API
-  calls), and — in dev/test only — the docs URLs are public. `/api/v2`, `/api/v3`
-  **and every legacy root route** (`/analyze`, `/simulate`, `/copilot`, …) require
-  a verified principal. **The `X-SignalForge-Tenant-ID` header alone no longer
-  authenticates a caller.**
-- **Entra JWT validation** of signature, algorithm allowlist (never `none`,
-  never symmetric for Entra), issuer, audience, `exp`/`nbf`/`iat`, tenant, stable
-  subject, and `kid`, with bounded JWKS caching (TTL, rotation refresh, size/
-  timeout limits). No bearer token is ever logged or persisted.
-- **Deny-by-default RBAC** — one versioned permission matrix (6 roles, 21
-  permissions); unknown roles/permissions, expired assignments and deactivated
-  principals grant nothing. `predictions.promote` and `security.*` administration
-  are restricted to `tenant_admin`. No employee-ranking permission exists.
-- **Explicit route RBAC on every reachable sensitive route** — legacy root
-  routes, `/api/v2` mutations (assessment create → `enterprise.manage`, simulation
-  run → `scenarios.run`, brief generate/review → `chief_of_staff.generate`/
-  `.review`) and `/api/v3` ingestion writes (data-source config →
-  `connectors.manage`; run/evidence execution → `connectors.sync`) each declare
-  an explicit permission. Read-only roles cannot write.
-- **Service-layer authorization** — every reachable sensitive mutation re-checks
-  `AuthorizationService` at its application-service entry point (ingestion,
-  assessment/simulation/brief/review persistence, security administration), not
-  only in the route; a direct service call with no context fails closed (proven by
-  tests). A permission-coverage audit (`app/security/coverage.py`) inventories
-  every sensitive permission against live route introspection. HTTP-unreachable
-  model-training / graph-rebuild / scenario-watch mutation is documented as
-  CLI/service-only and deferred.
-- **PostgreSQL row-level security** — RLS enabled and **forced** on ~45
-  tenant-qualified tables with transaction-local tenant context; missing context
-  fails closed; the application role is a **non-superuser** that cannot bypass
-  RLS. **SQLite does not enforce RLS** and is not proof of it.
-- **Append-only security auditing** (`ent_security_audit_events`) with secret
-  redaction/hashing, bounded keyset pagination, and a fail-closed audit-write
-  policy for security administration and model promotion.
-- **Production-safe configuration** — fail-closed startup validation (Entra
-  config, CORS, trusted hosts, docs visibility, dev-secret absence), security
-  headers, DB pool + statement-timeout safeguards.
-- **Minimal frontend auth boundary** — in-memory bearer token (never
-  localStorage / `NEXT_PUBLIC_*`), tenant selector, explicit 401/403 handling,
-  and a test-only signed-JWT adapter for Playwright.
-- **Mandatory PostgreSQL RLS CI** — a service-container job runs the RLS
-  integration tests as a non-superuser role (never silently skipped in CI).
-- Additive migration `p3_enterprise_security_scale` (single head, descends from
-  `p3_ai_chief_of_staff`). Synthetic **NovaBank** security principals validate the
-  RBAC personas.
-- **Cross-dialect migration portability** — the version table is widened to
-  `VARCHAR(128)` (long Phase 3 revision ids) and Boolean checks/defaults compile on
-  PostgreSQL (`sa.false()`, bare-boolean predicates). Validated on a live
-  disposable PostgreSQL 16 (migration to head as a non-superuser owner + full RLS
-  isolation suite) and via offline `--sql` compilation tests. No prior production
-  PostgreSQL deployment was ever claimed.
-
-See
-[`architecture/phase-3-enterprise-security-scale.md`](architecture/phase-3-enterprise-security-scale.md).
-This is a security **foundation**, not a completed security program:
-local-development mode is **not** production authentication; CI PostgreSQL
-validation is **not** a production security review; **no** penetration test,
-SOC 2 / ISO 27001 certification, SCIM, distributed rate limiter, or SIEM
-integration exists; **Microsoft has not endorsed the project**. Prompt 8
-observability and AI quality is implemented (see 9h).
-
-## 9h. Implemented — Phase 3 Prompt 8 (Observability and AI Quality)
-
-- **Provider-independent observability boundary** — domain code records through
-  an `ObservabilityProvider` protocol; a `NoOp` default, a deterministic
-  `InMemory` provider (tests/local, no network) and an OpenTelemetry-backed
-  provider (constructed only at the edge, SDK imported lazily). Telemetry is
-  fail-open and never alters deterministic scoring or security; required
-  security-audit persistence stays fail-closed per Prompt 7. **No global mutable
-  metrics dictionary.**
-- **HTTP status semantics** — outermost request-telemetry middleware classifies
-  2xx/3xx success, 4xx client/domain, 401 authentication-denial, 403
-  authorization-denial, 429 rate-limit, and 5xx/unhandled server failure.
-  **Expected 401/403 are security-denial telemetry — never 5xx and never an
-  availability failure**; only genuine 5xx increment the server-error metric
-  (proven by tests). W3C `traceparent` + sanitized correlation IDs propagate into
-  structured logs and the response header.
-- **Centralized cardinality/privacy policy** — one allowlist of low-cardinality
-  labels; tenant IDs, correlation/trace IDs, prompts, tokens, emails, repo/
-  project names and exception text are never metric dimensions. Tenant rollups
-  store `tenant_id` as an RLS-protected column only. Optional JSON logging redacts
-  bearer tokens, JWTs and secret assignments.
-- **Domain, connector-freshness and prediction-quality telemetry** — ingestion
-  lag / freshness age (timezone-aware, honest `unavailable`/`clock_skew`/
-  `never_synced` states) and calibration/drift snapshots (Brier, ECE, PSI) that
-  reuse Prompt 4 artifacts, never retrain, and report `unavailable`/
-  `insufficient_data` rather than fabricating values. The domain-metric
-  recorders are **wired into reachable application-service boundaries** and emit
-  at runtime: connector outcome/latency and records and ingestion lag/freshness
-  (`IngestionService.complete_run` / `append_evidence`), graph rebuild/incremental
-  outcome and duration (`GraphProjectionService`), prediction outcome/fallback/
-  missing-data (`PredictionOrchestrator.predict`), scenario run outcome/fallback
-  (`ScenarioExecutionService.execute`), Chief-of-Staff generation/provider/
-  fallback/grounding categories (`ChiefOfStaffOrchestrator.generate`),
-  human-review outcomes (`ChiefOfStaffService.append_review` and
-  `HumanReviewPersistenceService.add_review`; both require a non-optional
-  `SecurityContext` / `chief_of_staff.review`; CLI uses explicit
-  `internal_system_context`), prediction validation-run outcomes
-  (`PredictionOrchestrator.evaluate`; requires `predictions.validate` and the
-  same trusted-CLI pattern), and
-  security-audit write health (`SecurityAuditService.record_sensitive_action`).
-  Committed-success samples are emitted only after a durable UnitOfWork commit
-  (connector/ingestion commit inside the service; graph/prediction/scenario/review/
-  validation/audit success samples are queued on the UoW and flushed on commit;
-  a failed commit clears the queue).
-  Rollback discards pending success. Human-review and prediction-validation
-  metrics are collected and readable via `MetricsReader` but are **not** yet
-  dedicated dashboard tiles or SLO inputs. All emission is fail-open (a
-  telemetry error never alters business results,
-  transactions, or the Prompt 7 fail-closed audit contract) and uses only the
-  bounded attribute allowlist (no tenant/principal IDs, prompts, evidence or
-  secrets; dangerous values under allowlisted keys are redacted). Metric readers,
-  the observability API summary and domain SLOs
-  (e.g. connector success ratio, audit-write success) therefore consume real
-  runtime samples; zero samples remain `insufficient_data`. Production OTLP
-  export, Azure Monitor deployment, external alert delivery and live-provider
-  evaluation remain **deferred**.
-- **Offline AI-quality framework + release gate** — deterministic, synthetic,
-  immutable evaluation cases covering evidence completeness, citation
-  correctness, unsupported-claim rate, decision consistency, fallback
-  determinism, prompt regression, adversarial evidence and provider variation.
-  Fake deterministic providers only (**no live LLM in mandatory CI**). The gate
-  fails on any critical safety violation; `python -m app.observability
-  evaluate-ai-quality` exits non-zero.
-- **Versioned SLOs + internal alerts** — deterministic SLO evaluation
-  (`healthy`/`at_risk`/`breached`/`insufficient_data`); the availability SLO
-  excludes 401/403. Alerts are internal state only (`open`/`acknowledged`/
-  `resolved`) with stable-fingerprint dedupe and append-only transitions — **no
-  email/Teams/PagerDuty/SMS/SIEM**.
-- **Protected APIs, RBAC and dashboard** — `/api/v3/observability/*` is
-  authenticated, tenant-resolved and permission-gated (`observability.read/
-  manage`, `ai_quality.read/evaluate`) at both route and service layers. An
-  authenticated, role-aware `/observability` dashboard shows request/AI/SLO/alert
-  health with loading/empty/error/retry states and no mock fallback.
-- **Persistence + RLS** — one additive migration `p3_observability_ai_quality`
-  (parent `p3_enterprise_security_scale`) adds nine tenant-scoped tables (no raw
-  spans/logs/prompts/evidence/tokens), all under forced PostgreSQL RLS with a
-  dedicated non-superuser RLS CI job.
-
-See
-[`architecture/phase-3-observability-ai-quality.md`](architecture/phase-3-observability-ai-quality.md).
-Honest limitations: expected 401/403 test responses are **not** server failures;
-**no** production monitoring backend, Azure Monitor / Application Insights / live
-OTLP has been validated or deployed; **no** production SLO attainment is claimed
-(synthetic/local data only); live provider comparison is optional/manual; there
-is no automatic model promotion, external alert delivery or SIEM integration, and
-no raw prompt/response retention. **Microsoft has not endorsed the project.**
-
-## 9i. Implemented — Phase 3 Prompt 9 (Realistic Enterprise Demo Tenant)
-
-- Deterministic **NovaBank** enterprise demo dataset
-  (`novabank-enterprise-demo-v2`) with fixed UTC anchor `2026-07-31T18:00:00Z`.
-- Exact inventory on a fresh database: 5 business units, 10 teams, 48 fictional
-  engineers, 14 initiatives, 24 projects, 32 repositories, 30 sprints,
-  480 work items, 220 pull requests, 75 deployments, 32 incidents, 58
-  dependencies, 120 ownership rows, 18 availability windows, and eight
-  evidence-backed story scenarios.
-- Additive, idempotent generator that **extends** the Prompt 1–8 NovaBank tenant
-  (same `tenant_id=novabank`); never deletes rows to hit counts; rejects
-  incompatible stored manifests.
-- Cross-prompt materialization via existing graph / scenario / Chief-of-Staff
-  services using deterministic fallback (no external LLM or connector
-  credentials in mandatory tests). Graph rebuild is mandatory: failure aborts
-  materialization and rolls back partial derived state. Canonical full-scale
-  SQLite rebuild succeeds; second rebuild is idempotent. Story 7 produces a
-  grounded deterministic-fallback brief.
-- Privileged CLI: `python -m app.demo novabank seed|materialize|validate|manifest|report`
-  with explicit internal security context, `demo.tenant.manage` permission and
-  fail-closed `demo.dataset.seeded` audit.
-- Manifest persisted as an `EvidenceSignal` — **no new Alembic migration**; head
-  remains `p3_observability_ai_quality`.
-- Dedicated workflow `.github/workflows/demo-tenant-ci.yml` (deterministic seed,
-  materialize, graph rebuild + PostgreSQL RLS regressions that cannot all skip).
-
-See
-[`architecture/phase-3-realistic-enterprise-demo-tenant.md`](architecture/phase-3-realistic-enterprise-demo-tenant.md)
-and
-[`architecture/novabank-demo-data-dictionary.md`](architecture/novabank-demo-data-dictionary.md).
-
-Honest limitations: synthetic / production-ineligible only; uncalibrated scores
-are **not** probabilities; scenarios are **not** causal claims; **no** Microsoft
-endorsement, ROI model, buyer pitch or calibrated real-world probability
-(Prompt 10 remains responsible for pitch readiness). Local PostgreSQL requires
-`POSTGRES_TEST_URL`; remote CI enforces PostgreSQL 16 coverage.
-
-## 10. Planned Capabilities (Phase 3)
-
-- Jira / Azure DevOps **HTTP** connectors, GitHub webhooks/OAuth/Apps,
-  production multi-tenancy, auth/RBAC, Entra ID, secret
-  vault, production observability. Demo-scoped calibrated delivery prediction
-  is implemented (Prompt 4); continuous scenario intelligence is implemented
-  (Prompt 5); AI Chief of Staff is implemented (Prompt 6). Production-eligible
-  customer models remain ahead. See
-  [`architecture/phase-3-enterprise-product-roadmap.md`](architecture/phase-3-enterprise-product-roadmap.md).
-
-## 11. Deterministic Intelligence
-
-Readiness and confidence are computed from a versioned policy (`policy_v1`) and
-are fully reproducible. **AI never changes scores.**
-
-## 12. Readiness versus Confidence
-
-- **Readiness** — can this team deliver this initiative (capability match)?
-- **Confidence** — how sure is SignalForge in that readiness signal (evidence
-  strength)?
-
-They are distinct scores and are never conflated.
-
-## 13. Team Simulation
-
-Simulate `add`, `remove`, `replace`, or `compare` operations. Each returns
-readiness/confidence deltas, newly introduced/resolved gaps, and recommended
-mitigations. Simulations run compute-only or are explicitly persisted.
-
-## 14. Decision Traces
-
-Every assessment returns a structured decision trace explaining how the score was
-derived — no black box.
-
-## 15. Persistence and History
-
-Assessments and simulations are stored as immutable snapshots with input/result
-hashes. History and detail endpoints return persisted snapshots, not recomputed
-values.
-
-## 16. Human Review
-
-Leaders record judgment (accepted / overridden / needs-more-data). Overrides
-require a reason; needs-more-data requires a comment. Reviews never modify the
-deterministic scores.
-
-## 17. Leadership Briefs
-
-A leadership-ready narrative grounded in the deterministic evidence package,
-with brief history per assessment.
-
-## 18. AI Reasoning Boundary
-
-AI is an advisory communication layer only. The brief is grounded and validated;
-if grounding fails, output is malformed, or AI is disabled, the deterministic
-fallback is used.
-
-## 19. Deterministic Fallback
-
-The fallback provider always produces a valid, grounded brief and records
-`provider_mode`, `generation_status` and `failure_category` (e.g. `ai_disabled`).
-
----
-
-## 20. Architecture Diagram
-
-```mermaid
-flowchart TD
-    UI[Next.js dashboard: typed services + contracts] -->|HTTPS/JSON v2| API[FastAPI /api/v2]
-    API --> SVC[Deterministic intelligence services]
-    API --> PERS[Persistence: SQLAlchemy + Unit of Work]
-    SVC --> POLICY[Versioned policy policy_v1]
-    PERS --> DB[(Alembic-migrated DB)]
-    API --> BRIEF[Leadership Brief orchestrator]
-    BRIEF --> AZ[Azure provider]
-    BRIEF --> FB[Deterministic fallback]
-```
-
-## 21. Data-Flow Diagram
-
-```mermaid
-flowchart LR
-    C[Catalog: projects + engineers] --> A[Assess readiness]
-    A --> R[Readiness + confidence + trace]
-    R --> S[Simulate team change]
-    R --> P[(Persist snapshot)]
-    P --> H[History + detail]
-    P --> RV[Human review]
-    R --> LB[Leadership Brief]
-    LB --> G{Grounded + AI enabled?}
-    G -->|yes| AZ[Azure brief]
-    G -->|no| DF[Deterministic fallback]
-```
-
-## 22. Data Model
-
-Core persisted entities (SQLAlchemy, Alembic-migrated):
-
-- `assessment` — immutable readiness snapshot (inputs, result, hashes, policy).
-- `simulation_record` — immutable simulation snapshot with deltas.
-- `human_review` — review state attached to an assessment.
-- `leadership_brief` — generated brief with provider/generation metadata.
-- audit/event records for traceability.
-
-Catalog entities (projects, engineers, capabilities) are served from an
-in-memory mock repository and seeded for demos.
-
-## 23. APIs (v2)
-
-| Method | Path |
-| --- | --- |
-| GET | `/health`, `/docs`, `/openapi.json` |
-| GET | `/api/v2/projects`, `/api/v2/engineers`, `/api/v2/capabilities` |
-| GET | `/api/v2/policies/readiness` |
-| POST | `/api/v2/readiness/assess` (compute-only) |
-| POST/GET | `/api/v2/assessments`, `GET /api/v2/assessments/{id}` |
-| POST | `/api/v2/assessments/{id}/reviews` |
-| POST/GET | `/api/v2/assessments/{id}/leadership-brief(s)` |
-| POST/GET | `/api/v2/simulations`, `/api/v2/simulation-records`, `GET .../{id}` |
-
-Legacy v1 routes remain mounted for backward compatibility.
-
-Phase 3 adds **additive** `/api/v3` enterprise-foundation routes (organization
-hierarchy, engineer profiles, capabilities, initiatives, projects, repositories,
-data sources, ingestion runs, evidence signals, and a demo-tenant summary),
-gated by a local-only `X-SignalForge-Tenant-ID` header. v2 contracts are
-unchanged.
-
-## 24. Demo Scenarios
-
-Seeded scenarios include readiness and simulation cases such as
-`critical_engineer_exit` and `balanced_team`. See
-[`architecture/phase-2-demo-scripts.md`](architecture/phase-2-demo-scripts.md).
-
-## 25. Frontend Workflow
-
-Typed API client → per-resource services/contracts → dashboard views (catalog
-selection, assessment, history, review dialog, simulation panel, Leadership Brief
-panel), with async-state handling and Vitest tests.
-
-## 26. Screenshots / GIFs
-
-_Placeholders — to be captured against the v2 dashboard:_
-
-- `![Dashboard](assets/dashboard-home.png)` — catalog + assessment view.
-- `![Readiness vs Confidence](assets/readiness-confidence.png)` — separated scores.
-- `![Simulation](assets/staffing-simulator-before-after.png)` — remove-engineer delta.
-- `![Leadership Brief](assets/leadership-brief.png)` — grounded brief + provenance.
-
----
-
-## 27. Local Setup
-
-```bash
-git clone https://github.com/RPK2103/SignalForge.git
-cd SignalForge
-
-# Backend
-cd backend
-python -m venv .venv
-# Windows: .venv\Scripts\activate   |  macOS/Linux: source .venv/bin/activate
-pip install -r requirements.txt
-pip install -r requirements-dev.txt   # Ruff, pip-audit (dev only)
-
-# Frontend
-cd ../frontend
-npm ci
-```
-
-## 28. Environment Variables
-
-Backend (`backend/.env`, see `backend/.env.example`):
-
-```env
-APP_ENV=development
-LOG_LEVEL=INFO
-DATABASE_URL=sqlite:///./signalforge.db
-CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
-AI_ENABLED=false            # keep AI off for local/E2E; uses deterministic fallback
-# AZURE_OPENAI_* only needed for live AI briefs
-```
-
-`CORS_ORIGINS` accepts a comma-separated list, a JSON array string, `*`, or a
-single origin.
-
-Frontend (`frontend/.env.local`, see `frontend/.env.example`):
-
-```env
-NEXT_PUBLIC_SIGNALFORGE_API_BASE_URL=http://127.0.0.1:8000
-```
-
-## 29. Migration
-
-```bash
-cd backend
-python -m alembic upgrade head
-python -m alembic current
-python -m alembic check
-```
-
-Single head: `p3_observability_ai_quality` (Prompt 8; Prompt 9 adds **no**
-migration).
-
-## 30. Seed Command
-
-```bash
-cd backend
-python -m app.db.seed
-```
-
-Idempotent: first run seeds `capabilities=11, engineers=3, projects=5,
-scenarios=8`; a second run inserts nothing.
-
-Foundational NovaBank enterprise seed (Prompt 1 scale) remains available:
-
-```bash
-cd backend
-python -m app.db.enterprise_seed
-```
-
-**IMPLEMENTED** Prompt 9 realistic NovaBank demo (extends the same tenant;
-idempotent; audited):
+## Product mission
+
+Turn engineering capability, delivery evidence and initiative requirements into
+explainable readiness decisions — with simulation, Delivery Graph findings,
+honest prediction fallbacks, counterfactual scenarios, grounded Chief-of-Staff
+briefs, human review, tenant isolation and observability.
+
+## The enterprise problem
+
+Leaders greenlight high-stakes work from fragmented signals (status decks,
+spreadsheets, intuition). Capability gaps, dependency risk, ownership
+concentration and key-person exposure surface too late.
+
+## What SignalForge does
+
+1. Assess initiative/team readiness (readiness ≠ confidence).
+2. Inspect gaps, ownership concentration and decision traces.
+3. Simulate team changes and persist immutable history + human review.
+4. Build a Delivery Graph and review findings.
+5. Run counterfactual scenarios (decision-support overlays).
+6. Generate grounded Chief-of-Staff briefs with citations.
+7. Operate behind default-deny authentication and tenant controls.
+
+## Who it is for
+
+- **Economic buyer:** CTO / VP Engineering
+- **Operational buyer:** Engineering Operations / Program leadership
+- **Users:** directors, managers, platform and architecture leaders
+- **Reviewers:** security, data governance, enterprise architecture, procurement
+
+See [`docs/pitch/buyer-personas.md`](docs/pitch/buyer-personas.md).
+
+## Core capabilities (IMPLEMENTED)
+
+| Area | Summary |
+|---|---|
+| Readiness intelligence | Deterministic policy_v1 readiness + confidence, gaps, key-person risk, traces |
+| Simulation & review | Team simulate; immutable assessments; human review never rewrites scores |
+| Connectors | GitHub REST polling; Jira/ADO descriptors only (not HTTP-implemented) |
+| Delivery Graph | Relational projection/analysis/findings; rule-based confidence ≠ probability |
+| Prediction | Feature snapshots + fallback `uncalibrated_score` (not a probability) |
+| Scenarios | Overlay counterfactuals; 8 NovaBank stories after materialize |
+| AI Chief of Staff | Grounded briefs; claims/citations; deterministic fallback |
+| Security | Default-deny JWT, RBAC, audit, PostgreSQL FORCE RLS |
+| Observability | Protected APIs + `/observability`; offline AI-quality gate |
+| Executive briefing UI | Authenticated `/briefing` over live tenant APIs (no mock fallback) |
+
+Full inventory:
+[`architecture/phase-3-microsoft-poc-startup-pitch-readiness.md`](architecture/phase-3-microsoft-poc-startup-pitch-readiness.md).
+
+## Architecture
+
+FastAPI backend + Next.js frontend. Additive `/api/v2` (Phase 2 readiness) and
+`/api/v3` (enterprise intelligence). Auth is default-deny: Bearer JWT required
+for protected APIs; `X-SignalForge-Tenant-ID` is a **selector**, never
+authentication. Alembic head: **`p3_observability_ai_quality`**.
+
+## AI and prediction honesty
+
+- AI does not change deterministic readiness scores.
+- Briefs/CoS use provider abstraction with deterministic fallback.
+- NovaBank prediction candidate is **unpromoted** / production-ineligible.
+- Uncalibrated scores are **not** probabilities.
+- Scenarios are **not** causal predictions.
+- Mandatory tests do not call external LLMs.
+
+## NovaBank enterprise demo
+
+NovaBank is a **fictional** synthetic tenant (`novabank-enterprise-demo-v2`,
+as_of `2026-07-31T18:00:00Z`) for demos and tests — not a real bank or customer.
 
 ```bash
 cd backend
@@ -632,119 +97,173 @@ python -m app.demo novabank materialize --json
 python -m app.demo novabank validate
 ```
 
-## 31. Tests and Exact Verified Results
+Canonical fresh inventory includes 14 initiatives, 24 projects, 48 engineer
+profiles, 32 repositories, 8 scenarios; materialize builds graph findings and
+8 Chief-of-Staff briefs. Walk the narrative at **`/briefing`** (authenticated).
 
-| Suite | Command | Result |
-| --- | --- | --- |
-| Backend | `python -m pytest tests -q` | **323 passed, 1 warning** |
-| Backend format | `python -m ruff format --check app tests` | 161 files already formatted |
-| Backend lint | `python -m ruff check app tests` | All checks passed! |
-| Frontend | `npm run test` | **23 passed** (4 files) |
-| Frontend lint | `npm run lint` | clean |
-| Frontend types | `npm run typecheck` | clean |
-| Frontend build | `npm run build` | Compiled successfully |
-| Browser E2E | `npm run test:e2e` | **1 passed** (22-step flow) |
+Runbook: [`docs/poc/novabank-executive-demo-runbook.md`](docs/poc/novabank-executive-demo-runbook.md).
 
-## 32. Browser E2E Status
+## Security and governance
 
-**IMPLEMENTED.** Playwright (`frontend/playwright.config.ts`, `frontend/e2e/`)
-runs a deterministic cross-service test on a disposable SQLite DB with
-Alembic migration + explicit seed, `AI_ENABLED=false`, a locally started backend,
-and a production frontend build. It drives the full 22-step flow and asserts no
-uncaught console errors and no unhandled failed requests. Artifacts (reports,
-traces, videos, screenshots) are git-ignored.
+Designed to support enterprise review: JWT modes including `entra_oidc`
+verification, RBAC, audit, RLS on PostgreSQL, secret redaction, dependency
+audits. **Not yet certified** (no SOC 2 / ISO 27001 / pen-test completion claim).
+Interactive Entra/MSAL browser login is **POC CONFIGURATION / INTEGRATION
+REQUIRED**. Questionnaire:
+[`docs/poc/security-governance-questionnaire.md`](docs/poc/security-governance-questionnaire.md).
 
-## 33. CI Workflows
+## Observability and AI quality
 
-`.github/workflows/`: `backend-ci.yml`, `frontend-ci.yml`, `e2e-ci.yml`,
-`security-ci.yml`. All use `permissions: contents: read`, explicit timeouts,
-concurrency cancellation, trigger on PR + push-to-main + manual dispatch, and use
-no secrets, no Azure and no production database. `security-ci.yml` adds a
-**mandatory** `postgres-rls` job (PostgreSQL 16 service container, non-superuser
-application role) that runs the RLS integration tests without ever silently
-skipping them. **The first remote run is pending until pushed** — remote CI
-cannot yet be claimed as executed for Prompt 7.
+Local/in-process observability with optional OTel construct; protected
+`/api/v3/observability/*` and `/observability` UI; offline AI-quality release
+gate in CI. Production Azure Monitor export is **PROPOSED**, not validated.
 
-## 34. Deployment
+## Microsoft enterprise POC
 
-Backend deploys to **Render** (`render.yaml`): rootDir `backend`, build
-`pip install -r requirements.txt`, start
-`uvicorn app.main:app --host 0.0.0.0 --port $PORT`, health path `/health`,
-Python 3.13, Azure vars `sync:false`. Run `alembic upgrade head` then
-`python -m app.db.seed` on release. Rollback: redeploy the previous commit;
-schema rollback via `alembic downgrade -1` (with a backup). No frontend
-deployment configuration is committed yet.
+4–6 week evaluation blueprint (entry/exit criteria, success metrics, data
+onboarding, Microsoft-aligned **proposed** hosting/identity map):
+[`docs/poc/microsoft-enterprise-poc-blueprint.md`](docs/poc/microsoft-enterprise-poc-blueprint.md).
 
-## 35. Public Deployment Status
+Azure Marketplace publishing, Teams, Power BI and Copilot Studio integrations
+are **DEFERRED**. No Microsoft partnership or endorsement is claimed.
 
-**DEPLOYMENT CONFIGURATION VALIDATED; PUBLIC FLOW DEFERRED.** No live public URL
-was tested in this release pass. Public deployment success is **not** claimed.
+## Local development
 
-## 36. Security
+```bash
+git clone https://github.com/RPK2103/SignalForge.git
+cd SignalForge
 
-- Production dependency audits clean: `pip-audit -r backend/requirements.txt`
-  (0 known vulns) and `npm audit --omit=dev --audit-level=high` (0 high/critical).
-- Secret scanning via gitleaks in CI; working tree + git history contain no real
-  secrets, keys, `.env` files or databases (only `*.env.example` templates).
-- Remaining advisories are dev/lint-time only and reported informationally.
+cd backend
+python -m venv .venv
+# Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+pip install -r requirements-dev.txt
+python -m alembic upgrade head
+python -m app.db.seed
 
-## 37. Privacy and Employee-Data Considerations
+cd ../frontend
+npm ci
+```
 
-SignalForge analyzes **team and initiative delivery capability**, not individuals.
-Current data is entirely synthetic. It explicitly prohibits profile scraping,
-email collection, unauthorized chat ingestion and sensitive-attribute inference.
-See
-[`architecture/phase-3-realistic-data-strategy.md`](architecture/phase-3-realistic-data-strategy.md).
+Backend `.env` (see `backend/.env.example`):
 
-## 38. Limitations
+```env
+DATABASE_URL=sqlite:///./signalforge.db
+AI_ENABLED=false
+AUTH_MODE=local_development
+SIGNALFORGE_LOCAL_AUTH_SECRET=<at-least-32-chars>
+CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+```
 
-- Synthetic catalog/identities (toy seed IDs), not real customer data.
-- Deterministic Phase 2 policy scores remain distinct from Prompt 4 calibrated
-  delivery probabilities; readiness / assessment confidence / graph confidence
-  are never redefined as probability.
-- Demo prediction uses synthetic NovaBank outcomes
-  (`production_eligible=false`); synthetic metrics ≠ real-world accuracy.
-- GitHub polling is implemented; GitHub webhooks/OAuth/Apps are not.
-- Jira and Azure DevOps HTTP connectors are not implemented (staged contracts only).
-- Verified identity, deny-by-default RBAC, service-layer authorization and
-  PostgreSQL RLS are implemented (Prompt 7). Interactive Entra browser login
-  requires deployment-specific wiring not validated locally (provider boundary +
-  local/test adapter are implemented).
-- SQLite does **not** enforce RLS; RLS is proven only by the mandatory
-  PostgreSQL CI job. No penetration test, SOC 2 / ISO 27001 certification, SCIM,
-  distributed rate limiter, or SIEM integration exists.
-- Secret vault (Azure Key Vault) is documented as a deployment integration, not
-  implemented in code; secrets resolve from environment variables.
-- Delivery graph relational projection is implemented; graph DB / LLM graph
-  queries are not.
-- Live PostgreSQL RLS is validated in CI (service container); it was deferred
-  locally in this pass. Live Azure OpenAI not validated in this pass.
+Frontend `.env.local`:
 
-## 39. Phase 3 Roadmap
+```env
+NEXT_PUBLIC_SIGNALFORGE_API_BASE_URL=http://127.0.0.1:8000
+```
 
-Numbered from Prompt 1 in
-[`architecture/phase-3-enterprise-product-roadmap.md`](architecture/phase-3-enterprise-product-roadmap.md):
-domain foundation → connectors → delivery graph → prediction → continuous
-scenarios → AI Chief of Staff → security/scale → observability → realistic tenant
-→ POC/pitch.
+Run:
 
-## 40. Hackathon Origin
+```bash
+# backend
+cd backend
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 
-SignalForge began as a solo hackathon MVP (v1) — a FastAPI backend with a
-vanilla dashboard and Azure OpenAI copilot over synthetic data. Phase 2
-re-architected it into a deterministic, tested, persisted, typed and CI-covered
-release candidate.
+# frontend
+cd frontend
+npm run dev
+```
 
-## 41. Portfolio Relevance
+Mint a local JWT (never commit it):
 
-Demonstrates product thinking (a real leadership decision), deterministic +
-explainable intelligence, a clean FastAPI/Next.js architecture, and full
-engineering hygiene: migrations, tests, browser E2E, CI, security auditing and
-honest documentation of what is implemented versus planned.
+```bash
+cd backend
+python -m app.security issue-dev-token --subject dev --tenant novabank --roles tenant_admin
+```
 
----
+Inject in the browser console (non-production only):
 
-_Further reading:
-[`architecture/phase-2-completion-report.md`](architecture/phase-2-completion-report.md) ·
-[`architecture/phase-2-microsoft-poc-and-startup-readiness.md`](architecture/phase-2-microsoft-poc-and-startup-readiness.md) ·
-[`architecture/phase-2-demo-scripts.md`](architecture/phase-2-demo-scripts.md)._
+```js
+window.__SIGNALFORGE_TEST_AUTH__ = { token: "<jwt>", tenantId: "novabank" };
+```
+
+Then open `/`, `/briefing`, or `/observability` and retry if needed. Token is
+in-memory only and lost on reload.
+
+## Testing
+
+```bash
+# backend
+cd backend
+python -m ruff format --check app tests
+python -m ruff check app tests
+python -m alembic heads
+python -m alembic check
+python -m pytest -rs
+
+# frontend
+cd frontend
+npm test -- --run
+npm run lint
+npm run typecheck
+npm run build
+npx playwright test
+```
+
+Dependency gates: `pip check`, `pip_audit -r requirements.txt --strict`,
+`npm audit --omit=dev`.
+
+PostgreSQL RLS suites require `POSTGRES_TEST_URL` (or CI service container).
+SQLite does **not** prove RLS.
+
+Report **fresh** pass/skip counts from your run; do not reuse stale README
+tables as proof.
+
+## Deployment
+
+Backend Render blueprint: `render.yaml`. Run migrations + seed on release.
+Public production flow remains deferred. See POC blueprint for Azure Container
+Apps / App Service / Azure Database for PostgreSQL as **proposed** options.
+
+## Documentation index
+
+| Area | Link |
+|---|---|
+| Prompt 10 package | [`architecture/phase-3-microsoft-poc-startup-pitch-readiness.md`](architecture/phase-3-microsoft-poc-startup-pitch-readiness.md) |
+| POC blueprint | [`docs/poc/microsoft-enterprise-poc-blueprint.md`](docs/poc/microsoft-enterprise-poc-blueprint.md) |
+| Success framework | [`docs/poc/poc-success-framework.md`](docs/poc/poc-success-framework.md) |
+| Security questionnaire | [`docs/poc/security-governance-questionnaire.md`](docs/poc/security-governance-questionnaire.md) |
+| Data onboarding | [`docs/poc/data-onboarding-plan.md`](docs/poc/data-onboarding-plan.md) |
+| Demo runbook | [`docs/poc/novabank-executive-demo-runbook.md`](docs/poc/novabank-executive-demo-runbook.md) |
+| Executive one-pager | [`docs/pitch/executive-one-pager.md`](docs/pitch/executive-one-pager.md) |
+| Personas | [`docs/pitch/buyer-personas.md`](docs/pitch/buyer-personas.md) |
+| ROI hypothesis | [`docs/pitch/roi-hypothesis-model.md`](docs/pitch/roi-hypothesis-model.md) |
+| Competitive positioning | [`docs/pitch/competitive-positioning.md`](docs/pitch/competitive-positioning.md) |
+| Pitch outline | [`docs/pitch/startup-pitch-outline.md`](docs/pitch/startup-pitch-outline.md) |
+| Objections | [`docs/pitch/objections-and-responses.md`](docs/pitch/objections-and-responses.md) |
+| Case study | [`docs/portfolio/signalforge-case-study.md`](docs/portfolio/signalforge-case-study.md) |
+| Evidence index | [`docs/evidence/production-readiness-evidence-index.md`](docs/evidence/production-readiness-evidence-index.md) |
+| Phase 3 roadmap | [`architecture/phase-3-enterprise-product-roadmap.md`](architecture/phase-3-enterprise-product-roadmap.md) |
+| Agent / Cloud notes | [`AGENTS.md`](AGENTS.md) |
+
+## Limitations
+
+- No production/paid customer traction claimed; ROI is hypothesis-only.
+- No Microsoft endorsement, partnership, certification, or Marketplace listing.
+- NovaBank is synthetic / production-ineligible.
+- Jira/ADO HTTP connectors, GitHub webhooks/OAuth, Teams, Power BI, Copilot Studio: deferred or not implemented.
+- Interactive Entra login SPA not shipped.
+- Secret vault integration recommended, not implemented in-app.
+- No SOC 2 / ISO 27001 / formal pen-test / production DR validation claimed.
+
+## Roadmap
+
+Phase 3 Prompts 1–9 are implemented in product code. Prompt 10 packages POC and
+pitch readiness. Further work is customer-driven POC hardening and deferred
+integrations — not a new Phase 4 engine in this milestone.
+
+## Disclaimer
+
+SignalForge is decision-support software. Outputs can be wrong or incomplete.
+Humans remain accountable for delivery decisions. Synthetic demos are not
+customer evidence. Uncalibrated scores are not probabilities. Scenario overlays
+are not causal predictions.

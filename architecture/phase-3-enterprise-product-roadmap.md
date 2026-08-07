@@ -249,22 +249,35 @@ acceptance criteria.
 ### Microsoft POC and Startup Pitch Readiness
 
 - **Product goal:** Package a credible Microsoft POC and startup pitch backed by
-  evidence.
-- **Business value:** Convert the product into a fundable/pilotable offering.
-- **Architecture scope:** POC deployment (Azure), pilot instrumentation, ROI
-  measurement, backtesting evidence pack.
-- **Data model:** Pilot metrics, ROI/outcome tracking.
-- **APIs:** Pilot reporting endpoints.
-- **Migrations:** Pilot metrics tables.
-- **Tests:** Pilot report correctness; deployment smoke tests.
-- **Security:** Production security evidence + review.
-- **Observability:** Pilot success criteria dashboards.
-- **Acceptance criteria:** Documented POC with measurable success criteria,
-  backtesting evidence and ROI method; honest gap list.
+  repository evidence — without fabricating traction or endorsement.
+- **Business value:** Convert the implemented product into an evaluable enterprise
+  POC motion and honest startup narrative.
+- **Architecture scope:** Documentation package under `docs/poc`, `docs/pitch`,
+  `docs/portfolio`, `docs/evidence`; Microsoft-aligned **proposed** reference
+  architecture; generic authenticated executive briefing UI (`/briefing`) over
+  existing `/api/v3` read APIs.
+- **Data model:** **No new tables.** Alembic head remains
+  `p3_observability_ai_quality`.
+- **APIs:** **No new endpoints** unless existing read APIs cannot support the
+  briefing experience (Prompt 10 uses existing routes).
+- **Migrations:** None (default).
+- **Tests:** Documentation contract tests; executive briefing unit + Playwright
+  coverage; full regression suites.
+- **Security:** Questionnaire + evidence index; no auth bypass; no public demo
+  mutation API.
+- **Observability:** Reuses Prompt 8 surfaces; no fake pilot dashboards.
+- **Acceptance criteria:** POC blueprint with entry/exit and multi-metric success
+  framework; ROI labelled hypothesis; NovaBank labelled fictional; no Microsoft
+  endorsement claim; independent audit still required before commit.
 - **Dependencies:** Prompt 9.
-- **Non-goals:** Claiming Microsoft endorsement or funding without evidence.
-- **Suggested branch:** `feat/phase-3-poc-pitch-readiness`
+- **Non-goals:** Claiming Microsoft endorsement; inventing customers/ROI;
+  Marketplace publishing; Phase 4 engines; binary PPTX as source of truth.
+- **Suggested branch:** `feat/phase-3-microsoft-poc-startup-pitch-readiness`
 - **Suggested commit subject:** `feat(poc): Microsoft POC packaging and startup pitch readiness`
+
+**Delivery note:** Prompt 10 is implemented as documentation + briefing packaging
+on the feature branch above. See
+[`architecture/phase-3-microsoft-poc-startup-pitch-readiness.md`](phase-3-microsoft-poc-startup-pitch-readiness.md).
 
 ---
 
