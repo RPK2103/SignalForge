@@ -26,6 +26,10 @@ describe("briefing-labels", () => {
     expect(SYNTHETIC_DEMO_DISCLAIMER).toMatch(/not.*probabilities/i);
   });
 
+  it("treats unknown claim types as limitations", () => {
+    expect(claimDisplayKind("unknown_future_type")).toBe("limitation");
+  });
+
   it("does not present uncalibrated scores as probabilities", () => {
     expect(formatEstimateKind("uncalibrated_score")).toMatch(/not a probability/i);
     expect(formatEstimateKind("insufficient_data")).toBe("insufficient data");

@@ -23,12 +23,20 @@ const RECOMMENDATION_TYPES = new Set(["advisory_option"]);
 
 const LIMITATION_TYPES = new Set(["evidence_gap", "limitation"]);
 
+/**
+ * Known synthetic demo tenant ids from repository demo metadata
+ * (Prompt 9 NovaBank seed constants). This is not organization-name matching
+ * and must not be treated as a real-customer detector.
+ */
+export const KNOWN_SYNTHETIC_DEMO_TENANT_IDS = new Set(["novabank"]);
+
 export function claimDisplayKind(claimType: string): ClaimDisplayKind {
   if (EVIDENCE_TYPES.has(claimType)) return "evidence";
   if (INFERENCE_TYPES.has(claimType)) return "inference";
   if (RECOMMENDATION_TYPES.has(claimType)) return "recommendation";
   if (LIMITATION_TYPES.has(claimType)) return "limitation";
-  return "inference";
+  // Unknown claim types are limitations until explicitly classified.
+  return "limitation";
 }
 
 export function claimKindLabel(kind: ClaimDisplayKind): string {
@@ -44,18 +52,21 @@ export function claimKindLabel(kind: ClaimDisplayKind): string {
   }
 }
 
-/** Known synthetic demo tenant ids/slugs — never treat as real customers. */
+/** True only for known synthetic demo tenant metadata (not org display names). */
 export function isSyntheticDemoTenant(
   tenantId: string | null | undefined,
   organizationSlug?: string | null
 ): boolean {
   const id = (tenantId ?? "").toLowerCase();
   const slug = (organizationSlug ?? "").toLowerCase();
-  return id === "novabank" || slug === "novabank";
+  return (
+    KNOWN_SYNTHETIC_DEMO_TENANT_IDS.has(id) ||
+    KNOWN_SYNTHETIC_DEMO_TENANT_IDS.has(slug)
+  );
 }
 
 export const SYNTHETIC_DEMO_DISCLAIMER =
-  "NovaBank is a fictional composite organization created solely for controlled product demonstration and testing. It is not affiliated with any real bank or company. All engineers, evidence and outcomes are synthetic and production-ineligible. Uncalibrated scores are not probabilities. Scenario results are decision-support only and are not causal claims.";
+  "This tenant is a known fictional composite organization created solely for controlled product demonstration and testing. It is not affiliated with any real bank or company. All engineers, evidence and outcomes are synthetic and production-ineligible. Uncalibrated scores are not probabilities. Scenario results are decision-support only and are not causal claims.";
 
 export function formatEstimateKind(kind: string | null | undefined): string {
   if (!kind) return "unavailable";

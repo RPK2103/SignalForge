@@ -511,7 +511,7 @@ export function ExecutiveBriefingPanel() {
                   setInitiativeOffset((value) => Math.max(0, value - PAGE_SIZE))
                 }
               >
-                Previous
+                Previous initiatives
               </Button>
               <Button
                 type="button"
@@ -524,7 +524,7 @@ export function ExecutiveBriefingPanel() {
                   setInitiativeOffset((value) => value + PAGE_SIZE)
                 }
               >
-                Next
+                Next initiatives
               </Button>
             </div>
           ) : null}

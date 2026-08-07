@@ -1,6 +1,6 @@
 # Microsoft Enterprise POC Blueprint
 
-**Status labels used:** IMPLEMENTED · POC CONFIGURATION · PROPOSED · DEFERRED · NOT VALIDATED  
+**Status labels used:** IMPLEMENTED · POC CONFIGURATION · INTEGRATION REQUIRED · PROPOSED · DEFERRED · NOT VALIDATED  
 **Endorsement:** Microsoft has **not** endorsed, partnered with, certified, or
 listed SignalForge on Azure Marketplace.
 

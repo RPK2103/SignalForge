@@ -24,7 +24,9 @@ export type ChiefOfStaffClaim = {
   text: string;
   support_status: string;
   authorship: string;
+  temporal_cutoff: string;
   evidence_ids: string[];
+  semantic_metadata?: Record<string, unknown>;
   ordering_index: number;
 };
 
@@ -45,7 +47,12 @@ export type QualitySummary = {
   fallback_rate: number;
   failed_count: number;
   rejected_count: number;
+  failure_categories?: Record<string, number>;
   grounding_failures: number;
   citation_failures: number;
   unsupported_claim_detections: number;
+  prompt_injection_detections?: number;
+  provider_latency_ms_avg?: number | null;
+  provider_latency_ms_max?: number | null;
+  total_tokens_sum?: number | null;
 };

@@ -16,6 +16,7 @@ Every artifact in this package must distinguish:
 |---|---|
 | **IMPLEMENTED** | Present in code, APIs, tests, or validated workflows |
 | **POC CONFIGURATION** | Implemented capability requiring customer-environment setup |
+| **INTEGRATION REQUIRED** | Customer/product work still required before the capability is usable (e.g. interactive Entra SPA) |
 | **PROPOSED** | Plausible Microsoft/customer integration path, not shipped |
 | **DEFERRED** | Explicitly out of Prompt 10 / later roadmap |
 | **NOT VALIDATED** | Hypothesis or illustrative assumption only |

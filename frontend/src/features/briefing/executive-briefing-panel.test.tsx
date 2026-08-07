@@ -142,6 +142,10 @@ function seedHappyPath() {
         run_mode: "manual",
         as_of_at: "2026-07-31T18:00:00Z",
         horizon_days: 90,
+        source_fingerprint: "src_fp",
+        baseline_fingerprint: "base_fp",
+        scenario_fingerprint: "scen_fp",
+        run_input_hash: "input_hash",
         created_at: "2026-07-31T18:00:00Z",
       },
     ],
@@ -175,6 +179,7 @@ function seedHappyPath() {
     findings_improved_count: 0,
     data_quality_warnings: [],
     applicability_warnings: [],
+    result_hash: "result_hash_1",
   });
   mockedCos.listBriefs.mockResolvedValue({
     items: [
@@ -228,6 +233,7 @@ function seedHappyPath() {
       text: "Ownership concentration is present on a critical repository.",
       support_status: "supported",
       authorship: "deterministic",
+      temporal_cutoff: "2026-07-31T18:00:00Z",
       evidence_ids: ["e1"],
       ordering_index: 0,
     },
@@ -237,6 +243,7 @@ function seedHappyPath() {
       text: "Schedule a human risk review.",
       support_status: "supported",
       authorship: "deterministic",
+      temporal_cutoff: "2026-07-31T18:00:00Z",
       evidence_ids: ["e1"],
       ordering_index: 1,
     },

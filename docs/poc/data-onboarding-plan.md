@@ -36,7 +36,7 @@
 | GitHub webhooks / OAuth Apps | — | — | — | — | — | **DEFERRED** |
 | Jira | issue key, project, status, assignee, updated | sprint links | — | — | — | **PROPOSED CONNECTOR** (descriptor only) |
 | Azure DevOps | work item id, project, state, changed date | PR links | — | — | — | **PROPOSED CONNECTOR** (descriptor only) |
-| Manual CSV/API import for missing systems | stable external ids + event_time | richer provenance | human-approved upload process | bounded batches | checksum + reconciliation worksheet | **MANUAL IMPORT** |
+| Operator-assisted worksheet for missing systems | stable external ids + event_time | richer provenance | human-approved operator process (no shipped CSV/upload product surface) | bounded batches | checksum + reconciliation worksheet | **MANUAL IMPORT** (operational proposal — not an implemented product import API) |
 | HR / performance systems | — | — | — | — | — | **DEFERRED** (out of product intent; not employee surveillance) |
 
 ## Identity mapping

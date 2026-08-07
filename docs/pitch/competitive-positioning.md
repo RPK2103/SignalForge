@@ -7,20 +7,23 @@ intelligence** that combines capability modeling, dependency graph risk,
 counterfactual overlays, and grounded executive briefs — with tenant isolation
 and human review.
 
-## Category comparison (differentiated hypotheses, not superiority claims)
+## Category comparison (typical patterns are unverified; SignalForge column is product design)
 
-| Dimension | Project-mgmt reporting | Eng analytics / productivity dashboards | Portfolio mgmt | Architecture dependency mapping | AI exec assistants | Manual readiness assessments | SignalForge (IMPLEMENTED today) |
+Other-category cells are **typical-pattern hypotheses (EXTERNAL RESEARCH REQUIRED — DO NOT PRESENT AS FACT)**.
+They are not measured competitor audits. The SignalForge column describes **implemented product design** in this repository, not market dominance.
+
+| Dimension | Project-mgmt reporting (typical pattern, unverified) | Eng analytics / productivity dashboards (typical pattern, unverified) | Portfolio mgmt (typical pattern, unverified) | Architecture dependency mapping (typical pattern, unverified) | AI exec assistants (typical pattern, unverified) | Manual readiness assessments (typical pattern, unverified) | SignalForge (IMPLEMENTED product design) |
 |---|---|---|---|---|---|---|---|
-| Delivery readiness | Status-centric | Activity-centric | Portfolio status | Structural only | Narrative, often ungrounded | High effort, episodic | Deterministic readiness + confidence |
-| Capability modeling | Weak | Rarely first-class | Limited | Limited | Prompt-dependent | Expert-dependent | Explicit coverage / gaps |
-| Dependency intelligence | Ticket links | Limited | Partial | Strong maps | Weak | Expert-dependent | Delivery Graph findings |
-| Counterfactual simulation | Rare | Rare | Rare | Rare | Ad hoc chat | Workshops | Scenario overlays |
-| Evidence grounding | Mixed | Metrics without provenance | Mixed | Diagrams | Often weak | Variable | EvidenceSignal + citations |
-| Citation validation | Rare | Rare | Rare | Rare | Rare | Manual | CoS citation binding |
+| Delivery readiness | Often status-centric | Often activity-centric | Often portfolio status | Often structural only | Often narrative / variable grounding | High effort, episodic | Deterministic readiness + confidence |
+| Capability modeling | Often secondary | Rarely first-class | Often limited | Often limited | Prompt-dependent | Expert-dependent | Explicit coverage / gaps |
+| Dependency intelligence | Often ticket links | Often limited | Often partial | Often strong maps | Often weak | Expert-dependent | Delivery Graph findings |
+| Counterfactual simulation | Often rare | Often rare | Often rare | Often rare | Often ad hoc chat | Workshops | Scenario overlays |
+| Evidence grounding | Mixed | Metrics without provenance (typical) | Mixed | Diagrams (typical) | Often weak | Variable | EvidenceSignal + citations |
+| Citation validation | Often rare | Often rare | Often rare | Often rare | Often rare | Manual | CoS citation binding |
 | Tenant isolation | Varies | Varies | Varies | Varies | Varies | N/A | App tenancy + PG RLS |
-| Human review | Comments | Limited | Workflows | Limited | Optional | Inherent | Explicit review states |
-| Explainability | Low/Med | Med | Med | Med | Low | High | Decision traces + claim labels |
-| Executive briefing | Decks | Export | Reports | Architecture reviews | Generative | Memos | CoS structured briefs |
+| Human review | Comments (typical) | Limited (typical) | Workflows (typical) | Limited (typical) | Optional (typical) | Inherent | Explicit review states |
+| Explainability | Low/Med (typical) | Med (typical) | Med (typical) | Med (typical) | Low (typical) | High (typical) | Decision traces + claim labels |
+| Executive briefing | Decks (typical) | Export (typical) | Reports (typical) | Architecture reviews (typical) | Generative (typical) | Memos (typical) | CoS structured briefs |
 
 ## Claims avoided
 

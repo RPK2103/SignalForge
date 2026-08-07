@@ -115,7 +115,7 @@ No SOC 2 / ISO 27001 / penetration-test completion is claimed unless proven.
 | Materialization reliability | graph rebuild success |
 | Graph rebuild reliability | idempotent rebuild tests + ops logs |
 | Observability | `/api/v3/observability/*` + dashboard |
-| Failure recovery | documented runbooks + dead-letter replay |
+| Failure recovery | CLI dead-letter replay + customer IR process (no dedicated ops failure-recovery runbook packaged in Prompt 10; demo runbook is presentation-only) |
 | Deployment reproducibility | CI workflows + env docs |
 | Support ownership | named customer + SignalForge contacts |
 
