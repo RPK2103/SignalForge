@@ -3,6 +3,16 @@
 #
 # Sync these settings with the Render dashboard for the existing service at
 # https://signalforge-o0m4.onrender.com
+#
+# Production fail-closed reality (see backend/app/security/config.py):
+# - DOCS_ENABLED must be false when APP_ENV=production
+# - AUTH_MODE must be entra_oidc with ENTRA_* set in the dashboard (not git)
+# - TRUSTED_HOSTS and DATABASE_URL are environment-specific (sync: false)
+# - CORS_ORIGINS should be the frontend origin when a separate frontend exists
+# - Never commit live secrets; local_development auth is forbidden in production
+#
+# Cloud cutover using this blueprint remains:
+# DEPLOYMENT PROCEDURE — NOT YET PRODUCTION-VALIDATED
 
 services:
   - type: web
@@ -18,10 +28,30 @@ services:
         value: production
       - key: LOG_LEVEL
         value: INFO
+      - key: LOG_FORMAT
+        value: json
+      - key: DOCS_ENABLED
+        value: "false"
       - key: AI_ENABLED
         value: "true"
       - key: PYTHON_VERSION
         value: 3.13.0
+      # Entra OIDC must be configured in the Render dashboard (fail-closed).
+      # Do not put real issuer/audience/JWKS/tenant values in git.
+      - key: AUTH_MODE
+        sync: false
+      - key: ENTRA_ISSUER
+        sync: false
+      - key: ENTRA_AUDIENCE
+        sync: false
+      - key: ENTRA_JWKS_URI
+        sync: false
+      - key: ENTRA_ALLOWED_TENANT_IDS
+        sync: false
+      - key: TRUSTED_HOSTS
+        sync: false
+      - key: DATABASE_URL
+        sync: false
       - key: AZURE_OPENAI_ENDPOINT
         sync: false
       - key: AZURE_OPENAI_API_KEY
@@ -30,5 +60,7 @@ services:
         sync: false
       - key: AZURE_OPENAI_API_VERSION
         value: "2024-10-21"
+      # When a separate frontend origin exists, set CORS_ORIGINS to that origin
+      # (explicit allowlist; never '*'). Dashboard override via sync: false if needed.
       - key: CORS_ORIGINS
         value: "https://signalforge-o0m4.onrender.com"

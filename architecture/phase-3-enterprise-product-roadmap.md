@@ -182,20 +182,37 @@ acceptance criteria.
 
 - **Product goal:** Authentication, RBAC, tenant isolation and horizontal scale.
 - **Business value:** Required before any enterprise/production claim.
-- **Architecture scope:** AuthN (incl. Entra ID/OIDC), RBAC, hardened tenant
-  isolation, connection pooling, background workers, rate limiting.
+- **Architecture scope:** AuthN (incl. Entra ID/OIDC verifier), RBAC, hardened
+  tenant isolation, connection pooling. Background workers and distributed rate
+  limiting remain **DEFERRED** (not delivered as runtime scale features).
 - **Data model:** `user`, `role`, `permission`, `membership`, audit logs.
-- **APIs:** Auth flows; admin/role management; scoped API keys.
-- **Migrations:** Auth/RBAC tables.
-- **Tests:** AuthZ matrix; cross-tenant isolation; load/scale tests.
-- **Security:** Full threat model; secret management; audit logging.
-- **Observability:** Auth failures, authz denials, tenant-scoped metrics.
-- **Acceptance criteria:** Enforced RBAC + tenant isolation with tests; Entra ID
-  login working; documented scale limits.
+- **APIs:** Bearer JWT verification + RBAC on protected routes; admin/role
+  management surfaces as implemented. Scoped API keys = **DEFERRED** (not shipped).
+  Interactive Entra/MSAL SPA login = **INTEGRATION REQUIRED** (verifier exists;
+  browser login not shipped).
+- **Migrations:** Auth/RBAC tables; PostgreSQL FORCE RLS path.
+- **Tests:** AuthZ matrix; cross-tenant isolation (app + PG RLS in CI). Load/scale
+  tests = **NOT VALIDATED** / **DEFERRED**.
+- **Security:** Threat-model foundation; env-based secrets; audit logging.
+  Secret-vault integration remains recommended / **PROPOSED**, not in-app.
+- **Observability:** Auth failures, authz denials, tenant-scoped metrics (with
+  Prompt 8 surfaces).
+- **Acceptance criteria (original intent vs delivery):** Enforced RBAC + tenant
+  isolation with tests = delivered foundation. “Entra ID login working” means
+  production `entra_oidc` JWT verification path — interactive browser login is
+  **INTEGRATION REQUIRED**. Documented scale limits without claiming distributed
+  workers/rate limits.
 - **Dependencies:** Prompt 6.
 - **Non-goals:** New product features.
 - **Suggested branch:** `feat/phase-3-security-scale`
 - **Suggested commit subject:** `feat(security): authentication, RBAC, tenant isolation and scale`
+
+**Delivery status (Prompt 10):** Security foundation (JWT modes, RBAC, audit,
+PostgreSQL FORCE RLS in CI) is **IMPLEMENTED**. Interactive Entra/MSAL SPA,
+background workers, API rate limiting, and scoped API keys are **not** fully
+delivered — label as **INTEGRATION REQUIRED** / **DEFERRED** / **NOT VALIDATED**
+as above. See
+[`phase-3-enterprise-security-scale.md`](phase-3-enterprise-security-scale.md).
 
 ---
 
@@ -232,16 +249,24 @@ acceptance criteria.
 - **Architecture scope:** Rich NovaBank dataset across connectors (fixture-fed),
   curated initiatives, scenarios and briefs.
 - **Data model:** Reuses Prompts 1–8; adds curated demo fixtures.
-- **APIs:** No new APIs; demo configuration/reset endpoints.
+- **APIs:** Read APIs reused; demo seed/materialize/reset are **CLI only**.
+  No public HTTP demo mutation/reset API (intentionally withheld).
 - **Migrations:** None beyond fixtures.
-- **Tests:** Full E2E across the realistic tenant; demo-reset idempotency.
-- **Security:** Demo tenant isolated; synthetic-only data.
-- **Observability:** Demo dashboards populated.
-- **Acceptance criteria:** A scripted, reproducible end-to-end demo runs green.
+- **Tests:** Demo/E2E coverage and CLI idempotency for seed/materialize paths.
+- **Security:** Demo tenant isolated; synthetic-only / fictional data;
+  production-ineligible.
+- **Observability:** Demo dashboards populated via existing surfaces.
+- **Acceptance criteria:** A scripted, reproducible end-to-end demo runs green
+  via CLI + authenticated UI — not via a public reset API.
 - **Dependencies:** Prompt 8.
 - **Non-goals:** Pitch materials (next).
 - **Suggested branch:** `feat/phase-3-realistic-demo-tenant`
 - **Suggested commit subject:** `feat(demo): realistic NovaBank enterprise demo tenant`
+
+**Delivery status (Prompt 10):** NovaBank generator, materialize CLI, and demo
+CI are **IMPLEMENTED** (synthetic tenant). Demo configuration/reset **HTTP**
+APIs are **not** delivered — operators use CLI only. Do not read earlier
+“demo configuration/reset endpoints” wording as a shipped public mutation API.
 
 ---
 
@@ -249,22 +274,35 @@ acceptance criteria.
 ### Microsoft POC and Startup Pitch Readiness
 
 - **Product goal:** Package a credible Microsoft POC and startup pitch backed by
-  evidence.
-- **Business value:** Convert the product into a fundable/pilotable offering.
-- **Architecture scope:** POC deployment (Azure), pilot instrumentation, ROI
-  measurement, backtesting evidence pack.
-- **Data model:** Pilot metrics, ROI/outcome tracking.
-- **APIs:** Pilot reporting endpoints.
-- **Migrations:** Pilot metrics tables.
-- **Tests:** Pilot report correctness; deployment smoke tests.
-- **Security:** Production security evidence + review.
-- **Observability:** Pilot success criteria dashboards.
-- **Acceptance criteria:** Documented POC with measurable success criteria,
-  backtesting evidence and ROI method; honest gap list.
+  repository evidence — without fabricating traction or endorsement.
+- **Business value:** Convert the implemented product into an evaluable enterprise
+  POC motion and honest startup narrative.
+- **Architecture scope:** Documentation package under `docs/poc`, `docs/pitch`,
+  `docs/portfolio`, `docs/evidence`; Microsoft-aligned **proposed** reference
+  architecture; generic authenticated executive briefing UI (`/briefing`) over
+  existing `/api/v3` read APIs.
+- **Data model:** **No new tables.** Alembic head remains
+  `p3_observability_ai_quality`.
+- **APIs:** **No new endpoints** unless existing read APIs cannot support the
+  briefing experience (Prompt 10 uses existing routes).
+- **Migrations:** None (default).
+- **Tests:** Documentation contract tests; executive briefing unit + Playwright
+  coverage; full regression suites.
+- **Security:** Questionnaire + evidence index; no auth bypass; no public demo
+  mutation API.
+- **Observability:** Reuses Prompt 8 surfaces; no fake pilot dashboards.
+- **Acceptance criteria:** POC blueprint with entry/exit and multi-metric success
+  framework; ROI labelled hypothesis; NovaBank labelled fictional; no Microsoft
+  endorsement claim; independent audit still required before commit.
 - **Dependencies:** Prompt 9.
-- **Non-goals:** Claiming Microsoft endorsement or funding without evidence.
-- **Suggested branch:** `feat/phase-3-poc-pitch-readiness`
+- **Non-goals:** Claiming Microsoft endorsement; inventing customers/ROI;
+  Marketplace publishing; Phase 4 engines; binary PPTX as source of truth.
+- **Suggested branch:** `feat/phase-3-microsoft-poc-startup-pitch-readiness`
 - **Suggested commit subject:** `feat(poc): Microsoft POC packaging and startup pitch readiness`
+
+**Delivery note:** Prompt 10 is implemented as documentation + briefing packaging
+on the feature branch above. See
+[`architecture/phase-3-microsoft-poc-startup-pitch-readiness.md`](phase-3-microsoft-poc-startup-pitch-readiness.md).
 
 ---
 

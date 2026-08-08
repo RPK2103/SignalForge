@@ -134,6 +134,9 @@ async function globalSetup(): Promise<void> {
   // 2. Seed deterministic Phase 2 catalog + Prompt 9 NovaBank enterprise demo.
   runBackendCommand(["-m", "app.db.seed"]);
   runBackendCommand(["-m", "app.demo", "novabank", "seed", "--json"]);
+  // 2a. Materialize graph, story scenarios and deterministic Chief-of-Staff briefs
+  // so the executive briefing surface can exercise the NovaBank narrative.
+  runBackendCommand(["-m", "app.demo", "novabank", "materialize", "--json"]);
   // 2b. Mint the E2E bearer token for the authenticated dashboard flow.
   mintE2eToken();
 
