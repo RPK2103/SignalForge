@@ -2,276 +2,169 @@
 
 **Predict. Simulate. Deliver.**
 
-AI-native enterprise engineering **execution intelligence** for leaders who need
-evidence-backed answers to:
+AI-powered engineering execution intelligence for leaders who need to know whether a team and initiative can realistically deliver — before execution risk becomes a delivery failure.
 
-> Can this team successfully deliver this initiative — and what risks threaten readiness?
-
-SignalForge evaluates delivery-system risk, capability coverage, dependencies and
-evidence. It is **not** intended to rank individual employees or automate
-employment decisions.
-
-**Microsoft has not endorsed this project.**
-
-This README separates **IMPLEMENTED** capabilities from **POC CONFIGURATION**,
-**PROPOSED**, and **DEFERRED** work. Detailed diligence lives under `docs/` and
-`architecture/`.
+| | |
+|---|---|
+| **Live Demo** | [signalforge-o0m4.onrender.com/dashboard](https://signalforge-o0m4.onrender.com/dashboard/) |
+| **API** | [signalforge-o0m4.onrender.com](https://signalforge-o0m4.onrender.com) |
+| **Swagger** | [signalforge-o0m4.onrender.com/docs](https://signalforge-o0m4.onrender.com/docs) |
+| **Repository** | [github.com/RPK2103/SignalForge](https://github.com/RPK2103/SignalForge) |
 
 ---
 
-## Product mission
+## Why SignalForge?
 
-Turn engineering capability, delivery evidence and initiative requirements into
-explainable readiness decisions — with simulation, Delivery Graph findings,
-honest prediction fallbacks, counterfactual scenarios, grounded Chief-of-Staff
-briefs, human review, tenant isolation and observability.
+Engineering leaders often see delivery risk only after a project is already in motion.
 
-## The enterprise problem
+The signals that matter are usually scattered — across repositories, work items, delivery systems, incidents, capability knowledge, project dependencies, and ownership structures. Status decks and spreadsheets can make an initiative look healthy while capability gaps, concentrated ownership, or a fragile dependency remain invisible.
 
-Leaders greenlight high-stakes work from fragmented signals (status decks,
-spreadsheets, intuition). Capability gaps, dependency risk, ownership
-concentration and key-person exposure surface too late.
+SignalForge brings those signals together so teams can spot delivery risk earlier, explore interventions, and decide with clearer evidence before problems become expensive.
 
-## What SignalForge does
+It evaluates delivery-system risk. It is not employee surveillance, performance ranking, hiring automation, or automated employment decision-making.
 
-1. Assess initiative/team readiness (readiness ≠ confidence).
-2. Inspect gaps, ownership concentration and decision traces.
-3. Simulate team changes and persist immutable history + human review.
-4. Build a Delivery Graph and review findings.
-5. Run counterfactual scenarios (decision-support overlays).
-6. Generate grounded Chief-of-Staff briefs with citations.
-7. Operate behind default-deny authentication and tenant controls.
+---
 
-## Who it is for
+## What SignalForge Does
 
-- **Economic buyer:** CTO / VP Engineering
-- **Operational buyer:** Engineering Operations / Program leadership
-- **Users:** directors, managers, platform and architecture leaders
-- **Reviewers:** security, data governance, enterprise architecture, procurement
+### Delivery Readiness
 
-See [`docs/pitch/buyer-personas.md`](docs/pitch/buyer-personas.md).
+Assess capability coverage, project fit, and execution readiness — with readiness and confidence treated as separate signals.
 
-## Core capabilities (IMPLEMENTED)
+### Engineering Evidence
 
-| Area | Summary |
-|---|---|
-| Readiness intelligence | Deterministic policy_v1 readiness + confidence, gaps, key-person risk, traces |
-| Simulation & review | Team simulate; immutable assessments; human review never rewrites scores |
-| Connectors | GitHub REST polling; Jira/ADO descriptors only (not HTTP-implemented) |
-| Delivery Graph | Relational projection/analysis/findings; rule-based confidence ≠ probability |
-| Prediction | Feature snapshots + fallback `uncalibrated_score` (not a probability) |
-| Scenarios | Overlay counterfactuals; 8 NovaBank stories after materialize |
-| AI Chief of Staff | Grounded briefs; claims/citations; deterministic fallback |
-| Security | Default-deny JWT, RBAC, audit, PostgreSQL FORCE RLS |
-| Observability | Protected APIs + `/observability`; offline AI-quality gate |
-| Executive briefing UI | Authenticated `/briefing` over live tenant APIs (no mock fallback) |
+Normalize engineering evidence into a tenant-scoped evidence model with provenance, so recommendations can be traced back to sources.
 
-Full inventory:
-[`architecture/phase-3-microsoft-poc-startup-pitch-readiness.md`](architecture/phase-3-microsoft-poc-startup-pitch-readiness.md).
+### Delivery Graph
 
-## Architecture
+Connect teams, projects, repositories, dependencies, work items, incidents, and ownership relationships into a navigable delivery graph.
 
-FastAPI backend + Next.js frontend. Additive `/api/v2` (Phase 2 readiness) and
-`/api/v3` (enterprise intelligence). Auth is default-deny: Bearer JWT required
-for protected APIs; `X-SignalForge-Tenant-ID` is a **selector**, never
-authentication. Alembic head: **`p3_observability_ai_quality`**.
+### Scenario Intelligence
 
-## AI and prediction honesty
+Explore decision-support simulations such as dependency slips, capability shortages, ownership concentration, and critical-resource availability changes. Scenarios are overlays for leadership reasoning — not causal predictions.
 
-- AI does not change deterministic readiness scores.
-- Briefs/CoS use provider abstraction with deterministic fallback.
-- NovaBank prediction candidate is **unpromoted** / production-ineligible.
-- Uncalibrated scores are **not** probabilities.
-- Scenarios are **not** causal predictions.
-- Mandatory tests do not call external LLMs.
+### AI Chief of Staff
 
-## NovaBank enterprise demo
+Generate evidence-grounded engineering leadership briefs with source binding, human review workflows, and deterministic fallback when live AI is unavailable.
 
-NovaBank is a **fictional** synthetic tenant (`novabank-enterprise-demo-v2`,
-as_of `2026-07-31T18:00:00Z`) for demos and tests — not a real bank or customer.
+### AI Quality & Observability
 
-```bash
-cd backend
-python -m app.demo novabank seed --json
-python -m app.demo novabank materialize --json
-python -m app.demo novabank validate
+Track system behavior, evidence quality, AI workflows, and review activity so operators can see how the intelligence layer is behaving.
+
+---
+
+## Product Screens
+
+![Executive dashboard](assets/dashboard-home.png)
+
+*Delivery readiness — capability coverage, project fit, risk, and team recommendation in one view.*
+
+![Staffing impact simulator](assets/staffing-simulator-before-after.png)
+
+*Scenario intelligence — compare before/after impact when critical capacity changes.*
+
+![AI Chief of Staff console](assets/copilot-console.png)
+
+*AI Chief of Staff — evidence-grounded briefing for leadership questions.*
+
+![AI reasoning panel](assets/AI-reasoning-panel.png)
+
+*Explainable reasoning — structured drivers behind a delivery outlook.*
+
+---
+
+## How It Works
+
+```text
+Engineering Systems
+        ↓
+Connector & Evidence Layer
+        ↓
+Normalized Enterprise Evidence
+        ↓
+Delivery Graph + Prediction + Scenario Intelligence
+        ↓
+AI Chief of Staff
+        ↓
+Human Review + Executive Decision Support
 ```
 
-Canonical fresh inventory includes 14 initiatives, 24 projects, 48 engineer
-profiles, 32 repositories, 8 scenarios; materialize builds graph findings and
-8 Chief-of-Staff briefs. Walk the narrative at **`/briefing`** (authenticated).
+Signals enter through connectors and evidence ingestion, land in a normalized tenant-scoped model, and feed the delivery graph, readiness scoring, and scenario overlays. AI synthesizes grounded briefs for leaders; humans review and remain accountable for decisions.
 
-Runbook: [`docs/poc/novabank-executive-demo-runbook.md`](docs/poc/novabank-executive-demo-runbook.md).
+---
 
-## Security and governance
+## Enterprise & AI Capabilities
 
-Designed to support enterprise review: JWT modes including `entra_oidc`
-verification, RBAC, audit, RLS on PostgreSQL, secret redaction, dependency
-audits. **Not yet certified** (no SOC 2 / ISO 27001 / pen-test completion claim).
-Interactive Entra/MSAL browser login is **INTEGRATION REQUIRED**. Questionnaire:
-[`docs/poc/security-governance-questionnaire.md`](docs/poc/security-governance-questionnaire.md).
+SignalForge is built for environments where explainability and isolation matter as much as insight:
 
-## Observability and AI quality
+- Evidence-grounded AI with citation binding and deterministic fallback
+- Delivery graph intelligence over teams, systems, and ownership
+- Deterministic scenario simulation for decision support
+- Delivery prediction infrastructure with honest estimate labeling (not promoted as a calibrated probability)
+- Human review workflows that never silently rewrite scores
+- Tenant isolation, JWT authentication, RBAC, and PostgreSQL Row-Level Security
+- Auditability, observability, and AI-quality evaluation foundations
+- Deterministic test paths that do not require live external LLM access
 
-Local/in-process observability with optional OTel construct; protected
-`/api/v3/observability/*` and `/observability` UI; offline AI-quality release
-gate in CI. Production Azure Monitor export is **PROPOSED**, not validated.
+---
 
-## Microsoft enterprise POC
+## Microsoft / Enterprise Alignment
 
-4–6 week evaluation blueprint (entry/exit criteria, success metrics, data
-onboarding, Microsoft-aligned **proposed** hosting/identity map):
-[`docs/poc/microsoft-enterprise-poc-blueprint.md`](docs/poc/microsoft-enterprise-poc-blueprint.md).
+SignalForge originated in a Microsoft-focused engineering context and is designed to fit enterprise Microsoft environments.
 
-Azure Marketplace publishing, Teams, Power BI and Copilot Studio integrations
-are **DEFERRED**. No Microsoft partnership or endorsement is claimed.
+**In the product today:** optional Azure OpenAI provider support with deterministic fallback, Entra OIDC JWT verification as a configured auth mode, and a GitHub REST polling connector for engineering evidence.
 
-## Local development
+**Designed for / not yet shipped as interactive production integrations:** Microsoft Entra browser login, Azure Container Apps or App Service hosting, Azure Database for PostgreSQL as a production cutover, live Azure OpenAI production operation, Teams, Power BI, Copilot Studio, and Azure Marketplace publishing.
 
-```bash
-git clone https://github.com/RPK2103/SignalForge.git
-cd SignalForge
+Microsoft has not endorsed this project.
 
-cd backend
-python -m venv .venv
-# Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-pip install -r requirements-dev.txt
-python -m alembic upgrade head
-python -m app.db.seed
+---
 
-cd ../frontend
-npm ci
-```
+## Technology
 
-Backend `.env` (see `backend/.env.example`):
+**Backend:** FastAPI · Python · SQLAlchemy · PostgreSQL · Alembic · Pydantic
 
-```env
-DATABASE_URL=sqlite:///./signalforge.db
-AI_ENABLED=false
-AUTH_MODE=local_development
-SIGNALFORGE_LOCAL_AUTH_SECRET=<at-least-32-chars>
-CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
-```
+**Frontend:** Next.js · React · TypeScript · Tailwind · shadcn/ui
 
-Frontend `.env.local`:
+**AI / Intelligence:** Evidence-grounded briefs · Delivery graphs · Scenario simulation · Evaluation workflows · Optional Azure OpenAI
 
-```env
-NEXT_PUBLIC_SIGNALFORGE_API_BASE_URL=http://127.0.0.1:8000
-```
+**Engineering:** Pytest · Vitest · Playwright · Ruff · GitHub Actions · Docker
 
-Run:
+**Security:** JWT · RBAC · PostgreSQL RLS · Tenant isolation · Gitleaks · Dependency auditing
 
-```bash
-# backend
-cd backend
-python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+**Ingestion:** GitHub-backed evidence polling (implemented). Jira and Azure DevOps HTTP connectors are not completed.
 
-# frontend
-cd frontend
-npm run dev
-```
+**Engineering quality (verified baseline):** Backend 997 · Frontend 43 · Playwright 8 · Remote PostgreSQL 24 · Production dependency audits at 0 known vulnerabilities (pip + npm).
 
-Mint a local JWT (never commit it):
+---
 
-```bash
-cd backend
-python -m app.security issue-dev-token --subject dev --tenant novabank --roles tenant_admin
-```
+## Enterprise Demo
 
-Inject in the browser console (non-production only):
+**NovaBank is a deterministic synthetic enterprise used to demonstrate SignalForge safely. It is not a customer.**
 
-```js
-window.__SIGNALFORGE_TEST_AUTH__ = { token: "<jwt>", tenantId: "novabank" };
-```
+The demo tenant is sized to feel like a real engineering organization:
 
-Then open `/`, `/briefing`, or `/observability` and retry if needed. Token is
-in-memory only and lost on reload.
+- 48 engineers
+- 14 initiatives
+- 32 repositories
+- 1,015 graph nodes / 1,362 graph edges after materialization
+- 8 canonical delivery-risk scenarios
 
-## Testing
+It is production-ineligible by design — a controlled dataset for demos, tests, and narrative walkthroughs.
 
-```bash
-# backend
-cd backend
-python -m ruff format --check app tests
-python -m ruff check app tests
-python -m alembic heads
-python -m alembic check
-python -m pytest -rs
+---
 
-# frontend
-cd frontend
-npm test -- --run
-npm run lint
-npm run typecheck
-npm run build
-npx playwright test
-```
+## Current Status & Limitations
 
-Dependency gates: `pip check`, `pip_audit -r requirements.txt --strict`,
-`npm audit --omit=dev`.
+SignalForge has a strong enterprise architecture and extensive automated validation. Several areas remain intentionally unclaimed:
 
-PostgreSQL RLS suites require `POSTGRES_TEST_URL` (or CI service container).
-SQLite does **not** prove RLS.
+- NovaBank data is synthetic
+- The final enterprise build has not been validated in a real customer production environment
+- Microsoft Entra interactive authentication is not yet implemented
+- Jira HTTP integration is not yet implemented
+- Azure DevOps HTTP integration is not yet fully implemented
+- Delivery prediction is not promoted as a calibrated probability model
+- Real customer outcome / ROI validation has not been established
+- Production-scale performance limits have not been validated
 
-Report **fresh** pass/skip counts from your run; do not reuse stale README
-tables as proof.
-
-## Deployment
-
-Operator procedures (not a claim that production was executed):
-
-- [`docs/deployment/production-deployment-runbook.md`](docs/deployment/production-deployment-runbook.md)
-- [`docs/deployment/release-and-rollback.md`](docs/deployment/release-and-rollback.md)
-
-Render blueprint: `render.yaml`. Azure hosting remains a POC option — see the
-POC blueprint — and is **not** production-validated from this repository alone.
-
-## Documentation index
-
-| Area | Link |
-|---|---|
-| Prompt 10 package | [`architecture/phase-3-microsoft-poc-startup-pitch-readiness.md`](architecture/phase-3-microsoft-poc-startup-pitch-readiness.md) |
-| POC blueprint | [`docs/poc/microsoft-enterprise-poc-blueprint.md`](docs/poc/microsoft-enterprise-poc-blueprint.md) |
-| Success framework | [`docs/poc/poc-success-framework.md`](docs/poc/poc-success-framework.md) |
-| Security questionnaire | [`docs/poc/security-governance-questionnaire.md`](docs/poc/security-governance-questionnaire.md) |
-| Data onboarding | [`docs/poc/data-onboarding-plan.md`](docs/poc/data-onboarding-plan.md) |
-| Demo runbook | [`docs/poc/novabank-executive-demo-runbook.md`](docs/poc/novabank-executive-demo-runbook.md) |
-| Executive one-pager | [`docs/pitch/executive-one-pager.md`](docs/pitch/executive-one-pager.md) |
-| Personas | [`docs/pitch/buyer-personas.md`](docs/pitch/buyer-personas.md) |
-| ROI hypothesis | [`docs/pitch/roi-hypothesis-model.md`](docs/pitch/roi-hypothesis-model.md) |
-| Competitive positioning | [`docs/pitch/competitive-positioning.md`](docs/pitch/competitive-positioning.md) |
-| Pitch outline | [`docs/pitch/startup-pitch-outline.md`](docs/pitch/startup-pitch-outline.md) |
-| Objections | [`docs/pitch/objections-and-responses.md`](docs/pitch/objections-and-responses.md) |
-| Case study | [`docs/portfolio/signalforge-case-study.md`](docs/portfolio/signalforge-case-study.md) |
-| Evidence index | [`docs/evidence/production-readiness-evidence-index.md`](docs/evidence/production-readiness-evidence-index.md) |
-| Production deployment runbook | [`docs/deployment/production-deployment-runbook.md`](docs/deployment/production-deployment-runbook.md) |
-| Release / rollback | [`docs/deployment/release-and-rollback.md`](docs/deployment/release-and-rollback.md) |
-| Phase 3 roadmap | [`architecture/phase-3-enterprise-product-roadmap.md`](architecture/phase-3-enterprise-product-roadmap.md) |
-| Agent / Cloud notes | [`AGENTS.md`](AGENTS.md) |
-
-## Limitations
-
-- No production/paid customer traction claimed; ROI is hypothesis-only.
-- No Microsoft endorsement, partnership, certification, or Marketplace listing.
-- NovaBank is synthetic / production-ineligible.
-- Jira/ADO HTTP connectors, GitHub webhooks/OAuth, Teams, Power BI, Copilot Studio: deferred or not implemented.
-- Interactive Entra login SPA not shipped.
-- Secret vault integration recommended, not implemented in-app.
-- No SOC 2 / ISO 27001 / formal pen-test / production DR validation claimed.
-
-## Roadmap
-
-Core engines of Phase 3 Prompts 1–9 are in product code, with residuals:
-interactive Entra/MSAL SPA = **INTEGRATION REQUIRED**; NovaBank demo seed/reset =
-CLI-only (no public mutation API); background workers, API rate limiting, scoped
-API keys, and load-scale tests = **DEFERRED** or **NOT VALIDATED** as applicable.
-Prompt 10 packages POC and pitch readiness. Further work is customer-driven POC
-hardening and deferred integrations — not a new Phase 4 engine in this milestone.
-
-## Disclaimer
-
-SignalForge is decision-support software. Outputs can be wrong or incomplete.
-Humans remain accountable for delivery decisions. Synthetic demos are not
-customer evidence. Uncalibrated scores are not probabilities. Scenario overlays
-are not causal predictions.
+> SignalForge is being developed with a simple principle: intelligence should be explainable, evidence-backed, and useful to human decision-makers.
