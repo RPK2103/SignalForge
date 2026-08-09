@@ -4,11 +4,17 @@ on:
   pull_request:
     paths:
       - "backend/**"
+      - "docs/**"
+      - "architecture/**"
+      - "README.md"
       - ".github/workflows/backend-ci.yml"
   push:
     branches: [main]
     paths:
       - "backend/**"
+      - "docs/**"
+      - "architecture/**"
+      - "README.md"
       - ".github/workflows/backend-ci.yml"
   workflow_dispatch:
 

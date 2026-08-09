@@ -1,3 +1,4 @@
+import { AppNav } from "@/components/layout/app-nav";
 import { ObservabilityPanel } from "@/features/observability/observability-panel";
 
 export const metadata = {
@@ -7,6 +8,7 @@ export const metadata = {
 export default function ObservabilityPage() {
   return (
     <div className="min-h-full bg-slate-50/80">
+      <AppNav />
       <div className="mx-auto max-w-6xl space-y-6 px-4 py-8">
         <header className="space-y-1">
           <h1 className="text-2xl font-semibold">Observability & AI quality</h1>
