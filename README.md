@@ -21,7 +21,7 @@ SignalForge brings those signals together so teams can spot delivery risk earlie
 
 It evaluates delivery-system risk. It is not employee surveillance, performance ranking, hiring automation, or automated employment decision-making.
 
----
+
 
 ## What SignalForge Does
 
