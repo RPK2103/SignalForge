@@ -9,9 +9,7 @@ AI-powered engineering execution intelligence for leaders who need to know wheth
 | **Live Demo** | [signalforge-o0m4.onrender.com/dashboard](https://signalforge-o0m4.onrender.com/dashboard/) |
 | **API** | [signalforge-o0m4.onrender.com](https://signalforge-o0m4.onrender.com) |
 | **Swagger** | [signalforge-o0m4.onrender.com/docs](https://signalforge-o0m4.onrender.com/docs) |
-| **Repository** | [github.com/RPK2103/SignalForge](https://github.com/RPK2103/SignalForge) |
 
----
 
 ## Why SignalForge?
 
